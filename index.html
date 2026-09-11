@@ -786,22 +786,23 @@ function loadLevel2() {
   scene.background = new THREE.Color(0x5ca2ff);
   scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
 
-  // Настраиваем освещение с тенями
-  const sun = new THREE.DirectionalLight(0xfffaed, 1.4);
-  sun.position.set(150, 200, 100);
+  // Освещение с поддержкой теней
+  const sun = new THREE.DirectionalLight(0xfffaed, 1.5);
+  sun.position.set(200, 300, 150);
   sun.castShadow = true;
-  sun.shadow.mapSize.width = 1024;
-  sun.shadow.mapSize.height = 1024;
+  sun.shadow.mapSize.width = 2048;
+  sun.shadow.mapSize.height = 2048;
   sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 500;
-  const d = 150;
+  sun.shadow.camera.far = 800;
+  const d = 200;
   sun.shadow.camera.left = -d;
   sun.shadow.camera.right = d;
   sun.shadow.camera.top = d;
   sun.shadow.camera.bottom = -d;
+  sun.shadow.bias = -0.0005;
   scene.add(sun);
   
-  scene.add(new THREE.AmbientLight(0x88bbee, 0.8));
+  scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
 
   // Текстура травы
   const canvas = document.createElement('canvas');
@@ -824,7 +825,7 @@ function loadLevel2() {
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
   
-  // Холмистый ландшафт с поддержкой теней
+  // Холмистый ландшафт
   const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
@@ -839,35 +840,37 @@ function loadLevel2() {
   grassFloor.receiveShadow = true;
   scene.add(grassFloor);
 
-  // Облака с MeshLambertMaterial (видны под любым углом и освещаются солнцем)
-  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-  const cloudPartGeo = new THREE.SphereGeometry(12, 7, 7);
+  // ИСПРАВЛЕНИЕ ДЛЯ ОБЛАКОВ: Используем кубические блоки с MeshLambertMaterial вместо сферы
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+  const cloudBlockGeo = new THREE.BoxGeometry(10, 6, 10);
 
-  for(let i=0; i<25; i++) {
+  for(let i=0; i<30; i++) {
     const cloudGroup = new THREE.Group();
-    const partsCount = 5 + Math.floor(Math.random() * 5);
+    const partsCount = 6 + Math.floor(Math.random() * 6);
     for(let p=0; p<partsCount; p++) {
-      const part = new THREE.Mesh(cloudPartGeo, cloudMat);
+      const part = new THREE.Mesh(cloudBlockGeo, cloudMat);
       part.position.set(
-        (Math.random() - 0.5) * 30,
-        (Math.random() - 0.5) * 5,
-        (Math.random() - 0.5) * 20
+        (Math.random() - 0.5) * 35,
+        (Math.random() - 0.5) * 4,
+        (Math.random() - 0.5) * 25
       );
-      const s = 0.6 + Math.random() * 0.8;
-      part.scale.set(s, s * 0.5, s);
+      const s = 0.6 + Math.random() * 0.9;
+      part.scale.set(s, s * 0.6, s);
+      // Облака тоже должны отбрасывать тени на ландшафт!
+      part.castShadow = true;
       cloudGroup.add(part);
     }
     cloudGroup.position.set(
-      (Math.random() - 0.5) * 500,
-      70 + Math.random() * 30,
-      (Math.random() - 0.5) * 500
+      (Math.random() - 0.5) * 600,
+      80 + Math.random() * 40,
+      (Math.random() - 0.5) * 600
     );
     scene.add(cloudGroup);
   }
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Облака, холмы и тени исправлены!";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Облака заменены на кубические (видны всегда), тени активированы!";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
