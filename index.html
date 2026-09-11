@@ -138,7 +138,7 @@ html,body{
 .crosshair::before{ top:4px; left:0; width:10px; height:2px; }
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 
-/* МИНИ-КАРТА */
+/* МИНИ-КАРТА И КОМПАС */
 #minimap-container{
   position:absolute;
   top:20px;
@@ -155,6 +155,31 @@ html,body{
 #minimap-canvas{
   width:100%;
   height:100%;
+}
+
+.compass-box{
+  position:absolute;
+  top:140px;
+  left:35px;
+  width:80px;
+  height:35px;
+  background:rgba(20,19,15,0.8);
+  border:2px solid rgba(0,255,204,0.6);
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#00ffcc;
+  font-weight:bold;
+  font-size:18px;
+  box-shadow:0 0 8px rgba(0,255,204,0.3);
+  backdrop-filter:blur(4px);
+}
+#compass-arrow{
+  display:inline-block;
+  transition:transform 0.1s;
+  margin-right:6px;
+  font-size:20px;
 }
 
 #danger-overlay{
@@ -282,11 +307,15 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">🧭 Найди выход из лабиринта! Монстр рядом!</div>
+  <div id="hint" class="hint">🧭 Следуй за стрелкой компаса к выходу!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
     <canvas id="minimap-canvas" width="110" height="110"></canvas>
+  </div>
+
+  <div class="compass-box">
+    <span id="compass-arrow">⬆</span> Выход
   </div>
 
   <button id="fs" class="fs-btn">⛶</button>
@@ -322,14 +351,14 @@ const map = [
   "#..#..####################..#..####..#..#####..#.#",
   "#..#..#..................#..#..#..#..#......#..#.#",
   "#..#..#..##############..#..#..#..#..#####..#..#.#",
-  "#.....#..#............#..#..#.....#......#..#....#",
+  "#.....#..#............#..#..#     #......#..#....#",
   "########.#..########..#..#..###########..#..######",
   "#........#..#......#..#..#...............#.......#",
   "#..#######..#......#..#..######################..#",
   "#..#........#......#..#.......................#..#",
   "#..#..#######..#####..######################..#..#",
   "#..#..#.....#.........#....................#..#..#",
-  "#..#..#.....########..#..################..#..#..#",
+  "#..#..#     ########..#..################..#..#..#",
   "#.....#...............#..#..............#.....#..#",
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
@@ -346,6 +375,7 @@ const container = document.getElementById('webgl-container');
 const dangerOverlay = document.getElementById('danger-overlay');
 const minimapCanvas = document.getElementById('minimap-canvas');
 const mmCtx = minimapCanvas.getContext('2d');
+const compassArrow = document.getElementById('compass-arrow');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
@@ -516,7 +546,6 @@ for (let y = 0; y < MH; y++) {
       exitMesh.position.set(posX, 1.5, posZ - 1.4);
       scene.add(exitMesh);
 
-      // Светильник над выходом
       const exitLight = new THREE.PointLight(0x00ffcc, 2, 8);
       exitLight.position.set(posX, 2.5, posZ);
       scene.add(exitLight);
@@ -598,7 +627,7 @@ let pathTimer = 0;
 let currentMonsterPath = [];
 
 function checkObjectCollision(pos, radius = 0.4) {
-  if (currentLevel === 2) return false; // На Уровне 2 нет стен
+  if (currentLevel === 2) return false;
   for (let wall of walls) {
     const box = new THREE.Box3().setFromObject(wall);
     const objBox = new THREE.Box3(
@@ -610,24 +639,24 @@ function checkObjectCollision(pos, radius = 0.4) {
   return false;
 }
 
-function updateMinimap() {
+function updateMinimapAndCompass() {
   if (currentLevel === 2) {
     document.getElementById('minimap-container').style.display = 'none';
+    document.querySelector('.compass-box').style.display = 'none';
     return;
   }
 
+  // Обновление мини-карты
   mmCtx.clearRect(0, 0, 110, 110);
-  
   const px = camera.position.x;
   const pz = camera.position.z;
 
   mmCtx.save();
   mmCtx.translate(55, 55);
 
-  const viewRadius = 18; // видимость на мини-карте
+  const viewRadius = 18;
   const scale = 110 / (viewRadius * 2);
 
-  // Рисуем стены
   mmCtx.fillStyle = '#887744';
   for (let y = 0; y < MH; y++) {
     for (let x = 0; x < MW; x++) {
@@ -646,7 +675,6 @@ function updateMinimap() {
     }
   }
 
-  // Рисуем игрока (зелёная точка со стрелочкой)
   mmCtx.fillStyle = '#00ff00';
   mmCtx.beginPath();
   mmCtx.arc(0, 0, 4, 0, Math.PI * 2);
@@ -660,6 +688,18 @@ function updateMinimap() {
   mmCtx.stroke();
 
   mmCtx.restore();
+
+  // Обновление стрелки компаса на выход
+  const dirToExit = new THREE.Vector3().subVectors(exitPos, camera.position);
+  dirToExit.y = 0;
+  dirToExit.normalize();
+
+  const playerDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+  playerDir.y = 0;
+  playerDir.normalize();
+
+  const angle = Math.atan2(dirToExit.x, dirToExit.z) - Math.atan2(playerDir.x, playerDir.z);
+  compassArrow.style.transform = `rotate(${angle}rad)`;
 }
 
 function updatePlayer(dt) {
@@ -704,10 +744,9 @@ function updatePlayer(dt) {
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
-  updateMinimap();
+  updateMinimapAndCompass();
 
   if (currentLevel === 0) {
-    /* --- МОНСТР --- */
     const mPos = monster.position;
     const pPos = camera.position;
     const dist = mPos.distanceTo(pPos);
@@ -749,7 +788,6 @@ function updatePlayer(dt) {
       triggerJumpscare();
     }
 
-    // Проверка Выхода
     if (camera.position.distanceTo(exitPos) < 2.0) {
       triggerWin();
     }
@@ -768,9 +806,6 @@ function triggerWin() {
   document.getElementById('win-screen').style.display = 'flex';
 }
 
-/* =========================
-   ПЕРЕХОД НА УРОВЕНЬ 2
-========================= */
 document.getElementById('continue-btn').addEventListener('click', () => {
   document.getElementById('win-screen').style.display = 'none';
   loadLevel2();
@@ -780,12 +815,11 @@ document.getElementById('continue-btn').addEventListener('click', () => {
 function loadLevel2() {
   currentLevel = 2;
 
-  // Очищаем мир Level 0
   while(scene.children.length > 0){ 
     scene.remove(scene.children[0]); 
   }
 
-  scene.background = new THREE.Color(0x87ceeb); // Голубое небо
+  scene.background = new THREE.Color(0x87ceeb);
   scene.fog = new THREE.FogExp2(0xaaccff, 0.008);
 
   const sun = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -793,13 +827,11 @@ function loadLevel2() {
   scene.add(sun);
   scene.add(new THREE.AmbientLight(0x779977, 0.8));
 
-  // Огромное зелёное поле
   const grassMat = new THREE.MeshLambertMaterial({ map: createGrassTexture() });
   const grassFloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), grassMat);
   grassFloor.rotation.x = -Math.PI / 2;
   scene.add(grassFloor);
 
-  // Ставим игрока в центр Уровня 2
   camera.position.set(0, 1.5, 0);
 
   document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Бесконечные зелёные поля";
@@ -927,3 +959,4 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
+
