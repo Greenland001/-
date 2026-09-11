@@ -354,6 +354,8 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
@@ -646,7 +648,6 @@ function updateMinimap() {
   mmCtx.restore();
 }
 
-// Функция для высоты холмов (делаем их нелинейными и разнообразными)
 function getLevel2Height(x, z) {
   let h = Math.sin(x * 0.03) * Math.cos(z * 0.03) * 4.0;
   h += Math.sin(x * 0.08 + 1.5) * Math.sin(z * 0.08) * 1.5;
@@ -785,12 +786,24 @@ function loadLevel2() {
   scene.background = new THREE.Color(0x5ca2ff);
   scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
 
+  // Настраиваем освещение с тенями
   const sun = new THREE.DirectionalLight(0xfffaed, 1.4);
   sun.position.set(150, 200, 100);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = 1024;
+  sun.shadow.mapSize.height = 1024;
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 500;
+  const d = 150;
+  sun.shadow.camera.left = -d;
+  sun.shadow.camera.right = d;
+  sun.shadow.camera.top = d;
+  sun.shadow.camera.bottom = -d;
   scene.add(sun);
-  scene.add(new THREE.AmbientLight(0x88bbee, 1.0));
+  
+  scene.add(new THREE.AmbientLight(0x88bbee, 0.8));
 
-  // Улучшенная процедурная текстура травы (реалистичные оттенки и штрихи)
+  // Текстура травы
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 512;
   const ctx = canvas.getContext('2d');
@@ -811,7 +824,7 @@ function loadLevel2() {
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
   
-  // Создаем крутой реалистичный холмистый ландшафт
+  // Холмистый ландшафт с поддержкой теней
   const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
@@ -823,10 +836,11 @@ function loadLevel2() {
   grassGeo.computeVertexNormals();
 
   const grassFloor = new THREE.Mesh(grassGeo, grassMat);
+  grassFloor.receiveShadow = true;
   scene.add(grassFloor);
 
-  // Пышные и реалистичные 3D облака вместо плоских пятен
-  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, depthWrite: false });
+  // Облака с MeshLambertMaterial (видны под любым углом и освещаются солнцем)
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
   const cloudPartGeo = new THREE.SphereGeometry(12, 7, 7);
 
   for(let i=0; i<25; i++) {
@@ -853,7 +867,7 @@ function loadLevel2() {
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Зелёные поля с реалистичными холмами и облаками";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Облака, холмы и тени исправлены!";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
