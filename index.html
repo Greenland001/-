@@ -209,7 +209,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">🕹️ Осторожно: в коридорах кто-то есть...</div>
+  <div id="hint" class="hint">🕹️ Карта увеличена! Исследуйте гигантский лабиринт...</div>
   <div class="crosshair"></div>
   <button id="fs" class="fs-btn">⛶</button>
   <div id="jump" class="jump-btn">⬆</div>
@@ -219,28 +219,46 @@ html,body{
 <script>
 'use strict';
 
+/* УВЕЛИЧЕННАЯ КАРТА (50 x 38) */
 const map = [
-  "############################",
-  "#..........................#",
-  "#..#####....#####....####..#",
-  "#..#...#....#...#....#..#..#",
-  "#..#...######...######..#..#",
-  "#..#....................#..#",
-  "#..######..######..######..#",
-  "#.......#..#....#..#.......#",
-  "#.......#..#....#..#.......#",
-  "#..######..######..######..#",
-  "#..#....................#..#",
-  "#..#...######...######..#..#",
-  "#..#...#....#...#....#..#..#",
-  "#..#####....#####....####..#",
-  "#..........................#",
-  "#..######..######..######..#",
-  "#..#....#..#....#..#....#..#",
-  "#..#....#..#....#..#....#..#",
-  "#..#....####....####....#..#",
-  "#..........................#",
-  "############################"
+  "##################################################",
+  "#................................................#",
+  "#..#####....#####....####....#####....#####...#..#",
+  "#..#...#....#...#....#..#....#...#....#...#...#..#",
+  "#..#...######...######..######...######...#...#..#",
+  "#..#......................................#...#..#",
+  "#..######..######..######..######..######.#####..#",
+  "#.......#..#....#..#....#..#....#..#.............#",
+  "#.......#..#....#..#....#..#....#..#.............#",
+  "#..######..######..######..######..######.#####..#",
+  "#..#......................................#...#..#",
+  "#..#...######...######..######...######...#...#..#",
+  "#..#...#....#...#....#..#....#...#....#...#...#..#",
+  "#..#####....#####....####....#####....#####...#..#",
+  "#................................................#",
+  "#..######..######..######..######..######..####..#",
+  "#..#....#..#....#..#....#..#....#..#....#..#..#..#",
+  "#..#....#..#....#..#....#..#....#..#....#..#..#..#",
+  "#..#....####....####....####....####....####..#..#",
+  "#................................................#",
+  "#..#####....#####....####....#####....#####...#..#",
+  "#..#...#....#...#....#..#....#...#....#...#...#..#",
+  "#..#...######...######..######...######...#...#..#",
+  "#..#......................................#...#..#",
+  "#..######..######..######..######..######.#####..#",
+  "#.......#..#....#..#....#..#....#..#.............#",
+  "#.......#..#....#..#....#..#....#..#.............#",
+  "#..######..######..######..######..######.#####..#",
+  "#..#......................................#...#..#",
+  "#..#...######...######..######...######...#...#..#",
+  "#..#...#....#...#....#..#....#...#....#...#...#..#",
+  "#..#####....#####....####....#####....#####...#..#",
+  "#................................................#",
+  "#..######..######..######..######..######..####..#",
+  "#..#....#..#....#..#....#..#....#..#....#..#..#..#",
+  "#..#....####....####....####....####....####..#..#",
+  "#................................................#",
+  "##################################################"
 ];
 
 const MW = map[0].length;
@@ -250,9 +268,9 @@ const CELL_SIZE = 3;
 const container = document.getElementById('webgl-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
-scene.fog = new THREE.FogExp2(0x11110e, 0.04);
+scene.fog = new THREE.FogExp2(0x11110e, 0.035);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
@@ -424,7 +442,7 @@ for (let y = 0; y < MH; y++) {
 }
 
 /* =========================
-   СОЗДАНИЕ МОНСТРА
+   СОЗДАНИЕ МОНСТРА И ИГРОКА
 ========================= */
 const monsterMat = new THREE.SpriteMaterial({ map: createMonsterTexture() });
 const monster = new THREE.Sprite(monsterMat);
@@ -432,7 +450,7 @@ monster.scale.set(2.2, 2.2, 1);
 scene.add(monster);
 
 function respawnMonster() {
-  monster.position.set(22 * CELL_SIZE, 1.2, 18 * CELL_SIZE);
+  monster.position.set(45 * CELL_SIZE, 1.2, 32 * CELL_SIZE);
 }
 respawnMonster();
 
@@ -451,7 +469,6 @@ const jumpForce = 6.5;
 let isGrounded = true;
 let isGameOver = false;
 
-// Проверка столкновения объекта со стенами
 function checkObjectCollision(pos, radius = 0.4) {
   for (let wall of walls) {
     const box = new THREE.Box3().setFromObject(wall);
@@ -489,7 +506,7 @@ function updatePlayer(dt) {
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  const speed = 4.0 * dt;
+  const speed = 4.5 * dt;
   const dir = new THREE.Vector3();
   
   const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
@@ -506,21 +523,35 @@ function updatePlayer(dt) {
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
-  // Движение монстра с физикой стен
+  /* --- УМНЫЙ ИИ МОНСТРА (ОБХОД СТЕН НА БОЛЬШОЙ КАРТЕ) --- */
   const mPos = monster.position;
   const pPos = camera.position;
   const dist = mPos.distanceTo(pPos);
 
-  if (dist < 18) {
-    const monsterSpeed = 2.2 * dt;
-    const mDir = new THREE.Vector3().subVectors(pPos, mPos).normalize();
+  if (dist < 35) {
+    const monsterSpeed = 2.6 * dt;
+    let targetDir = new THREE.Vector3().subVectors(pPos, mPos).normalize();
     
-    // Проверка столкновений для монстра по X и Z отдельно
-    const nextMX = mPos.clone().add(new THREE.Vector3(mDir.x * monsterSpeed, 0, 0));
-    if (!checkObjectCollision(nextMX, 0.6)) mPos.x = nextMX.x;
+    // Проверяем прямое движение
+    let testPos = mPos.clone().addScaledVector(targetDir, 0.9);
+    
+    // Если путь перекрыт стеной, выбираем направление обхода
+    if (checkObjectCollision(testPos, 0.5)) {
+      const leftDir = new THREE.Vector3(-targetDir.z, 0, targetDir.x);
+      const rightDir = new THREE.Vector3(targetDir.z, 0, -targetDir.x);
 
-    const nextMZ = mPos.clone().add(new THREE.Vector3(0, 0, mDir.z * monsterSpeed));
-    if (!checkObjectCollision(nextMZ, 0.6)) mPos.z = nextMZ.z;
+      if (!checkObjectCollision(mPos.clone().addScaledVector(leftDir, 0.9), 0.5)) {
+        targetDir.addScaledVector(leftDir, 1.4).normalize();
+      } else if (!checkObjectCollision(mPos.clone().addScaledVector(rightDir, 0.9), 0.5)) {
+        targetDir.addScaledVector(rightDir, 1.4).normalize();
+      }
+    }
+
+    const nextMX = mPos.clone().add(new THREE.Vector3(targetDir.x * monsterSpeed, 0, 0));
+    if (!checkObjectCollision(nextMX, 0.5)) mPos.x = nextMX.x;
+
+    const nextMZ = mPos.clone().add(new THREE.Vector3(0, 0, targetDir.z * monsterSpeed));
+    if (!checkObjectCollision(nextMZ, 0.5)) mPos.z = nextMZ.z;
   }
 
   if (dist < 1.2) {
