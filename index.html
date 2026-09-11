@@ -242,6 +242,7 @@ let last=performance.now();
 const lamps=[];
 
 function isWall(x,y){
+
   const gx=Math.floor(x);
   const gy=Math.floor(y);
 
@@ -259,10 +260,12 @@ for(let y=1;y<MH-1;y+=4){
   for(let x=2;x<MW-2;x+=6){
 
     if(!isWall(x+.5,y+.5)){
+
       lamps.push({
         x:x+.5,
         y:y+.5
       });
+
     }
 
   }
@@ -350,7 +353,7 @@ resize();
 
 
 /* =========================
-   ТЕКСТУРА СТЕН
+   НОВАЯ ТЕКСТУРА СТЕН
 ========================= */
 
 const wallTex=document.createElement('canvas');
@@ -360,46 +363,142 @@ wallTex.height=256;
 
 const wt=wallTex.getContext('2d');
 
-wt.fillStyle='#b9a95d';
-wt.fillRect(0,0,256,256);
+
+/* Основной цвет старых обоев */
+
+const wallGradient=
+  wt.createLinearGradient(
+    0,0,
+    256,0
+  );
+
+wallGradient.addColorStop(
+  0,
+  '#a99a54'
+);
+
+wallGradient.addColorStop(
+  .25,
+  '#c0b267'
+);
+
+wallGradient.addColorStop(
+  .55,
+  '#b3a35a'
+);
+
+wallGradient.addColorStop(
+  .8,
+  '#c4b66b'
+);
+
+wallGradient.addColorStop(
+  1,
+  '#a79a53'
+);
+
+wt.fillStyle=wallGradient;
+
+wt.fillRect(
+  0,0,
+  256,256
+);
 
 
-/* горизонтальные следы обоев */
+/* Горизонтальные полосы */
 
 for(let y=0;y<256;y+=16){
 
-  wt.fillStyle='rgba(70,62,30,.035)';
-  wt.fillRect(0,y,256,2);
+  wt.fillStyle=
+    'rgba(70,60,25,.10)';
 
+  wt.fillRect(
+    0,y,
+    256,2
+  );
+
+  wt.fillStyle=
+    'rgba(255,245,170,.07)';
+
+  wt.fillRect(
+    0,y+2,
+    256,2
+  );
 }
 
 
-/* вертикальные стыки */
+/* Вертикальные стыки */
 
 for(let x=0;x<256;x+=32){
 
-  wt.fillStyle='rgba(255,240,160,.035)';
-  wt.fillRect(x,0,2,256);
+  wt.fillStyle=
+    'rgba(65,55,25,.13)';
 
+  wt.fillRect(
+    x,0,
+    2,256
+  );
+
+  wt.fillStyle=
+    'rgba(245,230,150,.08)';
+
+  wt.fillRect(
+    x+2,0,
+    2,256
+  );
 }
 
 
-/* мелкая неоднородность */
+/* Пятна старых обоев */
 
-for(let i=0;i<1800;i++){
+for(let i=0;i<170;i++){
 
   const x=Math.random()*256;
   const y=Math.random()*256;
 
-  const a=.025+Math.random()*.055;
+  const w=
+    4+
+    Math.random()*30;
+
+  const h=
+    2+
+    Math.random()*18;
 
   wt.fillStyle=
     `rgba(
-      ${70+Math.random()*50},
-      ${55+Math.random()*40},
-      ${25+Math.random()*30},
-      ${a}
+      70,55,20,
+      ${.025+Math.random()*.07}
     )`;
+
+  wt.beginPath();
+
+  wt.ellipse(
+    x,
+    y,
+    w,
+    h,
+    Math.random()*Math.PI,
+    0,
+    Math.PI*2
+  );
+
+  wt.fill();
+}
+
+
+/* Мелкие потёртости */
+
+for(let i=0;i<900;i++){
+
+  const x=Math.random()*256;
+  const y=Math.random()*256;
+
+  wt.fillStyle=
+    Math.random()<.55
+    ?
+    'rgba(255,245,170,.035)'
+    :
+    'rgba(50,40,15,.045)';
 
   wt.fillRect(
     x,
@@ -408,10 +507,6 @@ for(let i=0;i<1800;i++){
     1+Math.random()*2
   );
 }
-
-const tex=wt.getImageData(
-  0,0,256,256
-).data;
 
 
 /* =========================
@@ -531,6 +626,7 @@ function castRay(angle){
 
 
   return{
+
     dist:Math.min(
       Math.abs(dist),
       MAX_DIST
@@ -544,7 +640,7 @@ function castRay(angle){
 
 
 /* =========================
-   СВЕТ
+   НОВОЕ ОСВЕЩЕНИЕ
 ========================= */
 
 function lampLight(x,y){
@@ -559,17 +655,23 @@ function lampLight(x,y){
         y-l.y
       );
 
-    if(d<6){
+    if(d<6.5){
 
-      best=Math.max(
-        best,
-        1-d/6
-      );
+      const power=
+        1-d/6.5;
 
+      best=
+        Math.max(
+          best,
+          power
+        );
     }
   }
 
-  return best;
+  return Math.pow(
+    best,
+    .65
+  );
 }
 
 
@@ -583,7 +685,9 @@ function draw(){
   const ch=H;
 
 
-  /* потолок */
+  /* =====================
+     ПОТОЛОК
+  ===================== */
 
   const sky=
     ctx.createLinearGradient(
@@ -614,7 +718,9 @@ function draw(){
   );
 
 
-  /* пол */
+  /* =====================
+     ПОЛ
+  ===================== */
 
   const floor=
     ctx.createLinearGradient(
@@ -642,7 +748,9 @@ function draw(){
   );
 
 
-  /* raycasting */
+  /* =====================
+     RAYCASTING
+  ===================== */
 
   const cols=
     Math.min(
@@ -650,10 +758,8 @@ function draw(){
       900
     );
 
-  const strip=cw/cols;
-
-  const zbuf=
-    new Float32Array(cols);
+  const strip=
+    cw/cols;
 
 
   for(let i=0;i<cols;i++){
@@ -675,8 +781,8 @@ function draw(){
         a-player.a
       );
 
-    zbuf[i]=corrected;
 
+    /* Высота стены */
 
     const wallH=
       Math.min(
@@ -686,71 +792,76 @@ function draw(){
       );
 
     const top=
-      ch*.5-wallH*.5;
+      ch*.5-
+      wallH*.5;
 
+
+    /* =====================
+       ВАЖНО:
+       здесь теперь r.dist,
+       а не corrected
+    ===================== */
 
     const hitX=
       r.side===0
       ?
       player.y+
-      corrected*
+      r.dist*
       Math.sin(a)
       :
       player.x+
-      corrected*
+      r.dist*
       Math.cos(a);
 
+
+    const hitY=
+      r.side===0
+      ?
+      player.x+
+      r.dist*
+      Math.cos(a)
+      :
+      player.y+
+      r.dist*
+      Math.sin(a);
+
+
+    /* Координата текстуры */
 
     const u=
       ((hitX%1)+1)%1;
 
-    const tx=
-      Math.floor(u*255);
-
-    const base=
-      tx*4;
-
-
-    let light=
-      .72+
-      lampLight(
-        player.x+
-        Math.cos(a)*corrected,
-
-        player.y+
-        Math.sin(a)*corrected
-      )*.22;
+    let tx=
+      Math.floor(
+        u*255
+      );
 
 
-    light*=
-      1/(1+corrected*.035);
+    /* Небольшая правильная ориентация */
+
+    if(
+      (r.side===0 && Math.cos(a)>0) ||
+      (r.side===1 && Math.sin(a)<0)
+    ){
+
+      tx=
+        255-tx;
+    }
 
 
-    if(r.side)
-      light*=.84;
+    /* =====================
+       РЕАЛЬНАЯ ТЕКСТУРА
+    ===================== */
 
+    ctx.drawImage(
 
-    const col=
-      tex[base]*
-      light;
+      wallTex,
 
-    const g=
-      tex[base+1]*
-      light;
+      tx,
+      0,
+      1,
+      256,
 
-    const b=
-      tex[base+2]*
-      light;
-
-
-    ctx.fillStyle=
-      `rgb(
-        ${col|0},
-        ${g|0},
-        ${b|0}
-      )`;
-
-    ctx.fillRect(
       i*strip,
       top,
       strip+1,
@@ -758,18 +869,60 @@ function draw(){
     );
 
 
-    /* стыки */
+    /* =====================
+       ОСВЕЩЕНИЕ
+    ===================== */
 
-    if(tx%32<2){
+    const lamp=
+      lampLight(
+        hitX,
+        hitY
+      );
+
+
+    let light=
+      .42+
+      lamp*.78;
+
+
+    /* Затухание с расстоянием */
+
+    light*=
+      1/
+      (1+corrected*.025);
+
+
+    /* Боковые поверхности темнее */
+
+    if(r.side)
+      light*=.82;
+
+
+    light=
+      Math.max(
+        .25,
+        Math.min(
+          1.15,
+          light
+        )
+      );
+
+
+    /* Затемнение поверх текстуры */
+
+    const darkness=
+      1-light;
+
+
+    if(darkness>.01){
 
       ctx.fillStyle=
         `rgba(
-          45,38,18,
-          ${.10+
-            Math.min(
-              corrected/30,
-              .12
-            )}
+          20,16,8,
+          ${Math.min(
+            .72,
+            darkness
+          )}
         )`;
 
       ctx.fillRect(
@@ -781,7 +934,40 @@ function draw(){
     }
 
 
-    /* плинтус */
+    /* =====================
+       ДАЛЬНИЙ ТУМАН
+    ===================== */
+
+    const fog=
+      Math.max(
+        0,
+        Math.min(
+          .22,
+          (corrected-7)/35
+        )
+      );
+
+
+    if(fog>.01){
+
+      ctx.fillStyle=
+        `rgba(
+          48,42,22,
+          ${fog}
+        )`;
+
+      ctx.fillRect(
+        i*strip,
+        top,
+        strip+1,
+        wallH
+      );
+    }
+
+
+    /* =====================
+       ПЛИНТУС
+    ===================== */
 
     const baseH=
       Math.max(
@@ -791,6 +977,7 @@ function draw(){
           8/(corrected*.15+1)
         )
       );
+
 
     ctx.fillStyle=
       `rgba(
@@ -816,7 +1003,9 @@ function draw(){
   drawVignette();
 
 
-  /* прицел */
+  /* =====================
+     ПРИЦЕЛ
+  ===================== */
 
   ctx.strokeStyle=
     'rgba(255,255,255,.75)';
@@ -859,12 +1048,16 @@ function drawFloorDetails(){
 
   for(let y=0;y<8;y++){
 
-    const p=(y+1)/8;
+    const p=
+      (y+1)/8;
 
     const sy=
       H*.5+
       H*.5*
-      Math.pow(p,1.8);
+      Math.pow(
+        p,
+        1.8
+      );
 
     ctx.strokeStyle=
       `rgba(
@@ -904,13 +1097,18 @@ function drawLamps(){
       l.y-player.y;
 
     const dist=
-      Math.hypot(dx,dy);
+      Math.hypot(
+        dx,
+        dy
+      );
 
 
     let da=
       normAng(
-        Math.atan2(dy,dx)
-        -
+        Math.atan2(
+          dy,
+          dx
+        )-
         player.a
       );
 
@@ -953,15 +1151,26 @@ function drawLamps(){
       continue;
 
 
+    /* Свечение */
+
     const glow=
       ctx.createRadialGradient(
-        sx,y,0,
-        sx,y,size*3
+        sx,
+        y,
+        0,
+        sx,
+        y,
+        size*3
       );
 
     glow.addColorStop(
       0,
-      'rgba(255,247,190,.55)'
+      'rgba(255,247,190,.65)'
+    );
+
+    glow.addColorStop(
+      .35,
+      'rgba(255,239,150,.25)'
     );
 
     glow.addColorStop(
@@ -979,8 +1188,10 @@ function drawLamps(){
     );
 
 
+    /* Лампа */
+
     ctx.fillStyle=
-      'rgba(255,250,207,.92)';
+      'rgba(255,250,207,.95)';
 
     ctx.fillRect(
       sx-size,
@@ -990,8 +1201,10 @@ function drawLamps(){
     );
 
 
+    /* Яркая середина */
+
     ctx.fillStyle=
-      'rgba(255,255,235,.6)';
+      'rgba(255,255,235,.75)';
 
     ctx.fillRect(
       sx-size*.65,
@@ -1011,6 +1224,7 @@ function drawVignette(){
 
   const g=
     ctx.createRadialGradient(
+
       W/2,
       H/2,
       Math.min(W,H)*.22,
@@ -1040,7 +1254,10 @@ function drawVignette(){
   ctx.fillStyle=g;
 
   ctx.fillRect(
-    0,0,W,H
+    0,
+    0,
+    W,
+    H
   );
 }
 
@@ -1069,7 +1286,10 @@ function update(dt){
 
 
   const len=
-    Math.hypot(sx,sy);
+    Math.hypot(
+      sx,
+      sy
+    );
 
 
   if(len>1){
@@ -1081,11 +1301,19 @@ function update(dt){
 
   const speed=2.25;
 
-  const ca=Math.cos(player.a);
-  const sa=Math.sin(player.a);
+  const ca=
+    Math.cos(
+      player.a
+    );
+
+  const sa=
+    Math.sin(
+      player.a
+    );
 
 
   move(
+
     (ca*sy-sa*sx)*
     speed*dt,
 
@@ -1127,7 +1355,9 @@ function loop(now){
 
   draw();
 
-  requestAnimationFrame(loop);
+  requestAnimationFrame(
+    loop
+  );
 }
 
 
@@ -1167,7 +1397,10 @@ function joySet(e){
 
 
   const len=
-    Math.hypot(dx,dy);
+    Math.hypot(
+      dx,
+      dy
+    );
 
 
   if(len>max){
@@ -1373,4 +1606,4 @@ requestAnimationFrame(loop);
 </script>
 
 </body>
-    </html>
+  </html>
