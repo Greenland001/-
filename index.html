@@ -115,7 +115,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">🕹️ Увеличенная карта • Улучшенное мерцающее освещение</div>
+  <div id="hint" class="hint">🕹️ Джойстик — ходить • Свайп справа — смотреть</div>
   <div class="crosshair"></div>
   <button id="fs" class="fs">⛶</button>
   <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
@@ -125,34 +125,30 @@ html,body{
 'use strict';
 
 /* =========================
-   УВЕЛИЧЕННАЯ КАРТА УРОВНЯ (30x25)
+   УВЕЛИЧЕННАЯ КАРТА УРОВНЯ (28x22)
 ========================= */
 const map = [
-  "##############################",
-  "#............................#",
-  "#..#####..#######..#######...#",
-  "#..#...#..#.....#..#.....#...#",
-  "#..#...#..#..#..#..#..#..#...#",
-  "#..#......#..#........#..#...#",
-  "#..######.#..##########..#...#",
-  "#.......#.#..............#...#",
-  "#.......#.#.############.#...#",
-  "#..######.#.#..........#.#...#",
-  "#..#......#.#.########.#.#...#",
-  "#..#...####.#.#......#.#.#...#",
-  "#..#...#....#.#..##..#.#.#...#",
-  "#..#####....#.#...#..#.#.#...#",
-  "#...........#.###.#..#...#...#",
-  "#####.#######...#.#..#####...#",
-  "#.....#.........#.#..........#",
-  "#..####.#########.##########.#",
-  "#..#....#.......#..........#.#",
-  "#..#..###.#####.##########.#.#",
-  "#..#......#...#..........#.#.#",
-  "#..########.#.##########.#.#.#",
-  "#...........#............#...#",
-  "#............................#",
-  "##############################"
+  "############################",
+  "#..........................#",
+  "#..#####....#####....####..#",
+  "#..#...#....#...#....#..#..#",
+  "#..#...######...######..#..#",
+  "#..#....................#..#",
+  "#..######..######..######..#",
+  "#.......#..#....#..#.......#",
+  "#.......#..#....#..#.......#",
+  "#..######..######..######..#",
+  "#..#....................#..#",
+  "#..#...######...######..#..#",
+  "#..#...#....#...#....#..#..#",
+  "#..#####....#####....####..#",
+  "#..........................#",
+  "#..######..######..######..#",
+  "#..#....#..#....#..#....#..#",
+  "#..#....#..#....#..#....#..#",
+  "#..#....####....####....#..#",
+  "#..........................#",
+  "############################"
 ];
 
 const MW = map[0].length;
@@ -164,19 +160,17 @@ const CELL_SIZE = 3;
 ========================= */
 const container = document.getElementById('webgl-container');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a08);
-scene.fog = new THREE.FogExp2(0x0a0a08, 0.07);
+scene.background = new THREE.Color(0x11110e);
+scene.fog = new THREE.FogExp2(0x11110e, 0.05);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: false }); // Отключили тяжёлый antialias для высокого FPS
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.9;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 container.appendChild(renderer.domElement);
 
-// Мягкий рассеянный свет
-const ambientLight = new THREE.AmbientLight(0x333322, 0.5);
+// Яркий общий свет — больше не лагает и всё отлично видно
+const ambientLight = new THREE.AmbientLight(0xaaaa88, 1.1);
 scene.add(ambientLight);
 
 /* =========================
@@ -204,10 +198,10 @@ function createCarpetTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#5c5332';
+  ctx.fillStyle = '#6e633d';
   ctx.fillRect(0, 0, 128, 128);
-  ctx.fillStyle = 'rgba(30,25,10,0.25)';
-  for(let i=0; i<400; i++) ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
+  ctx.fillStyle = 'rgba(40,35,20,0.2)';
+  for(let i=0; i<300; i++) ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -219,9 +213,9 @@ function createCeilingTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#948c6b';
+  ctx.fillStyle = '#a39b78';
   ctx.fillRect(0, 0, 128, 128);
-  ctx.strokeStyle = '#635d43';
+  ctx.strokeStyle = '#7a7355';
   ctx.lineWidth = 4;
   ctx.strokeRect(0, 0, 128, 128);
   const texture = new THREE.CanvasTexture(canvas);
@@ -234,9 +228,9 @@ function createCeilingTexture() {
 /* =========================
    ПОСТРОЕНИЕ МИРА
 ========================= */
-const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.8 });
-const floorMat = new THREE.MeshStandardMaterial({ map: createCarpetTexture(), roughness: 0.9 });
-const ceilingMat = new THREE.MeshStandardMaterial({ map: createCeilingTexture(), roughness: 0.7 });
+const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
+const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
+const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
 
 // Пол и Потолок
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
@@ -250,13 +244,12 @@ ceiling.rotation.x = Math.PI / 2;
 ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
 scene.add(ceiling);
 
-// Стены и Источники Света
+// Стены и Лампы
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
-const lampGeo = new THREE.BoxGeometry(1.2, 0.08, 0.6);
+const lampGeo = new THREE.BoxGeometry(1.2, 0.1, 0.6);
 const lampMat = new THREE.MeshBasicMaterial({ color: 0xfffee0 });
 
 const walls = [];
-const lights = [];
 
 for (let y = 0; y < MH; y++) {
   for (let x = 0; x < MW; x++) {
@@ -269,16 +262,11 @@ for (let y = 0; y < MH; y++) {
       scene.add(wall);
       walls.push(wall);
     } else {
-      // Спавним лампы
-      if ((x % 3 === 0 && y % 3 === 0)) {
+      // Спавним лампы на потолке
+      if ((x + y) % 3 === 0) {
         const lamp = new THREE.Mesh(lampGeo, lampMat);
-        lamp.position.set(posX, 2.96, posZ);
+        lamp.position.set(posX, 2.95, posZ);
         scene.add(lamp);
-
-        const light = new THREE.PointLight(0xffebad, 1.2, 9, 2);
-        light.position.set(posX, 2.7, posZ);
-        scene.add(light);
-        lights.push(light);
       }
     }
   }
@@ -391,19 +379,13 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
 
 /* =========================
-   ИГРОВОЙ ЦИКЛ И ЭФФЕКТЫ
+   ИГРОВОЙ ЦИКЛ
 ========================= */
 let lastTime = performance.now();
 
 function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
-
-  // Эффект случайного мерцания ламп
-  if (Math.random() < 0.05 && lights.length > 0) {
-    const randomLight = lights[Math.floor(Math.random() * lights.length)];
-    randomLight.intensity = Math.random() < 0.3 ? 0.2 : 1.2;
-  }
 
   updatePlayer(dt);
   renderer.render(scene, camera);
@@ -428,4 +410,5 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
+
 
