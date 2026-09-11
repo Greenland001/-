@@ -106,7 +106,6 @@ html,body{
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 </style>
 
-<!-- Подключаем Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
@@ -124,9 +123,6 @@ html,body{
 <script>
 'use strict';
 
-/* =========================
-   УВЕЛИЧЕННАЯ КАРТА УРОВНЯ (28x22)
-========================= */
 const map = [
   "############################",
   "#..........................#",
@@ -155,13 +151,10 @@ const MW = map[0].length;
 const MH = map.length;
 const CELL_SIZE = 3;
 
-/* =========================
-   ИНИЦИАЛИЗАЦИЯ THREE.JS
-========================= */
 const container = document.getElementById('webgl-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
-scene.fog = new THREE.FogExp2(0x11110e, 0.05);
+scene.fog = new THREE.FogExp2(0x11110e, 0.04);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -169,19 +162,18 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 container.appendChild(renderer.domElement);
 
-// Рассеянный свет
-const ambientLight = new THREE.AmbientLight(0x888877, 0.9);
+const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
 scene.add(ambientLight);
 
 /* =========================
-   ТЕКСТУРЫ С ЗАПЕЧЁННЫМИ ТЕНЯМИ
+   ТЕКСТУРЫ БЕЗ БОКОВЫХ ШВОВ
 ========================= */
 function createWallTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
   
-  ctx.fillStyle = '#bfae5e';
+  ctx.fillStyle = '#c5b565';
   ctx.fillRect(0, 0, 256, 256);
   
   // Рисунок обоев
@@ -192,33 +184,22 @@ function createWallTexture() {
     ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
   }
 
-  // Тень сверху и снизу стены (Ambient Occlusion)
-  let gradTop = ctx.createLinearGradient(0, 0, 0, 45);
-  gradTop.addColorStop(0, 'rgba(0,0,0,0.45)');
+  // Мягкое затемнение ТОЛЬКО сверху и снизу (стык с полом и потолком)
+  let gradTop = ctx.createLinearGradient(0, 0, 0, 30);
+  gradTop.addColorStop(0, 'rgba(0,0,0,0.35)');
   gradTop.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = gradTop;
-  ctx.fillRect(0, 0, 256, 45);
+  ctx.fillRect(0, 0, 256, 30);
 
-  let gradBot = ctx.createLinearGradient(0, 211, 0, 256);
+  let gradBot = ctx.createLinearGradient(0, 226, 0, 256);
   gradBot.addColorStop(0, 'rgba(0,0,0,0)');
-  gradBot.addColorStop(1, 'rgba(0,0,0,0.55)');
+  gradBot.addColorStop(1, 'rgba(0,0,0,0.45)');
   ctx.fillStyle = gradBot;
-  ctx.fillRect(0, 211, 256, 45);
-
-  // Границы по бокам
-  let gradLeft = ctx.createLinearGradient(0, 0, 20, 0);
-  gradLeft.addColorStop(0, 'rgba(0,0,0,0.25)');
-  gradLeft.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = gradLeft;
-  ctx.fillRect(0, 0, 20, 256);
-
-  let gradRight = ctx.createLinearGradient(236, 0, 256, 0);
-  gradRight.addColorStop(0, 'rgba(0,0,0,0)');
-  gradRight.addColorStop(1, 'rgba(0,0,0,0.25)');
-  ctx.fillStyle = gradRight;
-  ctx.fillRect(236, 0, 20, 256);
+  ctx.fillRect(0, 226, 256, 30);
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
   return texture;
 }
 
@@ -254,13 +235,28 @@ function createCeilingTexture() {
 }
 
 /* =========================
+   ТЕКСТУРА СВЕЧЕНИЯ (GLOW)
+========================= */
+function createGlowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255, 255, 210, 0.6)');
+  grad.addColorStop(0.4, 'rgba(255, 240, 160, 0.2)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(canvas);
+}
+
+/* =========================
    ПОСТРОЕНИЕ МИРА
 ========================= */
 const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
 const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
 const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
 
-// Пол и Потолок
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
@@ -272,10 +268,18 @@ ceiling.rotation.x = Math.PI / 2;
 ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
 scene.add(ceiling);
 
-// Стены и Лампы
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
-const lampGeo = new THREE.BoxGeometry(1.2, 0.1, 0.6);
-const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffd0 });
+const lampGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
+const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+// Эффект объемного света под лампой
+const glowMat = new THREE.MeshBasicMaterial({
+  map: createGlowTexture(),
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
 
 const walls = [];
 
@@ -291,15 +295,21 @@ for (let y = 0; y < MH; y++) {
       walls.push(wall);
     } else {
       if ((x + y) % 3 === 0) {
+        // Лампа
         const lamp = new THREE.Mesh(lampGeo, lampMat);
-        lamp.position.set(posX, 2.95, posZ);
+        lamp.position.set(posX, 2.97, posZ);
         scene.add(lamp);
+
+        // Светящееся пятно под лампой на потолке
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.rotation.x = Math.PI / 2;
+        glow.position.set(posX, 2.94, posZ);
+        scene.add(glow);
       }
     }
   }
 }
 
-// Позиция игрока
 camera.position.set(2.5 * CELL_SIZE, 1.5, 2.5 * CELL_SIZE);
 
 /* =========================
