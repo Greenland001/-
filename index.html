@@ -138,7 +138,6 @@ html,body{
 .crosshair::before{ top:4px; left:0; width:10px; height:2px; }
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 
-/* МИНИ-КАРТА И КОМПАС */
 #minimap-container{
   position:absolute;
   top:20px;
@@ -307,7 +306,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">🧭 Следуй за стрелкой компаса к выходу!</div>
+  <div id="hint" class="hint">🚪 Выход прямо перед тобой! Подойди к нему!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
@@ -351,19 +350,19 @@ const map = [
   "#..#..####################..#..####..#..#####..#.#",
   "#..#..#..................#..#..#..#..#......#..#.#",
   "#..#..#..##############..#..#..#..#..#####..#..#.#",
-  "#.....#..#............#..#..#     #......#..#....#",
+  "#.....#..#............#..#..#.....#......#..#....#",
   "########.#..########..#..#..###########..#..######",
   "#........#..#......#..#..#...............#.......#",
   "#..#######..#......#..#..######################..#",
   "#..#........#......#..#.......................#..#",
   "#..#..#######..#####..######################..#..#",
   "#..#..#.....#.........#....................#..#..#",
-  "#..#..#     ########..#..################..#..#..#",
+  "#..#..#.....########..#..################..#..#..#",
   "#.....#...............#..#..............#.....#..#",
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
   "#..#######..##############..#..####..##########..#",
-  "#...........................#..#.................E",
+  "#...E.......................#..#.................#",
   "##################################################"
 ];
 
@@ -390,9 +389,6 @@ container.appendChild(renderer.domElement);
 const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
 scene.add(ambientLight);
 
-/* =========================
-   ТЕКСТУРЫ
-========================= */
 function createWallTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
@@ -499,9 +495,6 @@ function createExitDoorTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-/* =========================
-   ПОСТРОЕНИЕ МИРА (LEVEL 0)
-========================= */
 const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
 const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
 const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
@@ -564,9 +557,6 @@ for (let y = 0; y < MH; y++) {
   }
 }
 
-/* =========================
-   СОЗДАНИЕ МОНСТРА И ИГРОКА
-========================= */
 const monsterMat = new THREE.SpriteMaterial({ map: createMonsterTexture() });
 const monster = new THREE.Sprite(monsterMat);
 monster.scale.set(2.2, 2.2, 1);
@@ -577,11 +567,9 @@ function respawnMonster() {
 }
 respawnMonster();
 
-camera.position.set(2.5 * CELL_SIZE, 1.5, 2.5 * CELL_SIZE);
+// Старт игрока прямо возле выхода (в соседней клетке)
+camera.position.set(2.5 * CELL_SIZE, 1.5, 34.5 * CELL_SIZE);
 
-/* =========================
-   АЛГОРИТМ ПУТИ (BFS)
-========================= */
 function findPathBFS(startGrid, targetGrid) {
   const queue = [[startGrid]];
   const visited = new Set();
@@ -609,9 +597,6 @@ function findPathBFS(startGrid, targetGrid) {
   return null;
 }
 
-/* =========================
-   УПРАВЛЕНИЕ И ФИЗИКА
-========================= */
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
 
@@ -646,7 +631,6 @@ function updateMinimapAndCompass() {
     return;
   }
 
-  // Обновление мини-карты
   mmCtx.clearRect(0, 0, 110, 110);
   const px = camera.position.x;
   const pz = camera.position.z;
@@ -689,7 +673,6 @@ function updateMinimapAndCompass() {
 
   mmCtx.restore();
 
-  // Обновление стрелки компаса на выход
   const dirToExit = new THREE.Vector3().subVectors(exitPos, camera.position);
   dirToExit.y = 0;
   dirToExit.normalize();
@@ -843,9 +826,6 @@ document.getElementById('restart-btn').addEventListener('click', () => {
   location.reload();
 });
 
-/* =========================
-   ТАЧ-СОБЫТИЯ
-========================= */
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
 const jumpBtn = document.getElementById('jump');
