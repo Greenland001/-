@@ -327,7 +327,7 @@ const map = [
   "#..#######..#......#..#..######################..#",
   "#..#........#......#..#.......................#..#",
   "#..#..#######..#####..######################..#..#",
-  "#..#..#.....#.........#....................#..#..#",
+  "#..#..#     #.........#....................#..#..#",
   "#..#..#     ########..#..################..#..#..#",
   "#.....#...............#..#..............#.....#..#",
   "#######..##############..#..##########..#######..#",
@@ -440,7 +440,6 @@ function createMonsterTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-// Дверь в цветах 2 уровня (бирюзово-зеленоватая)
 function createExitDoorTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 256;
@@ -524,7 +523,6 @@ function respawnMonster() {
 }
 respawnMonster();
 
-// Игрок стартует прямо рядом с дверью (в ячейке (2,1))
 camera.position.set(2.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
 
 function findPathBFS(startGrid, targetGrid) {
@@ -597,7 +595,6 @@ function updateMinimap() {
   const viewRadius = 18;
   const scale = 110 / (viewRadius * 2);
 
-  // Стены
   mmCtx.fillStyle = '#887744';
   for (let y = 0; y < MH; y++) {
     for (let x = 0; x < MW; x++) {
@@ -616,7 +613,6 @@ function updateMinimap() {
     }
   }
 
-  // Дверь выхода (сине-зеленая точка)
   const dx = exitPos.x - px;
   const dz = exitPos.z - pz;
   if (Math.abs(dx) < viewRadius && Math.abs(dz) < viewRadius) {
@@ -626,7 +622,6 @@ function updateMinimap() {
     mmCtx.fill();
   }
 
-  // Монстр (красная точка)
   const mx = monster.position.x - px;
   const mz = monster.position.z - pz;
   if (Math.abs(mx) < viewRadius && Math.abs(mz) < viewRadius) {
@@ -636,7 +631,6 @@ function updateMinimap() {
     mmCtx.fill();
   }
 
-  // Игрок (зеленая точка с направлением)
   mmCtx.fillStyle = '#00ff00';
   mmCtx.beginPath();
   mmCtx.arc(0, 0, 4, 0, Math.PI * 2);
@@ -652,6 +646,14 @@ function updateMinimap() {
   mmCtx.restore();
 }
 
+// Функция для высоты холмов (делаем их нелинейными и разнообразными)
+function getLevel2Height(x, z) {
+  let h = Math.sin(x * 0.03) * Math.cos(z * 0.03) * 4.0;
+  h += Math.sin(x * 0.08 + 1.5) * Math.sin(z * 0.08) * 1.5;
+  h += Math.cos(x * 0.015) * Math.cos(z * 0.015) * 6.0;
+  return h;
+}
+
 function updatePlayer(dt) {
   if (isGameOver) return;
 
@@ -659,9 +661,9 @@ function updatePlayer(dt) {
   playerY += velocityY * dt;
 
   if (currentLevel === 2) {
-    const h = Math.sin(camera.position.x * 0.1) * Math.cos(camera.position.z * 0.1) * 1.5 + 1.5;
-    if (playerY <= h) {
-      playerY = h;
+    const terrainHeight = getLevel2Height(camera.position.x, camera.position.z) + 1.8;
+    if (playerY <= terrainHeight) {
+      playerY = terrainHeight;
       velocityY = 0;
       isGrounded = true;
     } else {
@@ -677,8 +679,8 @@ function updatePlayer(dt) {
     }
   }
 
-  if (playerY > 4.0) {
-    playerY = 4.0;
+  if (playerY > 15.0) {
+    playerY = 15.0;
     velocityY = 0;
   }
 
@@ -749,7 +751,6 @@ function updatePlayer(dt) {
       triggerJumpscare();
     }
 
-    // Телепортация только когда прямо в дверь зашел (дистанция меньше 0.8)
     if (camera.position.distanceTo(exitPos) < 0.8) {
       triggerWin();
     }
@@ -781,60 +782,78 @@ function loadLevel2() {
     scene.remove(scene.children[0]); 
   }
 
-  scene.background = new THREE.Color(0x6ba4fc);
-  scene.fog = new THREE.FogExp2(0xb6d4ff, 0.005);
+  scene.background = new THREE.Color(0x5ca2ff);
+  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
 
-  const sun = new THREE.DirectionalLight(0xfffaed, 1.3);
-  sun.position.set(100, 150, 100);
+  const sun = new THREE.DirectionalLight(0xfffaed, 1.4);
+  sun.position.set(150, 200, 100);
   scene.add(sun);
-  scene.add(new THREE.AmbientLight(0x99bbcc, 0.9));
+  scene.add(new THREE.AmbientLight(0x88bbee, 1.0));
 
-  const grassGeo = new THREE.PlaneGeometry(600, 600, 80, 80);
+  // Улучшенная процедурная текстура травы (реалистичные оттенки и штрихи)
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#428a2a'; ctx.fillRect(0, 0, 512, 512);
+  
+  for(let i=0; i<8000; i++) {
+    const rx = Math.random() * 512;
+    const ry = Math.random() * 512;
+    const col = Math.random();
+    if(col < 0.3) ctx.fillStyle = '#2d6318';
+    else if(col < 0.7) ctx.fillStyle = '#55a834';
+    else ctx.fillStyle = '#65c23d';
+    ctx.fillRect(rx, ry, 2, 10 + Math.random() * 10);
+  }
+  const grassTex = new THREE.CanvasTexture(canvas);
+  grassTex.wrapS = THREE.RepeatWrapping; grassTex.wrapT = THREE.RepeatWrapping;
+  grassTex.repeat.set(80, 80);
+
+  const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
+  
+  // Создаем крутой реалистичный холмистый ландшафт
+  const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
     const vx = pos.getX(i);
     const vz = pos.getZ(i);
-    pos.setY(i, Math.sin(vx * 0.1) * Math.cos(vz * 0.1) * 1.5);
+    pos.setY(i, getLevel2Height(vx, vz));
   }
   grassGeo.computeVertexNormals();
 
-  const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#3a8c28'; ctx.fillRect(0, 0, 512, 512);
-  for(let i=0; i<4000; i++) {
-    ctx.fillStyle = Math.random() > 0.5 ? '#286b1a' : '#4dc433';
-    ctx.fillRect(Math.random()*512, Math.random()*512, 2, 8);
-  }
-  const grassTex = new THREE.CanvasTexture(canvas);
-  grassTex.wrapS = THREE.RepeatWrapping; grassTex.wrapT = THREE.RepeatWrapping;
-  grassTex.repeat.set(50, 50);
-
-  const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.8 });
   const grassFloor = new THREE.Mesh(grassGeo, grassMat);
   scene.add(grassFloor);
 
-  const cloudGeo = new THREE.PlaneGeometry(30, 15);
-  const cloudCanvas = document.createElement('canvas');
-  cloudCanvas.width = 256; cloudCanvas.height = 128;
-  const cCtx = cloudCanvas.getContext('2d');
-  let grad = cCtx.createRadialGradient(128, 64, 10, 128, 64, 60);
-  grad.addColorStop(0, 'rgba(255,255,255,0.8)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  cCtx.fillStyle = grad; cCtx.fillRect(0, 0, 256, 128);
-  const cloudTex = new THREE.CanvasTexture(cloudCanvas);
-  const cloudMat = new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, opacity: 0.6, depthWrite: false });
+  // Пышные и реалистичные 3D облака вместо плоских пятен
+  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, depthWrite: false });
+  const cloudPartGeo = new THREE.SphereGeometry(12, 7, 7);
 
-  for(let i=0; i<15; i++) {
-    const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-    cloud.position.set((Math.random() - 0.5) * 300, 50 + Math.random() * 20, (Math.random() - 0.5) * 300);
-    scene.add(cloud);
+  for(let i=0; i<25; i++) {
+    const cloudGroup = new THREE.Group();
+    const partsCount = 5 + Math.floor(Math.random() * 5);
+    for(let p=0; p<partsCount; p++) {
+      const part = new THREE.Mesh(cloudPartGeo, cloudMat);
+      part.position.set(
+        (Math.random() - 0.5) * 30,
+        (Math.random() - 0.5) * 5,
+        (Math.random() - 0.5) * 20
+      );
+      const s = 0.6 + Math.random() * 0.8;
+      part.scale.set(s, s * 0.5, s);
+      cloudGroup.add(part);
+    }
+    cloudGroup.position.set(
+      (Math.random() - 0.5) * 500,
+      70 + Math.random() * 30,
+      (Math.random() - 0.5) * 500
+    );
+    scene.add(cloudGroup);
   }
 
-  camera.position.set(0, 3, 0);
+  camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Бесконечные холмы и зелёные поля";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Зелёные поля с реалистичными холмами и облаками";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
