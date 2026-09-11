@@ -156,31 +156,6 @@ html,body{
   height:100%;
 }
 
-.compass-box{
-  position:absolute;
-  top:140px;
-  left:35px;
-  width:80px;
-  height:35px;
-  background:rgba(20,19,15,0.8);
-  border:2px solid rgba(0,255,204,0.6);
-  border-radius:10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#00ffcc;
-  font-weight:bold;
-  font-size:18px;
-  box-shadow:0 0 8px rgba(0,255,204,0.3);
-  backdrop-filter:blur(4px);
-}
-#compass-arrow{
-  display:inline-block;
-  transition:transform 0.1s;
-  margin-right:6px;
-  font-size:20px;
-}
-
 #danger-overlay{
   position:fixed;
   inset:0;
@@ -306,15 +281,11 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">🚪 Выход прямо перед тобой! Подойди к нему!</div>
+  <div id="hint" class="hint">Дверь прямо перед тобой! Зайди в нее, чтобы перейти на Уровень 2.</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
     <canvas id="minimap-canvas" width="110" height="110"></canvas>
-  </div>
-
-  <div class="compass-box">
-    <span id="compass-arrow">⬆</span> Выход
   </div>
 
   <button id="fs" class="fs-btn">⛶</button>
@@ -327,7 +298,7 @@ html,body{
 
 const map = [
   "##################################################",
-  "#......................#.........................#",
+  "#E.....................#.........................#",
   "#..##################..#..#####################..#",
   "#..#................#..#..#...................#..#",
   "#..#..############..#..#..#..###############..#..#",
@@ -350,19 +321,19 @@ const map = [
   "#..#..####################..#..####..#..#####..#.#",
   "#..#..#..................#..#..#..#..#......#..#.#",
   "#..#..#..##############..#..#..#..#..#####..#..#.#",
-  "#.....#..#............#..#..#.....#......#..#....#",
+  "#.....#..#............#..#..#     #......#..#....#",
   "########.#..########..#..#..###########..#..######",
   "#........#..#......#..#..#...............#.......#",
   "#..#######..#......#..#..######################..#",
   "#..#........#......#..#.......................#..#",
   "#..#..#######..#####..######################..#..#",
   "#..#..#.....#.........#....................#..#..#",
-  "#..#..#.....########..#..################..#..#..#",
+  "#..#..#     ########..#..################..#..#..#",
   "#.....#...............#..#..............#.....#..#",
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
   "#..#######..##############..#..####..##########..#",
-  "#...E.......................#..#.................#",
+  "#................................................#",
   "##################################################"
 ];
 
@@ -374,7 +345,6 @@ const container = document.getElementById('webgl-container');
 const dangerOverlay = document.getElementById('danger-overlay');
 const minimapCanvas = document.getElementById('minimap-canvas');
 const mmCtx = minimapCanvas.getContext('2d');
-const compassArrow = document.getElementById('compass-arrow');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
@@ -429,21 +399,6 @@ function createCarpetTexture() {
   return texture;
 }
 
-function createGrassTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#3a8c28'; ctx.fillRect(0, 0, 256, 256);
-  for(let i=0; i<1500; i++) {
-    ctx.fillStyle = Math.random() > 0.5 ? '#2d6e1f' : '#49af33';
-    ctx.fillRect(Math.random()*256, Math.random()*256, 2, 6);
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(80, 80);
-  return texture;
-}
-
 function createCeilingTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
@@ -485,12 +440,14 @@ function createMonsterTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
+// Дверь в цветах 2 уровня (бирюзово-зеленоватая)
 function createExitDoorTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 256;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#00ffcc'; ctx.fillRect(0,0,128,256);
-  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial';
+  ctx.fillStyle = '#004433'; ctx.fillRect(10,10,108,236);
+  ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 20px Arial';
   ctx.textAlign = 'center'; ctx.fillText('ВЫХОД', 64, 128);
   return new THREE.CanvasTexture(canvas);
 }
@@ -536,7 +493,7 @@ for (let y = 0; y < MH; y++) {
       exitPos.set(posX, 1.5, posZ);
       const exitMat = new THREE.MeshBasicMaterial({ map: createExitDoorTexture() });
       const exitMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), exitMat);
-      exitMesh.position.set(posX, 1.5, posZ - 1.4);
+      exitMesh.position.set(posX, 1.5, posZ);
       scene.add(exitMesh);
 
       const exitLight = new THREE.PointLight(0x00ffcc, 2, 8);
@@ -567,8 +524,8 @@ function respawnMonster() {
 }
 respawnMonster();
 
-// Старт игрока прямо возле выхода (в соседней клетке)
-camera.position.set(2.5 * CELL_SIZE, 1.5, 34.5 * CELL_SIZE);
+// Игрок стартует прямо рядом с дверью (в ячейке (2,1))
+camera.position.set(2.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
 
 function findPathBFS(startGrid, targetGrid) {
   const queue = [[startGrid]];
@@ -624,10 +581,9 @@ function checkObjectCollision(pos, radius = 0.4) {
   return false;
 }
 
-function updateMinimapAndCompass() {
+function updateMinimap() {
   if (currentLevel === 2) {
     document.getElementById('minimap-container').style.display = 'none';
-    document.querySelector('.compass-box').style.display = 'none';
     return;
   }
 
@@ -641,6 +597,7 @@ function updateMinimapAndCompass() {
   const viewRadius = 18;
   const scale = 110 / (viewRadius * 2);
 
+  // Стены
   mmCtx.fillStyle = '#887744';
   for (let y = 0; y < MH; y++) {
     for (let x = 0; x < MW; x++) {
@@ -659,6 +616,27 @@ function updateMinimapAndCompass() {
     }
   }
 
+  // Дверь выхода (сине-зеленая точка)
+  const dx = exitPos.x - px;
+  const dz = exitPos.z - pz;
+  if (Math.abs(dx) < viewRadius && Math.abs(dz) < viewRadius) {
+    mmCtx.fillStyle = '#00ffcc';
+    mmCtx.beginPath();
+    mmCtx.arc(dx * scale, dz * scale, 4, 0, Math.PI * 2);
+    mmCtx.fill();
+  }
+
+  // Монстр (красная точка)
+  const mx = monster.position.x - px;
+  const mz = monster.position.z - pz;
+  if (Math.abs(mx) < viewRadius && Math.abs(mz) < viewRadius) {
+    mmCtx.fillStyle = '#ff0000';
+    mmCtx.beginPath();
+    mmCtx.arc(mx * scale, mz * scale, 4, 0, Math.PI * 2);
+    mmCtx.fill();
+  }
+
+  // Игрок (зеленая точка с направлением)
   mmCtx.fillStyle = '#00ff00';
   mmCtx.beginPath();
   mmCtx.arc(0, 0, 4, 0, Math.PI * 2);
@@ -672,17 +650,6 @@ function updateMinimapAndCompass() {
   mmCtx.stroke();
 
   mmCtx.restore();
-
-  const dirToExit = new THREE.Vector3().subVectors(exitPos, camera.position);
-  dirToExit.y = 0;
-  dirToExit.normalize();
-
-  const playerDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-  playerDir.y = 0;
-  playerDir.normalize();
-
-  const angle = Math.atan2(dirToExit.x, dirToExit.z) - Math.atan2(playerDir.x, playerDir.z);
-  compassArrow.style.transform = `rotate(${angle}rad)`;
 }
 
 function updatePlayer(dt) {
@@ -691,16 +658,27 @@ function updatePlayer(dt) {
   velocityY += gravity * dt;
   playerY += velocityY * dt;
 
-  if (playerY <= 1.5) {
-    playerY = 1.5;
-    velocityY = 0;
-    isGrounded = true;
+  if (currentLevel === 2) {
+    const h = Math.sin(camera.position.x * 0.1) * Math.cos(camera.position.z * 0.1) * 1.5 + 1.5;
+    if (playerY <= h) {
+      playerY = h;
+      velocityY = 0;
+      isGrounded = true;
+    } else {
+      isGrounded = false;
+    }
   } else {
-    isGrounded = false;
+    if (playerY <= 1.5) {
+      playerY = 1.5;
+      velocityY = 0;
+      isGrounded = true;
+    } else {
+      isGrounded = false;
+    }
   }
 
-  if (playerY > 2.4) {
-    playerY = 2.4;
+  if (playerY > 4.0) {
+    playerY = 4.0;
     velocityY = 0;
   }
 
@@ -727,7 +705,7 @@ function updatePlayer(dt) {
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
-  updateMinimapAndCompass();
+  updateMinimap();
 
   if (currentLevel === 0) {
     const mPos = monster.position;
@@ -771,7 +749,8 @@ function updatePlayer(dt) {
       triggerJumpscare();
     }
 
-    if (camera.position.distanceTo(exitPos) < 2.0) {
+    // Телепортация только когда прямо в дверь зашел (дистанция меньше 0.8)
+    if (camera.position.distanceTo(exitPos) < 0.8) {
       triggerWin();
     }
   }
@@ -802,22 +781,60 @@ function loadLevel2() {
     scene.remove(scene.children[0]); 
   }
 
-  scene.background = new THREE.Color(0x87ceeb);
-  scene.fog = new THREE.FogExp2(0xaaccff, 0.008);
+  scene.background = new THREE.Color(0x6ba4fc);
+  scene.fog = new THREE.FogExp2(0xb6d4ff, 0.005);
 
-  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-  sun.position.set(50, 100, 50);
+  const sun = new THREE.DirectionalLight(0xfffaed, 1.3);
+  sun.position.set(100, 150, 100);
   scene.add(sun);
-  scene.add(new THREE.AmbientLight(0x779977, 0.8));
+  scene.add(new THREE.AmbientLight(0x99bbcc, 0.9));
 
-  const grassMat = new THREE.MeshLambertMaterial({ map: createGrassTexture() });
-  const grassFloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), grassMat);
-  grassFloor.rotation.x = -Math.PI / 2;
+  const grassGeo = new THREE.PlaneGeometry(600, 600, 80, 80);
+  grassGeo.rotateX(-Math.PI / 2);
+  const pos = grassGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const vx = pos.getX(i);
+    const vz = pos.getZ(i);
+    pos.setY(i, Math.sin(vx * 0.1) * Math.cos(vz * 0.1) * 1.5);
+  }
+  grassGeo.computeVertexNormals();
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#3a8c28'; ctx.fillRect(0, 0, 512, 512);
+  for(let i=0; i<4000; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? '#286b1a' : '#4dc433';
+    ctx.fillRect(Math.random()*512, Math.random()*512, 2, 8);
+  }
+  const grassTex = new THREE.CanvasTexture(canvas);
+  grassTex.wrapS = THREE.RepeatWrapping; grassTex.wrapT = THREE.RepeatWrapping;
+  grassTex.repeat.set(50, 50);
+
+  const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.8 });
+  const grassFloor = new THREE.Mesh(grassGeo, grassMat);
   scene.add(grassFloor);
 
-  camera.position.set(0, 1.5, 0);
+  const cloudGeo = new THREE.PlaneGeometry(30, 15);
+  const cloudCanvas = document.createElement('canvas');
+  cloudCanvas.width = 256; cloudCanvas.height = 128;
+  const cCtx = cloudCanvas.getContext('2d');
+  let grad = cCtx.createRadialGradient(128, 64, 10, 128, 64, 60);
+  grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  cCtx.fillStyle = grad; cCtx.fillRect(0, 0, 256, 128);
+  const cloudTex = new THREE.CanvasTexture(cloudCanvas);
+  const cloudMat = new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, opacity: 0.6, depthWrite: false });
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Бесконечные зелёные поля";
+  for(let i=0; i<15; i++) {
+    const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+    cloud.position.set((Math.random() - 0.5) * 300, 50 + Math.random() * 20, (Math.random() - 0.5) * 300);
+    scene.add(cloud);
+  }
+
+  camera.position.set(0, 3, 0);
+
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Бесконечные холмы и зелёные поля";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
