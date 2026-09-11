@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ru">
 <head>
@@ -51,7 +52,6 @@ html,body{
 
 .hint.hide{ opacity:0; }
 
-/* Кнопка Полного Экрана (Сверху справа) */
 .fs-btn{
   pointer-events:auto;
   position:absolute;
@@ -76,7 +76,6 @@ html,body{
   transform:scale(0.92);
 }
 
-/* Кнопка Прыжка (Снизу справа) */
 .jump-btn{
   pointer-events:auto;
   position:absolute;
@@ -162,6 +161,35 @@ html,body{
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(90deg); }
 }
+
+/* Экран смерти / Скример */
+#jumpscare-screen{
+  position:fixed;
+  inset:0;
+  background:black;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  color:red;
+  font-family:monospace;
+}
+#jumpscare-screen h1{
+  font-size:48px;
+  margin-bottom:20px;
+  text-shadow:0 0 10px red;
+}
+#restart-btn{
+  pointer-events:auto;
+  padding:12px 28px;
+  font-size:20px;
+  background:#111;
+  color:#fff;
+  border:2px solid red;
+  border-radius:10px;
+  cursor:pointer;
+}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -175,10 +203,15 @@ html,body{
   <p>Для удобной игры переверните телефон горизонтально</p>
 </div>
 
+<div id="jumpscare-screen">
+  <h1>ВАС ПОЙМАЛИ</h1>
+  <button id="restart-btn">ПОПРОБОВАТЬ СНОВА</button>
+</div>
+
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">🕹️ Джойстик — ходить • Свайп справа — смотреть</div>
+  <div id="hint" class="hint">🕹️ Осторожно: в коридорах кто-то есть...</div>
   <div class="crosshair"></div>
   <button id="fs" class="fs-btn">⛶</button>
   <div id="jump" class="jump-btn">⬆</div>
@@ -218,8 +251,8 @@ const CELL_SIZE = 3;
 
 const container = document.getElementById('webgl-container');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x11110e);
-scene.fog = new THREE.FogExp2(0x11110e, 0.04);
+scene.background = new THREE.Color(0x0a0a08);
+scene.fog = new THREE.FogExp2(0x0a0a08, 0.05);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -227,7 +260,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
+const ambientLight = new THREE.AmbientLight(0x777766, 0.8);
 scene.add(ambientLight);
 
 /* =========================
@@ -237,29 +270,14 @@ function createWallTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  
   ctx.fillStyle = '#c5b565';
   ctx.fillRect(0, 0, 256, 256);
-  
   ctx.fillStyle = 'rgba(80,70,30,0.12)';
   for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
   for(let i=0; i<400; i++) {
     ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
     ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
   }
-
-  let gradTop = ctx.createLinearGradient(0, 0, 0, 30);
-  gradTop.addColorStop(0, 'rgba(0,0,0,0.35)');
-  gradTop.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = gradTop;
-  ctx.fillRect(0, 0, 256, 30);
-
-  let gradBot = ctx.createLinearGradient(0, 226, 0, 256);
-  gradBot.addColorStop(0, 'rgba(0,0,0,0)');
-  gradBot.addColorStop(1, 'rgba(0,0,0,0.45)');
-  ctx.fillStyle = gradBot;
-  ctx.fillRect(0, 226, 256, 30);
-
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -297,17 +315,33 @@ function createCeilingTexture() {
   return texture;
 }
 
-function createGlowTexture() {
+// Текстура жуткой улыбки для монстра
+function createMonsterTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
+  canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(255, 255, 210, 0.6)');
-  grad.addColorStop(0.4, 'rgba(255, 240, 160, 0.2)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(canvas);
+  
+  ctx.fillStyle = 'rgba(0,0,0,0)';
+  ctx.fillRect(0,0,256,256);
+
+  // Глаза
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(70, 90, 25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(186, 90, 25, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = '#000000';
+  ctx.beginPath(); ctx.arc(70, 90, 8, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(186, 90, 8, 0, Math.PI*2); ctx.fill();
+
+  // Улыбка
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.arc(128, 130, 80, 0.1 * Math.PI, 0.9 * Math.PI, false);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
 }
 
 /* =========================
@@ -329,17 +363,6 @@ ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
 scene.add(ceiling);
 
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
-const lampGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
-const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-
-const glowMat = new THREE.MeshBasicMaterial({
-  map: createGlowTexture(),
-  transparent: true,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false
-});
-const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
-
 const walls = [];
 
 for (let y = 0; y < MH; y++) {
@@ -352,20 +375,22 @@ for (let y = 0; y < MH; y++) {
       wall.position.set(posX, 1.5, posZ);
       scene.add(wall);
       walls.push(wall);
-    } else {
-      if ((x + y) % 3 === 0) {
-        const lamp = new THREE.Mesh(lampGeo, lampMat);
-        lamp.position.set(posX, 2.97, posZ);
-        scene.add(lamp);
-
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.rotation.x = Math.PI / 2;
-        glow.position.set(posX, 2.94, posZ);
-        scene.add(glow);
-      }
     }
   }
 }
+
+/* =========================
+   СОЗДАНИЕ МОНСТРА
+========================= */
+const monsterMat = new THREE.SpriteMaterial({ map: createMonsterTexture() });
+const monster = new THREE.Sprite(monsterMat);
+monster.scale.set(2.2, 2.2, 1);
+scene.add(monster);
+
+function respawnMonster() {
+  monster.position.set(22 * CELL_SIZE, 1.2, 18 * CELL_SIZE);
+}
+respawnMonster();
 
 camera.position.set(2.5 * CELL_SIZE, 1.5, 2.5 * CELL_SIZE);
 
@@ -380,6 +405,7 @@ let velocityY = 0;
 const gravity = -18;
 const jumpForce = 6.5;
 let isGrounded = true;
+let isGameOver = false;
 
 function checkCollision(newPos) {
   const radius = 0.4;
@@ -395,6 +421,8 @@ function checkCollision(newPos) {
 }
 
 function updatePlayer(dt) {
+  if (isGameOver) return;
+
   velocityY += gravity * dt;
   playerY += velocityY * dt;
 
@@ -433,7 +461,36 @@ function updatePlayer(dt) {
 
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkCollision(nextPosZ)) camera.position.z = nextPosZ.z;
+
+  // Движение монстра к игроку
+  const mPos = monster.position;
+  const pPos = camera.position;
+  const dist = mPos.distanceTo(pPos);
+
+  if (dist < 18) { // Монстр слышит игрока на определенном расстоянии
+    const monsterSpeed = 2.2 * dt;
+    const mDir = new THREE.Vector3().subVectors(pPos, mPos).normalize();
+    monster.position.x += mDir.x * monsterSpeed;
+    monster.position.z += mDir.z * monsterSpeed;
+  }
+
+  // Скример / Атака монстра
+  if (dist < 1.2) {
+    triggerJumpscare();
+  }
 }
+
+function triggerJumpscare() {
+  isGameOver = true;
+  document.getElementById('jumpscare-screen').style.display = 'flex';
+}
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  camera.position.set(2.5 * CELL_SIZE, 1.5, 2.5 * CELL_SIZE);
+  respawnMonster();
+  document.getElementById('jumpscare-screen').style.display = 'none';
+  isGameOver = false;
+});
 
 /* =========================
    ТАЧ-СОБЫТИЯ
@@ -446,19 +503,17 @@ const fsBtn = document.getElementById('fs');
 let joyId = null, joyRect = null;
 let lookId = null, lastTouchX = 0, lastTouchY = 0;
 
-// Включение полного экрана
 fsBtn.addEventListener('click', () => {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().catch(()=>{});
   } else {
     document.exitFullscreen().catch(()=>{});
   }
-  if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(()=>{});
 });
 
 jumpBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation();
-  if (isGrounded) {
+  if (isGrounded && !isGameOver) {
     velocityY = jumpForce;
     isGrounded = false;
   }
@@ -517,9 +572,6 @@ window.addEventListener('pointermove', e => {
 
 window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
 
-/* =========================
-   ПРОВЕРКА ОРИЕНТАЦИИ
-========================= */
 function checkOrientation() {
   const rotateScreen = document.getElementById('rotate-screen');
   if (window.innerHeight > window.innerWidth) {
@@ -538,9 +590,6 @@ window.addEventListener('resize', () => {
 
 checkOrientation();
 
-/* =========================
-   ИГРОВОЙ ЦИКЛ
-========================= */
 let lastTime = performance.now();
 
 function animate(now) {
@@ -553,7 +602,7 @@ function animate(now) {
   requestAnimationFrame(animate);
 }
 
-setTimeout(() => document.getElementById('hint').classList.add('hide'), 4000);
+setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
 
 requestAnimationFrame(animate);
 </script>
