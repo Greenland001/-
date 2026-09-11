@@ -1,369 +1,211 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1,
-maximum-scale=1,
-user-scalable=no,
-viewport-fit=cover">
-
-<title>Backrooms</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Backrooms — Level 0</title>
 
 <style>
-
 *{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent
 }
 
 html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#000;
-    touch-action:none;
-    font-family:Arial,sans-serif;
-}
-
-#game{
-    position:fixed;
-    inset:0;
-    background:#000;
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#17150d;
+  font-family:Arial,sans-serif;
+  touch-action:none
 }
 
 canvas{
-    display:block;
-    width:100%;
-    height:100%;
+  display:block;
+  width:100%;
+  height:100%;
 }
 
-/* Экран для вертикального телефона */
-
-#portrait{
-    position:fixed;
-    inset:0;
-    z-index:50;
-
-    background:#151515;
-    color:white;
-
-    display:none;
-    align-items:center;
-    justify-content:center;
-
-    text-align:center;
+.hud{
+  position:fixed;
+  inset:0;
+  pointer-events:none
 }
 
-#portrait .box{
-    font-size:23px;
-    padding:25px;
+.hint{
+  position:absolute;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:12px 22px;
+  border-radius:18px;
+  background:rgba(28,26,17,.72);
+  color:#eee;
+  font-size:17px;
+  line-height:1.35;
+  backdrop-filter:blur(8px);
+  text-align:center;
+  max-width:85%;
+  transition:opacity .8s
 }
 
-#portrait small{
-    display:block;
-    margin-top:10px;
-    color:#aaa;
+.hint.hide{
+  opacity:0
 }
 
-#rotate{
-    margin-top:20px;
-    padding:14px 20px;
-
-    border:0;
-    border-radius:15px;
-
-    background:#333;
-    color:white;
-
-    font-size:17px;
+.fs{
+  pointer-events:auto;
+  position:absolute;
+  right:28px;
+  bottom:30px;
+  width:82px;
+  height:82px;
+  border:0;
+  border-radius:24px;
+  background:rgba(20,19,15,.82);
+  color:white;
+  font-size:37px
 }
 
-
-/* Джойстик */
-
-#joy{
-    position:fixed;
-
-    left:30px;
-    bottom:30px;
-
-    width:150px;
-    height:150px;
-
-    border-radius:50%;
-
-    background:rgba(40,40,40,.7);
-
-    border:3px solid #888;
-
-    z-index:10;
+.joy{
+  pointer-events:auto;
+  position:absolute;
+  left:34px;
+  bottom:35px;
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  background:rgba(28,27,23,.62);
+  border:4px solid rgba(190,190,190,.55);
+  box-shadow:
+    inset 0 10px 25px rgba(255,255,255,.04),
+    0 8px 30px rgba(0,0,0,.2)
 }
 
-#knob{
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    width:76px;
-    height:76px;
-
-    margin-left:-38px;
-    margin-top:-38px;
-
-    border-radius:50%;
-
-    background:#aaa;
-
-    box-shadow:0 3px 15px #0008;
+.knob{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:88px;
+  height:88px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:rgba(190,190,190,.9);
+  box-shadow:0 8px 20px rgba(0,0,0,.3)
 }
 
-
-/* Область для поворота */
-
-#look{
-    position:fixed;
-
-    right:0;
-    top:0;
-
-    width:62%;
-    height:100%;
-
-    z-index:5;
+.portrait{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:10;
+  background:#15130d;
+  color:#eee;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:30px;
+  font-size:20px
 }
 
-
-/* Полноэкранная кнопка */
-
-#fs{
-    position:fixed;
-
-    right:22px;
-    bottom:22px;
-
-    z-index:15;
-
-    width:64px;
-    height:64px;
-
-    border:0;
-    border-radius:18px;
-
-    background:#080808cc;
-
-    color:white;
-
-    font-size:28px;
+.portrait b{
+  display:block;
+  font-size:30px;
+  margin-bottom:10px
 }
-
-
-/* Подсказка */
-
-#hint{
-    position:fixed;
-
-    top:18px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    z-index:15;
-
-    color:#ddd;
-
-    background:#0009;
-
-    padding:9px 15px;
-
-    border-radius:12px;
-
-    font-size:15px;
-
-    pointer-events:none;
-}
-
-
-/* Только вертикальный экран */
 
 @media (orientation:portrait){
-
-    #portrait{
-        display:flex;
-    }
-
+  .portrait{
+    display:flex
+  }
 }
-
-@media (orientation:landscape){
-
-    #portrait{
-        display:none;
-    }
-
-}
-
 </style>
 </head>
 
 <body>
 
-<div id="game">
+<canvas id="game"></canvas>
 
-<canvas id="c"></canvas>
+<div class="hud">
 
-</div>
-
-
-<div id="portrait">
-
-    <div class="box">
-
-        📱
-
-        <br><br>
-
-        <b>Поверни телефон горизонтально</b>
-
-        <small>
-            Игра рассчитана на горизонтальный экран.
-        </small>
-
-        <button id="rotate">
-            ↔ Попробовать повернуть
-        </button>
-
-    </div>
-
-</div>
-
-
-<div id="hint">
+  <div id="hint" class="hint">
     🕹️ Джойстик — движение • Свайп справа — поворот
-</div>
+  </div>
 
-
-<div id="joy">
-
-    <div id="knob"></div>
-
-</div>
-
-
-<div id="look"></div>
-
-
-<button id="fs">
+  <button id="fs" class="fs">
     ⛶
-</button>
+  </button>
 
+  <div id="joy" class="joy">
+    <div id="knob" class="knob"></div>
+  </div>
+
+</div>
+
+<div class="portrait">
+  <div>
+    <b>Поверни телефон</b>
+    Игра лучше работает в горизонтальном режиме.
+  </div>
+</div>
 
 <script>
+'use strict';
 
-"use strict";
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d',{alpha:false});
 
-
-/* =========================
-   CANVAS
-========================= */
-
-const canvas =
-document.getElementById("c");
-
-const ctx =
-canvas.getContext("2d");
-
-
-let W=0;
-let H=0;
-let DPR=1;
-
-
-function resize(){
-
-    DPR=Math.min(
-        window.devicePixelRatio || 1,
-        2
-    );
-
-    W=Math.max(
-        320,
-        Math.floor(innerWidth)
-    );
-
-    H=Math.max(
-        180,
-        Math.floor(innerHeight)
-    );
-
-    canvas.width=
-        Math.floor(W*DPR);
-
-    canvas.height=
-        Math.floor(H*DPR);
-
-    ctx.setTransform(
-        DPR,0,0,DPR,0,0
-    );
-}
-
-
-window.addEventListener(
-    "resize",
-    resize
-);
-
-resize();
-
+const joy=document.getElementById('joy');
+const knob=document.getElementById('knob');
+const fs=document.getElementById('fs');
+const hint=document.getElementById('hint');
 
 
 /* =========================
-   КАРТА BACKROOMS
+   БОЛЬШАЯ КАРТА
 ========================= */
 
 const map=[
 
-"########################",
-
-"#......................#",
-
-"#......................#",
-
-"#......####............#",
-
-"#......#...............#",
-
-"#......#........####...#",
-
-"#................#.....#",
-
-"#..########.......#....#",
-
-"#........#.............#",
-
-"#........#..######.....#",
-
-"#........#.............#",
-
-"#........#.............#",
-
-"#......................#",
-
-"#.....####.............#",
-
-"#......................#",
-
-"########################"
+"############################################################",
+"#..........................................................#",
+"#..........................................................#",
+"#..............#########...................................#",
+"#..............#.......#...................................#",
+"#..............#.......#.................##########........#",
+"#..............#.......#.................#........#........#",
+"#..............#.......#.................#........#........#",
+"#......................#.................#........#........#",
+"#..###########.........#.................#........#........#",
+"#..#.........#.........#.................#........#........#",
+"#..#.........#.........#.................#........#........#",
+"#..#.........#..................##########........#........#",
+"#..#.........#..................#................#........##",
+"#..#.........##############.....#................#........##",
+"#..#...........................#................#........###",
+"#..#...........................#................#........###",
+"#..#############...............#....#############........##",
+"#................#.............#....#...................###",
+"#................#.............#....#...................###",
+"#................#.............#....#...................###",
+"#................#.............#....#......########.....###",
+"#................#..................#......#......#.....###",
+"#................#..................#......#......#.....###",
+"#................##########.........#......#......#.....###",
+"#..........................#........#......#......#.....###",
+"#..........................#........#...................###",
+"#..........############....#........################...###",
+"#..........#..........#....#...........................###",
+"#..........#..........#....#...........................###",
+"#..........#..........#................................###",
+"#..........############................................###",
+"############################################################"
 
 ];
 
-
 const MW=map[0].length;
 const MH=map.length;
-
 
 
 /* =========================
@@ -371,1380 +213,1164 @@ const MH=map.length;
 ========================= */
 
 const player={
-
-    x:2.5,
-    y:2.5,
-
-    angle:0
-
+  x:3.5,
+  y:2.7,
+  a:0.15
 };
 
-
 const FOV=Math.PI/3;
+const MAX_DIST=30;
+const PLAYER_R=.20;
 
-const playerRadius=.22;
+let W=innerWidth;
+let H=innerHeight;
+let DPR=Math.min(devicePixelRatio||1,1.5);
 
+let moveX=0;
+let moveY=0;
+let lookDX=0;
+
+let keys={};
+
+let last=performance.now();
 
 
 /* =========================
-   СТЕНЫ
+   ЛАМПЫ
 ========================= */
+
+const lamps=[];
 
 function isWall(x,y){
+  const gx=Math.floor(x);
+  const gy=Math.floor(y);
 
-    const ix=Math.floor(x);
-    const iy=Math.floor(y);
-
-    if(
-        ix<0 ||
-        iy<0 ||
-        ix>=MW ||
-        iy>=MH
-    ){
-        return true;
-    }
-
-    return map[iy][ix]==="#";
+  return(
+    gy<0 ||
+    gy>=MH ||
+    gx<0 ||
+    gx>=MW ||
+    map[gy][gx]==='#'
+  );
 }
 
+for(let y=1;y<MH-1;y+=4){
 
+  for(let x=2;x<MW-2;x+=6){
 
-/* =========================
-   СТОЛКНОВЕНИЯ
-========================= */
+    if(!isWall(x+.5,y+.5)){
+      lamps.push({
+        x:x+.5,
+        y:y+.5
+      });
+    }
 
-function canMove(x,y){
-
-    const r=playerRadius;
-
-    return (
-
-        !isWall(x-r,y-r) &&
-        !isWall(x+r,y-r) &&
-        !isWall(x-r,y+r) &&
-        !isWall(x+r,y+r) &&
-
-        !isWall(x,y-r) &&
-        !isWall(x,y+r) &&
-        !isWall(x-r,y) &&
-        !isWall(x+r,y)
-
-    );
+  }
 
 }
 
 
-function movePlayer(dx,dy){
-
-    const nx=
-        player.x+dx;
-
-    const ny=
-        player.y+dy;
-
-
-    /* X отдельно */
-
-    if(
-        canMove(nx,player.y)
-    ){
-
-        player.x=nx;
-
-    }
-
-
-    /* Y отдельно */
-
-    if(
-        canMove(player.x,ny)
-    ){
-
-        player.y=ny;
-
-    }
-
-}
-
-
-
 /* =========================
-   ДЖОЙСТИК
+   КОЛЛИЗИЯ
 ========================= */
 
-const joy=
-document.getElementById("joy");
-
-const knob=
-document.getElementById("knob");
-
-
-let joyID=null;
-
-let joyX=0;
-let joyY=0;
-
-
-function updateJoystick(touch){
-
-    const rect=
-        joy.getBoundingClientRect();
-
-
-    const centerX=
-        rect.left+
-        rect.width/2;
-
-    const centerY=
-        rect.top+
-        rect.height/2;
-
-
-    let dx=
-        touch.clientX-centerX;
-
-    let dy=
-        touch.clientY-centerY;
-
-
-    const max=
-        rect.width/2-38;
-
-
-    const distance=
-        Math.hypot(dx,dy);
-
-
-    if(distance>max){
-
-        dx=
-            dx/distance*max;
-
-        dy=
-            dy/distance*max;
-
-    }
-
-
-    knob.style.transform=
-        `translate(${dx}px,${dy}px)`;
-
-
-    joyX=
-        dx/max;
-
-    joyY=
-        dy/max;
-
-}
-
-
-joy.addEventListener(
-    "touchstart",
-    function(e){
-
-        e.preventDefault();
-
-        joyID=
-            e.changedTouches[0]
-             .identifier;
-
-        updateJoystick(
-            e.changedTouches[0]
-        );
-
-    },
-    {passive:false}
-);
-
-
-joy.addEventListener(
-    "touchmove",
-    function(e){
-
-        e.preventDefault();
-
-        for(
-            const touch
-            of e.changedTouches
-        ){
-
-            if(
-                touch.identifier===
-                joyID
-            ){
-
-                updateJoystick(touch);
-
-            }
-
-        }
-
-    },
-    {passive:false}
-);
-
-
-function joystickEnd(e){
-
-    for(
-        const touch
-        of e.changedTouches
-    ){
-
-        if(
-            touch.identifier===
-            joyID
-        ){
-
-            joyID=null;
-
-            joyX=0;
-            joyY=0;
-
-            knob.style.transform=
-                "translate(0,0)";
-
-        }
-
-    }
-
-}
-
-
-joy.addEventListener(
-    "touchend",
-    joystickEnd
-);
-
-joy.addEventListener(
-    "touchcancel",
-    joystickEnd
-);
-
-
-
-/* =========================
-   ПОВОРОТ КАМЕРЫ
-========================= */
-
-const look=
-document.getElementById("look");
-
-
-let lookID=null;
-
-let lastLookX=0;
-
-
-look.addEventListener(
-    "touchstart",
-    function(e){
-
-        if(lookID!==null)
-            return;
-
-        const touch=
-            e.changedTouches[0];
-
-        lookID=
-            touch.identifier;
-
-        lastLookX=
-            touch.clientX;
-
-    },
-    {passive:true}
-);
-
-
-look.addEventListener(
-    "touchmove",
-    function(e){
-
-        for(
-            const touch
-            of e.changedTouches
-        ){
-
-            if(
-                touch.identifier===
-                lookID
-            ){
-
-                const difference=
-                    touch.clientX-
-                    lastLookX;
-
-
-                player.angle+=
-                    difference*0.006;
-
-
-                lastLookX=
-                    touch.clientX;
-
-            }
-
-        }
-
-    },
-    {passive:true}
-);
-
-
-function lookEnd(e){
-
-    for(
-        const touch
-        of e.changedTouches
-    ){
-
-        if(
-            touch.identifier===
-            lookID
-        ){
-
-            lookID=null;
-
-        }
-
-    }
-
-}
-
-
-look.addEventListener(
-    "touchend",
-    lookEnd
-);
-
-look.addEventListener(
-    "touchcancel",
-    lookEnd
-);
-
-
-
-/* =========================
-   КЛАВИАТУРА
-   (если открыть на ПК)
-========================= */
-
-const keys={};
-
-
-window.addEventListener(
-    "keydown",
-    e=>{
-        keys[e.key.toLowerCase()]=true;
-    }
-);
-
-
-window.addEventListener(
-    "keyup",
-    e=>{
-        keys[e.key.toLowerCase()]=false;
-    }
-);
-
-
-
-/* =========================
-   ГОРИЗОНТАЛЬНЫЙ ЭКРАН
-========================= */
-
-async function tryLandscape(){
-
-    try{
-
-        if(
-            !document.fullscreenElement &&
-            document.documentElement.requestFullscreen
-        ){
-
-            await document.documentElement
-                .requestFullscreen();
-
-        }
-
-    }catch(error){}
-
-
-    try{
-
-        if(
-            screen.orientation &&
-            screen.orientation.lock
-        ){
-
-            await screen.orientation
-                .lock("landscape");
-
-        }
-
-    }catch(error){}
-
-}
-
-
-document
-.getElementById("rotate")
-.addEventListener(
-    "click",
-    tryLandscape
-);
-
-
-
-/* =========================
-   FULLSCREEN
-========================= */
-
-document
-.getElementById("fs")
-.addEventListener(
-    "click",
-    async function(){
-
-        try{
-
-            if(
-                !document.fullscreenElement
-            ){
-
-                await document.documentElement
-                    .requestFullscreen();
-
-            }else{
-
-                await document
-                    .exitFullscreen();
-
-            }
-
-        }catch(error){}
-
-
-        try{
-
-            if(
-                screen.orientation &&
-                screen.orientation.lock
-            ){
-
-                await screen.orientation
-                    .lock("landscape");
-
-            }
-
-        }catch(error){}
-
-    }
-);
-
-
-
-/* =========================
-   СЛУЧАЙНАЯ ТЕКСТУРА
-========================= */
-
-function hash(n){
-
-    n=(n<<13)^n;
-
-    return 1-
-    (
-        (
-            n*
-            (
-                n*n*15731+
-                789221
-            )+
-            1376312589
-        )
-        &
-        2147483647
+function blocked(x,y){
+
+  return(
+    isWall(x-PLAYER_R,y) ||
+    isWall(x+PLAYER_R,y) ||
+    isWall(x,y-PLAYER_R) ||
+    isWall(x,y+PLAYER_R) ||
+
+    isWall(
+      x-PLAYER_R,
+      y-PLAYER_R
+    ) ||
+
+    isWall(
+      x+PLAYER_R,
+      y+PLAYER_R
+    ) ||
+
+    isWall(
+      x-PLAYER_R,
+      y+PLAYER_R
+    ) ||
+
+    isWall(
+      x+PLAYER_R,
+      y-PLAYER_R
     )
-    /1073741824;
+  );
+}
+
+
+function move(dx,dy){
+
+  const nx=player.x+dx;
+  const ny=player.y+dy;
+
+  if(!blocked(nx,player.y))
+    player.x=nx;
+
+  if(!blocked(player.x,ny))
+    player.y=ny;
+}
+
+
+/* =========================
+   RESIZE
+========================= */
+
+function resize(){
+
+  W=innerWidth;
+  H=innerHeight;
+
+  DPR=Math.min(devicePixelRatio||1,1.5);
+
+  canvas.width=Math.max(
+    320,
+    Math.floor(W*DPR)
+  );
+
+  canvas.height=Math.max(
+    240,
+    Math.floor(H*DPR)
+  );
+
+  ctx.setTransform(
+    DPR,0,0,DPR,0,0
+  );
+}
+
+addEventListener('resize',resize);
+
+resize();
+
+
+/* =========================
+   ТЕКСТУРА СТЕН
+========================= */
+
+const wallTex=document.createElement('canvas');
+
+wallTex.width=256;
+wallTex.height=256;
+
+const wt=wallTex.getContext('2d');
+
+wt.fillStyle='#b9a95d';
+wt.fillRect(0,0,256,256);
+
+
+/* горизонтальные следы обоев */
+
+for(let y=0;y<256;y+=16){
+
+  wt.fillStyle='rgba(70,62,30,.035)';
+  wt.fillRect(0,y,256,2);
 
 }
 
+
+/* вертикальные стыки */
+
+for(let x=0;x<256;x+=32){
+
+  wt.fillStyle='rgba(255,240,160,.035)';
+  wt.fillRect(x,0,2,256);
+
+}
+
+
+/* мелкая неоднородность */
+
+for(let i=0;i<1800;i++){
+
+  const x=Math.random()*256;
+  const y=Math.random()*256;
+
+  const a=.025+Math.random()*.055;
+
+  wt.fillStyle=
+    `rgba(
+      ${70+Math.random()*50},
+      ${55+Math.random()*40},
+      ${25+Math.random()*30},
+      ${a}
+    )`;
+
+  wt.fillRect(
+    x,
+    y,
+    1+Math.random()*2,
+    1+Math.random()*2
+  );
+}
+
+const tex=wt.getImageData(
+  0,0,256,256
+).data;
+
+
+/* =========================
+   УГОЛ
+========================= */
+
+function normAng(a){
+
+  a%=Math.PI*2;
+
+  if(a<0)
+    a+=Math.PI*2;
+
+  return a;
+}
+
+
+/* =========================
+   RAYCAST
+========================= */
+
+function castRay(angle){
+
+  const rx=Math.cos(angle);
+  const ry=Math.sin(angle);
+
+  let mx=Math.floor(player.x);
+  let my=Math.floor(player.y);
+
+  const ddx=Math.abs(
+    1/(rx||1e-9)
+  );
+
+  const ddy=Math.abs(
+    1/(ry||1e-9)
+  );
+
+  let stepx;
+  let stepy;
+
+  let sdx;
+  let sdy;
+
+  if(rx<0){
+
+    stepx=-1;
+
+    sdx=
+      (player.x-mx)*ddx;
+
+  }else{
+
+    stepx=1;
+
+    sdx=
+      (mx+1-player.x)*ddx;
+  }
+
+
+  if(ry<0){
+
+    stepy=-1;
+
+    sdy=
+      (player.y-my)*ddy;
+
+  }else{
+
+    stepy=1;
+
+    sdy=
+      (my+1-player.y)*ddy;
+  }
+
+
+  let side=0;
+  let dist=MAX_DIST;
+
+  for(let i=0;i<100;i++){
+
+    if(sdx<sdy){
+
+      sdx+=ddx;
+      mx+=stepx;
+      side=0;
+
+    }else{
+
+      sdy+=ddy;
+      my+=stepy;
+      side=1;
+    }
+
+
+    if(
+      mx<0 ||
+      my<0 ||
+      mx>=MW ||
+      my>=MH
+    ){
+      break;
+    }
+
+
+    if(map[my][mx]==='#'){
+
+      dist=
+        side===0
+        ?
+        (mx-player.x+(1-stepx)/2)/rx
+        :
+        (my-player.y+(1-stepy)/2)/ry;
+
+      break;
+    }
+  }
+
+
+  return{
+    dist:Math.min(
+      Math.abs(dist),
+      MAX_DIST
+    ),
+
+    side,
+    mx,
+    my
+  };
+}
+
+
+/* =========================
+   СВЕТ
+========================= */
+
+function lampLight(x,y){
+
+  let best=0;
+
+  for(const l of lamps){
+
+    const d=
+      Math.hypot(
+        x-l.x,
+        y-l.y
+      );
+
+    if(d<6){
+
+      best=Math.max(
+        best,
+        1-d/6
+      );
+
+    }
+  }
+
+  return best;
+}
 
 
 /* =========================
    ОТРИСОВКА
 ========================= */
 
-function render(){
+function draw(){
 
-    const width=W;
-    const height=H;
-
-
-    /* =====================
-       ПОТОЛОК
-    ===================== */
-
-    const ceiling=
-        ctx.createLinearGradient(
-            0,
-            0,
-            0,
-            height*.52
-        );
+  const cw=W;
+  const ch=H;
 
 
-    ceiling.addColorStop(
-        0,
-        "#d9cf9d"
+  /* потолок */
+
+  const sky=
+    ctx.createLinearGradient(
+      0,0,
+      0,ch*.55
     );
 
-    ceiling.addColorStop(
-        1,
-        "#9e915c"
+  sky.addColorStop(
+    0,
+    '#d0c88e'
+  );
+
+  sky.addColorStop(
+    .55,
+    '#b8ad70'
+  );
+
+  sky.addColorStop(
+    1,
+    '#a99c62'
+  );
+
+  ctx.fillStyle=sky;
+
+  ctx.fillRect(
+    0,0,
+    cw,ch*.54
+  );
+
+
+  /* пол */
+
+  const floor=
+    ctx.createLinearGradient(
+      0,ch*.5,
+      0,ch
     );
 
+  floor.addColorStop(
+    0,
+    '#7c7045'
+  );
 
-    ctx.fillStyle=ceiling;
+  floor.addColorStop(
+    1,
+    '#39331f'
+  );
+
+  ctx.fillStyle=floor;
+
+  ctx.fillRect(
+    0,
+    ch*.5,
+    cw,
+    ch*.5
+  );
+
+
+  /* raycasting */
+
+  const cols=
+    Math.min(
+      Math.floor(cw*.78),
+      900
+    );
+
+  const strip=cw/cols;
+
+  const zbuf=
+    new Float32Array(cols);
+
+
+  for(let i=0;i<cols;i++){
+
+    const camera=
+      (i+.5)/cols-.5;
+
+    const a=
+      player.a+
+      camera*FOV;
+
+    const r=
+      castRay(a);
+
+
+    const corrected=
+      r.dist*
+      Math.cos(
+        a-player.a
+      );
+
+    zbuf[i]=corrected;
+
+
+    const wallH=
+      Math.min(
+        ch*1.65,
+        ch*.95/
+        (corrected+.0001)
+      );
+
+    const top=
+      ch*.5-wallH*.5;
+
+
+    const hitX=
+      r.side===0
+      ?
+      player.y+
+      corrected*
+      Math.sin(a)
+      :
+      player.x+
+      corrected*
+      Math.cos(a);
+
+
+    const u=
+      ((hitX%1)+1)%1;
+
+    const tx=
+      Math.floor(u*255);
+
+    const base=
+      tx*4;
+
+
+    let light=
+      .72+
+      lampLight(
+        player.x+
+        Math.cos(a)*corrected,
+
+        player.y+
+        Math.sin(a)*corrected
+      )*.22;
+
+
+    light*=
+      1/(1+corrected*.035);
+
+
+    if(r.side)
+      light*=.84;
+
+
+    const col=
+      tex[base]*
+      light;
+
+    const g=
+      tex[base+1]*
+      light;
+
+    const b=
+      tex[base+2]*
+      light;
+
+
+    ctx.fillStyle=
+      `rgb(
+        ${col|0},
+        ${g|0},
+        ${b|0}
+      )`;
 
     ctx.fillRect(
-        0,
-        0,
-        width,
-        height*.52
+      i*strip,
+      top,
+      strip+1,
+      wallH
     );
 
 
+    /* стыки */
 
-    /* =====================
-       ПОЛ
-    ===================== */
+    if(tx%32<2){
 
-    const floor=
-        ctx.createLinearGradient(
-            0,
-            height*.48,
-            0,
-            height
-        );
+      ctx.fillStyle=
+        `rgba(
+          45,38,18,
+          ${.10+
+            Math.min(
+              corrected/30,
+              .12
+            )}
+        )`;
 
-
-    floor.addColorStop(
-        0,
-        "#9c9165"
-    );
-
-    floor.addColorStop(
-        1,
-        "#554d35"
-    );
+      ctx.fillRect(
+        i*strip,
+        top,
+        strip+1,
+        wallH
+      );
+    }
 
 
-    ctx.fillStyle=floor;
+    /* плинтус */
 
-    ctx.fillRect(
-        0,
-        height*.48,
-        width,
-        height*.52
-    );
-
-
-
-    /* =====================
-       RAYCASTING
-    ===================== */
-
-    const horizon=
-        height*.50;
-
-
-    const rays=
+    const baseH=
+      Math.max(
+        2,
         Math.min(
-            700,
-            Math.max(
-                360,
-                Math.floor(width*.75)
-            )
-        );
-
-
-    const columnWidth=
-        width/rays;
-
-
-    for(
-        let rayNumber=0;
-        rayNumber<rays;
-        rayNumber++
-    ){
-
-        const screenPosition=
-            (rayNumber+.5)/
-            rays-
-            .5;
-
-
-        const rayAngle=
-            player.angle+
-            screenPosition*FOV;
-
-
-        const rayX=
-            Math.cos(rayAngle);
-
-        const rayY=
-            Math.sin(rayAngle);
-
-
-
-        /* DDA */
-
-        let mapX=
-            Math.floor(player.x);
-
-        let mapY=
-            Math.floor(player.y);
-
-
-        const deltaX=
-            Math.abs(1/rayX);
-
-        const deltaY=
-            Math.abs(1/rayY);
-
-
-        let stepX;
-        let stepY;
-
-        let sideDistanceX;
-        let sideDistanceY;
-
-
-        if(rayX<0){
-
-            stepX=-1;
-
-            sideDistanceX=
-                (player.x-mapX)*
-                deltaX;
-
-        }else{
-
-            stepX=1;
-
-            sideDistanceX=
-                (mapX+1-player.x)*
-                deltaX;
-
-        }
-
-
-        if(rayY<0){
-
-            stepY=-1;
-
-            sideDistanceY=
-                (player.y-mapY)*
-                deltaY;
-
-        }else{
-
-            stepY=1;
-
-            sideDistanceY=
-                (mapY+1-player.y)*
-                deltaY;
-
-        }
-
-
-        let side=0;
-
-        let hit=false;
-
-
-        for(
-            let i=0;
-            i<80;
-            i++
-        ){
-
-            if(
-                sideDistanceX<
-                sideDistanceY
-            ){
-
-                sideDistanceX+=
-                    deltaX;
-
-                mapX+=stepX;
-
-                side=0;
-
-            }else{
-
-                sideDistanceY+=
-                    deltaY;
-
-                mapY+=stepY;
-
-                side=1;
-
-            }
-
-
-            if(
-                mapX<0 ||
-                mapY<0 ||
-                mapX>=MW ||
-                mapY>=MH
-            ){
-
-                hit=true;
-
-                break;
-
-            }
-
-
-            if(
-                map[mapY][mapX]==="#"
-            ){
-
-                hit=true;
-
-                break;
-
-            }
-
-        }
-
-
-        if(!hit)
-            continue;
-
-
-
-        /* Расстояние */
-
-        let distance;
-
-
-        if(side===0){
-
-            distance=
-                (
-                    mapX-
-                    player.x+
-                    (1-stepX)/2
-                )/rayX;
-
-        }else{
-
-            distance=
-                (
-                    mapY-
-                    player.y+
-                    (1-stepY)/2
-                )/rayY;
-
-        }
-
-
-        distance=
-            Math.max(
-                .05,
-                distance
-            );
-
-
-        /* Убираем искажение */
-
-        const correctedDistance=
-            distance*
-            Math.cos(
-                rayAngle-
-                player.angle
-            );
-
-
-        /* Высота стены */
-
-        const wallHeight=
-            Math.min(
-                height*1.8,
-                height*.95/
-                correctedDistance
-            );
-
-
-        const top=
-            horizon-
-            wallHeight/2;
-
-
-        const bottom=
-            horizon+
-            wallHeight/2;
-
-
-
-        /* =================
-           ОСВЕЩЕНИЕ
-        ================= */
-
-        let brightness=
-            Math.max(
-                .18,
-                1-
-                correctedDistance/13
-            );
-
-
-        if(side)
-            brightness*=.82;
-
-
-
-        /* =================
-           ТЕКСТУРА СТЕН
-        ================= */
-
-        const wallPosition=
-            side===0
-
-            ?
-
-            player.y+
-            distance*rayY
-
-            :
-
-            player.x+
-            distance*rayX;
-
-
-        const texture=
-            Math.floor(
-                (
-                    wallPosition-
-                    Math.floor(wallPosition)
-                )*12
-            );
-
-
-        const noise=
-            hash(
-                mapX*97+
-                mapY*193+
-                texture*17
-            )*7;
-
-
-        let red=
-            208*brightness+
-            noise;
-
-
-        let green=
-            194*brightness+
-            noise;
-
-
-        let blue=
-            112*brightness+
-            noise;
-
-
-        red=Math.max(
-            35,
-            Math.min(235,red)
-        );
-
-        green=Math.max(
-            32,
-            Math.min(225,green)
-        );
-
-        blue=Math.max(
-            18,
-            Math.min(150,blue)
-        );
-
-
-        ctx.fillStyle=
-            `rgb(
-                ${red|0},
-                ${green|0},
-                ${blue|0}
-            )`;
-
-
-        ctx.fillRect(
-            rayNumber*columnWidth,
-            top,
-            columnWidth+1,
-            bottom-top
-        );
-
-
-
-        /* Вертикальные швы обоев */
-
-        if(texture===0){
-
-            ctx.fillStyle=
-                `rgba(
-                    80,
-                    65,
-                    25,
-                    ${.18*brightness}
-                )`;
-
-
-            ctx.fillRect(
-                rayNumber*columnWidth,
-                top,
-                Math.max(
-                    1,
-                    columnWidth
-                ),
-                bottom-top
-            );
-
-        }
-
-
-
-        /* Плинтус */
-
-        ctx.fillStyle=
-            `rgba(
-                75,
-                65,
-                38,
-                ${.45*brightness}
-            )`;
-
-
-        ctx.fillRect(
-            rayNumber*columnWidth,
-            bottom-wallHeight*.055,
-            columnWidth+1,
-            wallHeight*.055
-        );
-
-    }
-
-
-
-    /* =====================
-       ПЛИТКА ПОЛА
-    ===================== */
-
-    ctx.strokeStyle=
-        "rgba(55,50,32,.20)";
-
-    ctx.lineWidth=1;
-
-
-    for(
-        let distance=1;
-        distance<18;
-        distance++
-    ){
-
-        const y=
-            horizon+
-            (
-                height-horizon
-            )*
-            (
-                1-
-                Math.exp(
-                    -distance*.22
-                )
-            );
-
-
-        ctx.beginPath();
-
-        ctx.moveTo(0,y);
-
-        ctx.lineTo(width,y);
-
-        ctx.stroke();
-
-    }
-
-
-
-    /* =====================
-       ЛАМПЫ
-    ===================== */
-
-    const lamps=[
-
-        [3.5,2.5],
-        [8.5,2.5],
-        [15.5,2.5],
-        [20.5,2.5],
-
-        [5.5,6.5],
-        [12.5,6.5],
-        [19.5,6.5],
-
-        [4.5,11.5],
-        [11.5,11.5],
-        [18.5,11.5],
-
-        [6.5,14.5],
-        [14.5,14.5]
-
-    ];
-
-
-    for(
-        const lamp
-        of lamps
-    ){
-
-        const lx=lamp[0];
-        const ly=lamp[1];
-
-
-        const dx=
-            lx-player.x;
-
-        const dy=
-            ly-player.y;
-
-
-        const distance=
-            Math.hypot(
-                dx,
-                dy
-            );
-
-
-        let angle=
-            Math.atan2(
-                dy,
-                dx
-            )-
-            player.angle;
-
-
-        angle=
-            Math.atan2(
-                Math.sin(angle),
-                Math.cos(angle)
-            );
-
-
-        if(
-            Math.abs(angle)>
-            FOV*.72
+          12,
+          8/(corrected*.15+1)
         )
-            continue;
+      );
 
-
-        if(
-            distance>
-            16
-        )
-            continue;
-
-
-        const screenX=
-            width/2+
-            (
-                angle/FOV
-            )*
-            width;
-
-
-        const screenY=
-            height*.13+
-            Math.min(
-                height*.24,
-                distance*5
-            );
-
-
-        const alpha=
-            Math.max(
-                0,
-                .25-distance*.012
-            );
-
-
-        ctx.fillStyle=
-            `rgba(
-                255,
-                249,
-                205,
-                ${alpha}
-            )`;
-
-
-        ctx.fillRect(
-            screenX-18,
-            screenY,
-            36,
-            5
-        );
-
-
-        ctx.fillStyle=
-            `rgba(
-                255,
-                255,
-                230,
-                ${Math.min(
-                    .95,
-                    alpha*3
-                )}
-            )`;
-
-
-        ctx.fillRect(
-            screenX-11,
-            screenY+1,
-            22,
-            2
-        );
-
-    }
-
-
-
-    /* =====================
-       ТЁМНЫЕ КРАЯ
-    ===================== */
-
-    const vignette=
-        ctx.createRadialGradient(
-            width/2,
-            height*.5,
-            Math.min(width,height)*.15,
-
-            width/2,
-            height*.5,
-            Math.max(width,height)*.72
-        );
-
-
-    vignette.addColorStop(
-        0,
-        "rgba(0,0,0,0)"
-    );
-
-
-    vignette.addColorStop(
-        .72,
-        "rgba(0,0,0,.08)"
-    );
-
-
-    vignette.addColorStop(
-        1,
-        "rgba(0,0,0,.48)"
-    );
-
-
-    ctx.fillStyle=vignette;
-
+    ctx.fillStyle=
+      `rgba(
+        74,63,31,
+        ${.38/
+          (1+corrected*.03)}
+      )`;
 
     ctx.fillRect(
-        0,
-        0,
-        width,
-        height
+      i*strip,
+      top+wallH-baseH,
+      strip+1,
+      baseH
     );
 
+  }
 
 
-    /* =====================
-       ПРИЦЕЛ
-    ===================== */
+  drawFloorDetails();
+
+  drawLamps();
+
+  drawVignette();
+
+
+  /* прицел */
+
+  ctx.strokeStyle=
+    'rgba(255,255,255,.75)';
+
+  ctx.lineWidth=1;
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    cw/2-9,
+    ch/2
+  );
+
+  ctx.lineTo(
+    cw/2+9,
+    ch/2
+  );
+
+  ctx.moveTo(
+    cw/2,
+    ch/2-9
+  );
+
+  ctx.lineTo(
+    cw/2,
+    ch/2+9
+  );
+
+  ctx.stroke();
+}
+
+
+/* =========================
+   ПОЛ
+========================= */
+
+function drawFloorDetails(){
+
+  ctx.lineWidth=1;
+
+  for(let y=0;y<8;y++){
+
+    const p=(y+1)/8;
+
+    const sy=
+      H*.5+
+      H*.5*
+      Math.pow(p,1.8);
 
     ctx.strokeStyle=
-        "rgba(255,255,255,.55)";
-
-    ctx.lineWidth=1;
-
+      `rgba(
+        210,196,126,
+        ${.10*(1-p)}
+      )`;
 
     ctx.beginPath();
 
     ctx.moveTo(
-        width/2-5,
-        height/2
+      0,
+      sy
     );
 
     ctx.lineTo(
-        width/2+5,
-        height/2
+      W,
+      sy
     );
-
-
-    ctx.moveTo(
-        width/2,
-        height/2-5
-    );
-
-    ctx.lineTo(
-        width/2,
-        height/2+5
-    );
-
 
     ctx.stroke();
-
+  }
 }
-
 
 
 /* =========================
-   ИГРОВОЙ ЦИКЛ
+   ЛАМПЫ
 ========================= */
 
-let lastTime=
-    performance.now();
+function drawLamps(){
 
-
-function gameLoop(time){
-
-    const deltaTime=
-        Math.min(
-            .04,
-            (time-lastTime)/1000
-        );
-
-
-    lastTime=time;
-
-
-
-    /* Движение */
-
-    let forward=
-        -joyY;
-
-    let strafe=
-        joyX;
-
-
-
-    /* Клавиатура */
-
-    if(
-        keys["w"] ||
-        keys["arrowup"]
-    )
-        forward=1;
-
-
-    if(
-        keys["s"] ||
-        keys["arrowdown"]
-    )
-        forward=-1;
-
-
-    if(
-        keys["a"] ||
-        keys["arrowleft"]
-    )
-        strafe=-1;
-
-
-    if(
-        keys["d"] ||
-        keys["arrowright"]
-    )
-        strafe=1;
-
-
-
-    /* Поворот ПК */
-
-    if(keys["q"])
-        player.angle-=
-            deltaTime*2.2;
-
-
-    if(keys["e"])
-        player.angle+=
-            deltaTime*2.2;
-
-
-
-    /* Скорость */
-
-    const speed=2.5;
-
-
+  for(const l of lamps){
 
     const dx=
-        (
-            Math.cos(player.angle)*
-            forward
-
-            -
-
-            Math.sin(player.angle)*
-            strafe
-
-        )*
-        speed*
-        deltaTime;
-
+      l.x-player.x;
 
     const dy=
-        (
-            Math.sin(player.angle)*
-            forward
+      l.y-player.y;
 
-            +
-
-            Math.cos(player.angle)*
-            strafe
-
-        )*
-        speed*
-        deltaTime;
+    const dist=
+      Math.hypot(dx,dy);
 
 
+    let da=
+      normAng(
+        Math.atan2(dy,dx)
+        -
+        player.a
+      );
 
-    movePlayer(
-        dx,
-        dy
+
+    if(da>Math.PI)
+      da-=Math.PI*2;
+
+
+    if(
+      Math.abs(da)>FOV*.62 ||
+      dist<.5
+    )
+      continue;
+
+
+    const sx=
+      W/2+
+      (da/FOV)*W;
+
+
+    const size=
+      Math.max(
+        3,
+        Math.min(
+          38,
+          22/dist
+        )
+      );
+
+
+    const y=
+      H*.16+
+      dist*.015*H;
+
+
+    if(
+      sx<-40 ||
+      sx>W+40
+    )
+      continue;
+
+
+    const glow=
+      ctx.createRadialGradient(
+        sx,y,0,
+        sx,y,size*3
+      );
+
+    glow.addColorStop(
+      0,
+      'rgba(255,247,190,.55)'
+    );
+
+    glow.addColorStop(
+      1,
+      'rgba(255,247,190,0)'
+    );
+
+    ctx.fillStyle=glow;
+
+    ctx.fillRect(
+      sx-size*3,
+      y-size*3,
+      size*6,
+      size*6
     );
 
 
+    ctx.fillStyle=
+      'rgba(255,250,207,.92)';
 
-    /* Рисуем */
-
-    render();
-
-
-    requestAnimationFrame(
-        gameLoop
+    ctx.fillRect(
+      sx-size,
+      y-size*.18,
+      size*2,
+      size*.36
     );
 
+
+    ctx.fillStyle=
+      'rgba(255,255,235,.6)';
+
+    ctx.fillRect(
+      sx-size*.65,
+      y-size*.08,
+      size*1.3,
+      size*.16
+    );
+  }
 }
 
 
-requestAnimationFrame(
-    gameLoop
+/* =========================
+   ВИНЬЕТКА
+========================= */
+
+function drawVignette(){
+
+  const g=
+    ctx.createRadialGradient(
+      W/2,
+      H/2,
+      Math.min(W,H)*.22,
+
+      W/2,
+      H/2,
+      Math.max(W,H)*.72
+    );
+
+
+  g.addColorStop(
+    0,
+    'rgba(0,0,0,0)'
+  );
+
+  g.addColorStop(
+    .72,
+    'rgba(0,0,0,.08)'
+  );
+
+  g.addColorStop(
+    1,
+    'rgba(0,0,0,.38)'
+  );
+
+
+  ctx.fillStyle=g;
+
+  ctx.fillRect(
+    0,0,W,H
+  );
+}
+
+
+/* =========================
+   UPDATE
+========================= */
+
+function update(dt){
+
+  let sx=moveX;
+  let sy=moveY;
+
+
+  if(keys.KeyW||keys.ArrowUp)
+    sy-=1;
+
+  if(keys.KeyS||keys.ArrowDown)
+    sy+=1;
+
+  if(keys.KeyA||keys.ArrowLeft)
+    sx-=1;
+
+  if(keys.KeyD||keys.ArrowRight)
+    sx+=1;
+
+
+  const len=
+    Math.hypot(sx,sy);
+
+
+  if(len>1){
+
+    sx/=len;
+    sy/=len;
+  }
+
+
+  const speed=2.25;
+
+  const ca=Math.cos(player.a);
+  const sa=Math.sin(player.a);
+
+
+  move(
+    (ca*sy-sa*sx)*
+    speed*dt,
+
+    (sa*sy+ca*sx)*
+    speed*dt
+  );
+
+
+  player.a=
+    normAng(
+      player.a+
+      lookDX*dt
+    );
+
+
+  lookDX*=
+    Math.pow(
+      .001,
+      dt
+    );
+}
+
+
+/* =========================
+   GAME LOOP
+========================= */
+
+function loop(now){
+
+  const dt=
+    Math.min(
+      .033,
+      (now-last)/1000
+    );
+
+  last=now;
+
+  update(dt);
+
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+
+/* =========================
+   ДЖОЙСТИК
+========================= */
+
+let joyId=null;
+let joyRect=null;
+
+
+function joySet(e){
+
+  if(!joyRect)
+    joyRect=
+      joy.getBoundingClientRect();
+
+
+  let dx=
+    e.clientX-
+    (
+      joyRect.left+
+      joyRect.width/2
+    );
+
+
+  let dy=
+    e.clientY-
+    (
+      joyRect.top+
+      joyRect.height/2
+    );
+
+
+  const max=
+    joyRect.width*.36;
+
+
+  const len=
+    Math.hypot(dx,dy);
+
+
+  if(len>max){
+
+    dx=
+      dx/len*max;
+
+    dy=
+      dy/len*max;
+  }
+
+
+  knob.style.transform=
+    `translate(
+      calc(-50% + ${dx}px),
+      calc(-50% + ${dy}px)
+    )`;
+
+
+  moveX=dx/max;
+  moveY=dy/max;
+}
+
+
+function joyEnd(){
+
+  joyId=null;
+
+  moveX=0;
+  moveY=0;
+
+  knob.style.transform=
+    'translate(-50%,-50%)';
+}
+
+
+joy.addEventListener(
+  'pointerdown',
+  e=>{
+
+    joyId=e.pointerId;
+
+    joy.setPointerCapture(
+      joyId
+    );
+
+    joyRect=
+      joy.getBoundingClientRect();
+
+    joySet(e);
+  }
 );
+
+
+joy.addEventListener(
+  'pointermove',
+  e=>{
+
+    if(e.pointerId===joyId)
+      joySet(e);
+  }
+);
+
+
+joy.addEventListener(
+  'pointerup',
+  joyEnd
+);
+
+
+joy.addEventListener(
+  'pointercancel',
+  joyEnd
+);
+
+
+/* =========================
+   ПОВОРОТ
+========================= */
+
+let lookId=null;
+let lastLookX=0;
+
+
+addEventListener(
+  'pointerdown',
+  e=>{
+
+    if(
+      e.target===joy ||
+      joy.contains(e.target) ||
+      e.target===fs
+    )
+      return;
+
+
+    if(e.clientX>W*.42){
+
+      lookId=e.pointerId;
+
+      lastLookX=e.clientX;
+    }
+  }
+);
+
+
+addEventListener(
+  'pointermove',
+  e=>{
+
+    if(e.pointerId===lookId){
+
+      const dx=
+        e.clientX-lastLookX;
+
+      lastLookX=e.clientX;
+
+      player.a=
+        normAng(
+          player.a+
+          dx*.005
+        );
+    }
+  }
+);
+
+
+addEventListener(
+  'pointerup',
+  e=>{
+
+    if(e.pointerId===lookId)
+      lookId=null;
+  }
+);
+
+
+/* =========================
+   КЛАВИАТУРА
+========================= */
+
+addEventListener(
+  'keydown',
+  e=>{
+    keys[e.code]=true;
+  }
+);
+
+addEventListener(
+  'keyup',
+  e=>{
+    keys[e.code]=false;
+  }
+);
+
+
+/* =========================
+   FULLSCREEN
+========================= */
+
+fs.addEventListener(
+  'click',
+  async()=>{
+
+    try{
+
+      if(!document.fullscreenElement){
+
+        await document.documentElement
+          .requestFullscreen();
+      }
+
+
+      if(screen.orientation?.lock){
+
+        await screen.orientation
+          .lock('landscape');
+      }
+
+    }catch(e){}
+  }
+);
+
+
+/* =========================
+   ПОДСКАЗКА
+========================= */
+
+setTimeout(
+  ()=>{
+    hint.classList.add('hide');
+  },
+  4500
+);
+
+
+/* =========================
+   START
+========================= */
+
+requestAnimationFrame(loop);
 
 </script>
 
 </body>
-</html>
-
+    </html>
