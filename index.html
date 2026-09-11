@@ -2,15 +2,21 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+
 <meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no,
+viewport-fit=cover">
 
 <title>Backrooms</title>
 
 <style>
+
 *{
     box-sizing:border-box;
-    touch-action:none;
+    -webkit-tap-highlight-color:transparent;
 }
 
 html,body{
@@ -18,319 +24,346 @@ html,body{
     width:100%;
     height:100%;
     overflow:hidden;
-    background:#111;
-    font-family:Arial;
+    background:#000;
+    touch-action:none;
+    font-family:Arial,sans-serif;
 }
 
 #game{
+    position:fixed;
+    inset:0;
+    background:#000;
+}
+
+canvas{
+    display:block;
     width:100%;
     height:100%;
 }
 
-/* Джойстик */
-#joystick{
+/* Экран для вертикального телефона */
+
+#portrait{
     position:fixed;
-    left:25px;
-    bottom:25px;
-    width:125px;
-    height:125px;
+    inset:0;
+    z-index:50;
+
+    background:#151515;
+    color:white;
+
+    display:none;
+    align-items:center;
+    justify-content:center;
+
+    text-align:center;
+}
+
+#portrait .box{
+    font-size:23px;
+    padding:25px;
+}
+
+#portrait small{
+    display:block;
+    margin-top:10px;
+    color:#aaa;
+}
+
+#rotate{
+    margin-top:20px;
+    padding:14px 20px;
+
+    border:0;
+    border-radius:15px;
+
+    background:#333;
+    color:white;
+
+    font-size:17px;
+}
+
+
+/* Джойстик */
+
+#joy{
+    position:fixed;
+
+    left:30px;
+    bottom:30px;
+
+    width:150px;
+    height:150px;
+
     border-radius:50%;
-    background:rgba(255,255,255,.13);
-    border:2px solid rgba(255,255,255,.3);
+
+    background:rgba(40,40,40,.7);
+
+    border:3px solid #888;
+
     z-index:10;
 }
 
-#stick{
+#knob{
     position:absolute;
-    width:58px;
-    height:58px;
-    left:31px;
-    top:31px;
+
+    left:50%;
+    top:50%;
+
+    width:76px;
+    height:76px;
+
+    margin-left:-38px;
+    margin-top:-38px;
+
     border-radius:50%;
-    background:rgba(255,255,255,.5);
+
+    background:#aaa;
+
+    box-shadow:0 3px 15px #0008;
 }
 
-/* Область камеры */
+
+/* Область для поворота */
+
 #look{
     position:fixed;
+
     right:0;
     top:0;
-    width:70%;
+
+    width:62%;
     height:100%;
+
     z-index:5;
 }
 
-#rotateHint{
+
+/* Полноэкранная кнопка */
+
+#fs{
     position:fixed;
-    top:15px;
-    left:50%;
-    transform:translateX(-50%);
+
+    right:22px;
+    bottom:22px;
+
+    z-index:15;
+
+    width:64px;
+    height:64px;
+
+    border:0;
+    border-radius:18px;
+
+    background:#080808cc;
+
     color:white;
-    font-size:18px;
-    text-shadow:0 2px 5px #000;
-    z-index:20;
-    opacity:.7;
+
+    font-size:28px;
 }
 
-/* Кнопка полноэкранного режима */
-#fullscreen{
+
+/* Подсказка */
+
+#hint{
     position:fixed;
-    right:15px;
-    bottom:15px;
-    z-index:20;
-    border:0;
+
+    top:18px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    z-index:15;
+
+    color:#ddd;
+
+    background:#0009;
+
+    padding:9px 15px;
+
     border-radius:12px;
-    padding:12px 16px;
-    background:rgba(0,0,0,.5);
-    color:white;
+
     font-size:15px;
+
+    pointer-events:none;
 }
+
+
+/* Только вертикальный экран */
+
+@media (orientation:portrait){
+
+    #portrait{
+        display:flex;
+    }
+
+}
+
+@media (orientation:landscape){
+
+    #portrait{
+        display:none;
+    }
+
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="game"></div>
+<div id="game">
 
-<div id="rotateHint">
-    Свайп — смотреть
+<canvas id="c"></canvas>
+
 </div>
 
-<div id="joystick">
-    <div id="stick"></div>
+
+<div id="portrait">
+
+    <div class="box">
+
+        📱
+
+        <br><br>
+
+        <b>Поверни телефон горизонтально</b>
+
+        <small>
+            Игра рассчитана на горизонтальный экран.
+        </small>
+
+        <button id="rotate">
+            ↔ Попробовать повернуть
+        </button>
+
+    </div>
+
 </div>
 
-<button id="fullscreen">⛶</button>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<div id="hint">
+    🕹️ Джойстик — движение • Свайп справа — поворот
+</div>
+
+
+<div id="joy">
+
+    <div id="knob"></div>
+
+</div>
+
+
+<div id="look"></div>
+
+
+<button id="fs">
+    ⛶
+</button>
+
 
 <script>
 
-/* =========================
-   СЦЕНА
-========================= */
-
-const scene = new THREE.Scene();
-
-scene.background = new THREE.Color(0x15130c);
-
-scene.fog = new THREE.Fog(
-    0x15130c,
-    5,
-    32
-);
+"use strict";
 
 
 /* =========================
-   КАМЕРА
+   CANVAS
 ========================= */
 
-const camera = new THREE.PerspectiveCamera(
-    72,
-    innerWidth/innerHeight,
-    0.05,
-    100
-);
+const canvas =
+document.getElementById("c");
 
-camera.position.set(0,1.65,5);
-
-camera.rotation.order="YXZ";
+const ctx =
+canvas.getContext("2d");
 
 
-/* =========================
-   РЕНДЕР
-========================= */
-
-const renderer =
-new THREE.WebGLRenderer({
-    antialias:true,
-    powerPreference:"high-performance"
-});
-
-renderer.setSize(
-    innerWidth,
-    innerHeight
-);
-
-renderer.setPixelRatio(
-    Math.min(devicePixelRatio,2)
-);
-
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=
-THREE.PCFSoftShadowMap;
-
-document
-.getElementById("game")
-.appendChild(renderer.domElement);
+let W=0;
+let H=0;
+let DPR=1;
 
 
-/* =========================
-   СВЕТ
-========================= */
+function resize(){
 
-const ambient =
-new THREE.HemisphereLight(
-    0xffe7a0,
-    0x222018,
-    1.8
-);
-
-scene.add(ambient);
-
-
-/* =========================
-   ПОЛ
-========================= */
-
-const floorMat =
-new THREE.MeshStandardMaterial({
-    color:0x777044,
-    roughness:.9
-});
-
-const floor =
-new THREE.Mesh(
-    new THREE.PlaneGeometry(60,60),
-    floorMat
-);
-
-floor.rotation.x=-Math.PI/2;
-floor.receiveShadow=true;
-
-scene.add(floor);
-
-
-/* =========================
-   СТЕНЫ
-========================= */
-
-const wallMat =
-new THREE.MeshStandardMaterial({
-    color:0xc1ad4e,
-    roughness:.8
-});
-
-const walls=[];
-
-function createWall(x,z,w,d){
-
-    const mesh =
-    new THREE.Mesh(
-        new THREE.BoxGeometry(w,4,d),
-        wallMat
+    DPR=Math.min(
+        window.devicePixelRatio || 1,
+        2
     );
 
-    mesh.position.set(x,2,z);
+    W=Math.max(
+        320,
+        Math.floor(innerWidth)
+    );
 
-    mesh.castShadow=true;
-    mesh.receiveShadow=true;
+    H=Math.max(
+        180,
+        Math.floor(innerHeight)
+    );
 
-    scene.add(mesh);
+    canvas.width=
+        Math.floor(W*DPR);
 
-    walls.push({
-        mesh:mesh,
-        x:x,
-        z:z,
-        w:w,
-        d:d
-    });
+    canvas.height=
+        Math.floor(H*DPR);
+
+    ctx.setTransform(
+        DPR,0,0,DPR,0,0
+    );
 }
 
 
-/* Внешние стены */
-
-createWall(0,-12,30,.5);
-createWall(-15,0,.5,24);
-createWall(15,0,.5,24);
-createWall(0,12,30,.5);
-
-
-/* Внутренние стены */
-
-createWall(-7,-3,.45,12);
-createWall(7,3,.45,12);
-
-createWall(0,6,14,.45);
-
-createWall(-10,6,.45,7);
-
-createWall(10,-6,.45,7);
-
-
-/* =========================
-   ПОТОЛОК
-========================= */
-
-const ceilingMat =
-new THREE.MeshStandardMaterial({
-    color:0x9c966b,
-    roughness:1
-});
-
-const ceiling =
-new THREE.Mesh(
-    new THREE.PlaneGeometry(60,60),
-    ceilingMat
+window.addEventListener(
+    "resize",
+    resize
 );
 
-ceiling.rotation.x=Math.PI/2;
-ceiling.position.y=4;
+resize();
 
-scene.add(ceiling);
 
 
 /* =========================
-   ЛАМПЫ
+   КАРТА BACKROOMS
 ========================= */
 
-function createLamp(x,z){
+const map=[
 
-    const light =
-    new THREE.PointLight(
-        0xffe9a5,
-        3.2,
-        8
-    );
+"########################",
 
-    light.position.set(
-        x,3.75,z
-    );
+"#......................#",
 
-    light.castShadow=true;
+"#......................#",
 
-    light.shadow.mapSize.width=512;
-    light.shadow.mapSize.height=512;
+"#......####............#",
 
-    scene.add(light);
+"#......#...............#",
 
+"#......#........####...#",
 
-    const lamp =
-    new THREE.Mesh(
-        new THREE.BoxGeometry(
-            1.6,.08,.35
-        ),
-        new THREE.MeshBasicMaterial({
-            color:0xffffcc
-        })
-    );
+"#................#.....#",
 
-    lamp.position.set(
-        x,3.82,z
-    );
+"#..########.......#....#",
 
-    scene.add(lamp);
-}
+"#........#.............#",
+
+"#........#..######.....#",
+
+"#........#.............#",
+
+"#........#.............#",
+
+"#......................#",
+
+"#.....####.............#",
+
+"#......................#",
+
+"########################"
+
+];
 
 
-for(let x=-12;x<=12;x+=6){
+const MW=map[0].length;
+const MH=map.length;
 
-    for(let z=-9;z<=9;z+=6){
-
-        createLamp(x,z);
-
-    }
-}
 
 
 /* =========================
@@ -338,315 +371,406 @@ for(let x=-12;x<=12;x+=6){
 ========================= */
 
 const player={
-    radius:.35,
-    speed:3.2
+
+    x:2.5,
+    y:2.5,
+
+    angle:0
+
 };
 
 
+const FOV=Math.PI/3;
+
+const playerRadius=.22;
+
+
+
 /* =========================
-   КОЛЛИЗИИ
+   СТЕНЫ
 ========================= */
 
-function collides(x,z){
+function isWall(x,y){
 
-    const r=player.radius;
+    const ix=Math.floor(x);
+    const iy=Math.floor(y);
 
-    for(const wall of walls){
-
-        const minX =
-        wall.x-wall.w/2-r;
-
-        const maxX =
-        wall.x+wall.w/2+r;
-
-        const minZ =
-        wall.z-wall.d/2-r;
-
-        const maxZ =
-        wall.z+wall.d/2+r;
-
-        if(
-            x>minX &&
-            x<maxX &&
-            z>minZ &&
-            z<maxZ
-        ){
-            return true;
-        }
+    if(
+        ix<0 ||
+        iy<0 ||
+        ix>=MW ||
+        iy>=MH
+    ){
+        return true;
     }
 
-    return false;
+    return map[iy][ix]==="#";
 }
 
 
+
 /* =========================
-   ДВИЖЕНИЕ
+   СТОЛКНОВЕНИЯ
 ========================= */
 
-let moveX=0;
-let moveY=0;
+function canMove(x,y){
+
+    const r=playerRadius;
+
+    return (
+
+        !isWall(x-r,y-r) &&
+        !isWall(x+r,y-r) &&
+        !isWall(x-r,y+r) &&
+        !isWall(x+r,y+r) &&
+
+        !isWall(x,y-r) &&
+        !isWall(x,y+r) &&
+        !isWall(x-r,y) &&
+        !isWall(x+r,y)
+
+    );
+
+}
 
 
-/* Джойстик */
+function movePlayer(dx,dy){
 
-const joystick=
-document.getElementById("joystick");
+    const nx=
+        player.x+dx;
 
-const stick=
-document.getElementById("stick");
-
-let joystickID=null;
-
-joystick.addEventListener(
-"touchstart",
-e=>{
-
-    const t=e.changedTouches[0];
-
-    joystickID=t.identifier;
-
-},{passive:false});
+    const ny=
+        player.y+dy;
 
 
-joystick.addEventListener(
-"touchmove",
-e=>{
+    /* X отдельно */
 
-    e.preventDefault();
+    if(
+        canMove(nx,player.y)
+    ){
 
-    for(const t of e.changedTouches){
+        player.x=nx;
 
-        if(t.identifier!==joystickID)
-            continue;
-
-        const rect=
-        joystick.getBoundingClientRect();
-
-        let x=
-        t.clientX-
-        (rect.left+62.5);
-
-        let y=
-        t.clientY-
-        (rect.top+62.5);
-
-        const max=45;
-
-        const len=
-        Math.hypot(x,y);
-
-        if(len>max){
-
-            x=x/len*max;
-            y=y/len*max;
-
-        }
-
-        moveX=x/max;
-        moveY=y/max;
-
-        stick.style.transform=
-        `translate(${x}px,${y}px)`;
     }
 
-},{passive:false});
 
+    /* Y отдельно */
 
-joystick.addEventListener(
-"touchend",
-e=>{
+    if(
+        canMove(player.x,ny)
+    ){
 
-    for(const t of e.changedTouches){
+        player.y=ny;
 
-        if(t.identifier===joystickID){
-
-            joystickID=null;
-
-            moveX=0;
-            moveY=0;
-
-            stick.style.transform=
-            "translate(0,0)";
-        }
     }
 
-});
+}
+
 
 
 /* =========================
-   КАМЕРА
+   ДЖОЙСТИК
+========================= */
+
+const joy=
+document.getElementById("joy");
+
+const knob=
+document.getElementById("knob");
+
+
+let joyID=null;
+
+let joyX=0;
+let joyY=0;
+
+
+function updateJoystick(touch){
+
+    const rect=
+        joy.getBoundingClientRect();
+
+
+    const centerX=
+        rect.left+
+        rect.width/2;
+
+    const centerY=
+        rect.top+
+        rect.height/2;
+
+
+    let dx=
+        touch.clientX-centerX;
+
+    let dy=
+        touch.clientY-centerY;
+
+
+    const max=
+        rect.width/2-38;
+
+
+    const distance=
+        Math.hypot(dx,dy);
+
+
+    if(distance>max){
+
+        dx=
+            dx/distance*max;
+
+        dy=
+            dy/distance*max;
+
+    }
+
+
+    knob.style.transform=
+        `translate(${dx}px,${dy}px)`;
+
+
+    joyX=
+        dx/max;
+
+    joyY=
+        dy/max;
+
+}
+
+
+joy.addEventListener(
+    "touchstart",
+    function(e){
+
+        e.preventDefault();
+
+        joyID=
+            e.changedTouches[0]
+             .identifier;
+
+        updateJoystick(
+            e.changedTouches[0]
+        );
+
+    },
+    {passive:false}
+);
+
+
+joy.addEventListener(
+    "touchmove",
+    function(e){
+
+        e.preventDefault();
+
+        for(
+            const touch
+            of e.changedTouches
+        ){
+
+            if(
+                touch.identifier===
+                joyID
+            ){
+
+                updateJoystick(touch);
+
+            }
+
+        }
+
+    },
+    {passive:false}
+);
+
+
+function joystickEnd(e){
+
+    for(
+        const touch
+        of e.changedTouches
+    ){
+
+        if(
+            touch.identifier===
+            joyID
+        ){
+
+            joyID=null;
+
+            joyX=0;
+            joyY=0;
+
+            knob.style.transform=
+                "translate(0,0)";
+
+        }
+
+    }
+
+}
+
+
+joy.addEventListener(
+    "touchend",
+    joystickEnd
+);
+
+joy.addEventListener(
+    "touchcancel",
+    joystickEnd
+);
+
+
+
+/* =========================
+   ПОВОРОТ КАМЕРЫ
 ========================= */
 
 const look=
 document.getElementById("look");
 
+
 let lookID=null;
 
-let lastX=0;
-let lastY=0;
-
-let yaw=0;
-let pitch=0;
+let lastLookX=0;
 
 
 look.addEventListener(
-"touchstart",
-e=>{
+    "touchstart",
+    function(e){
 
-    const t=e.changedTouches[0];
+        if(lookID!==null)
+            return;
 
-    lookID=t.identifier;
+        const touch=
+            e.changedTouches[0];
 
-    lastX=t.clientX;
-    lastY=t.clientY;
+        lookID=
+            touch.identifier;
 
-},{passive:false});
+        lastLookX=
+            touch.clientX;
 
-
-look.addEventListener(
-"touchmove",
-e=>{
-
-    e.preventDefault();
-
-    for(const t of e.changedTouches){
-
-        if(t.identifier!==lookID)
-            continue;
-
-        const dx=
-        t.clientX-lastX;
-
-        const dy=
-        t.clientY-lastY;
-
-        yaw-=dx*.004;
-        pitch-=dy*.004;
-
-        pitch=Math.max(
-            -1.35,
-            Math.min(1.35,pitch)
-        );
-
-        lastX=t.clientX;
-        lastY=t.clientY;
-    }
-
-},{passive:false});
+    },
+    {passive:true}
+);
 
 
 look.addEventListener(
-"touchend",
-e=>{
+    "touchmove",
+    function(e){
 
-    for(const t of e.changedTouches){
+        for(
+            const touch
+            of e.changedTouches
+        ){
 
-        if(t.identifier===lookID)
+            if(
+                touch.identifier===
+                lookID
+            ){
+
+                const difference=
+                    touch.clientX-
+                    lastLookX;
+
+
+                player.angle+=
+                    difference*0.006;
+
+
+                lastLookX=
+                    touch.clientX;
+
+            }
+
+        }
+
+    },
+    {passive:true}
+);
+
+
+function lookEnd(e){
+
+    for(
+        const touch
+        of e.changedTouches
+    ){
+
+        if(
+            touch.identifier===
+            lookID
+        ){
+
             lookID=null;
+
+        }
+
     }
 
-});
-
-
-/* =========================
-   ДВИЖЕНИЕ С КОЛЛИЗИЯМИ
-========================= */
-
-function movePlayer(dx,dz){
-
-    const newX=
-    camera.position.x+dx;
-
-    const newZ=
-    camera.position.z+dz;
-
-    /* Проверяем X отдельно */
-
-    if(!collides(
-        newX,
-        camera.position.z
-    )){
-        camera.position.x=newX;
-    }
-
-    /* Проверяем Z отдельно */
-
-    if(!collides(
-        camera.position.x,
-        newZ
-    )){
-        camera.position.z=newZ;
-    }
 }
 
 
+look.addEventListener(
+    "touchend",
+    lookEnd
+);
+
+look.addEventListener(
+    "touchcancel",
+    lookEnd
+);
+
+
+
 /* =========================
-   ИГРОВОЙ ЦИКЛ
+   КЛАВИАТУРА
+   (если открыть на ПК)
 ========================= */
 
-const clock=
-new THREE.Clock();
-
-function animate(){
-
-    requestAnimationFrame(animate);
-
-    const delta=
-    Math.min(clock.getDelta(),.05);
-
-    camera.rotation.y=yaw;
-    camera.rotation.x=pitch;
-
-    const speed=
-    player.speed*delta;
+const keys={};
 
 
-    /* направление вперёд */
-
-    const forwardX=
-    -Math.sin(yaw);
-
-    const forwardZ=
-    -Math.cos(yaw);
-
-
-    /* направление вправо */
-
-    const rightX=
-    Math.cos(yaw);
-
-    const rightZ=
-    -Math.sin(yaw);
+window.addEventListener(
+    "keydown",
+    e=>{
+        keys[e.key.toLowerCase()]=true;
+    }
+);
 
 
-    const dx=
-    forwardX*(-moveY)*speed+
-    rightX*moveX*speed;
+window.addEventListener(
+    "keyup",
+    e=>{
+        keys[e.key.toLowerCase()]=false;
+    }
+);
 
-    const dz=
-    forwardZ*(-moveY)*speed+
-    rightZ*moveX*speed;
-
-
-    movePlayer(dx,dz);
-
-
-    camera.position.y=1.65;
-
-    renderer.render(
-        scene,
-        camera
-    );
-}
-
-animate();
 
 
 /* =========================
    ГОРИЗОНТАЛЬНЫЙ ЭКРАН
 ========================= */
 
-async function landscape(){
+async function tryLandscape(){
+
+    try{
+
+        if(
+            !document.fullscreenElement &&
+            document.documentElement.requestFullscreen
+        ){
+
+            await document.documentElement
+                .requestFullscreen();
+
+        }
+
+    }catch(error){}
+
 
     try{
 
@@ -655,71 +779,972 @@ async function landscape(){
             screen.orientation.lock
         ){
 
-            await screen.orientation.lock(
-                "landscape"
-            );
+            await screen.orientation
+                .lock("landscape");
 
         }
 
-    }catch(e){}
+    }catch(error){}
 
 }
 
 
-document.body.addEventListener(
-"click",
-landscape,
-{once:true}
+document
+.getElementById("rotate")
+.addEventListener(
+    "click",
+    tryLandscape
 );
 
 
+
 /* =========================
-   ПОЛНЫЙ ЭКРАН
+   FULLSCREEN
 ========================= */
 
 document
-.getElementById("fullscreen")
+.getElementById("fs")
 .addEventListener(
-"click",
-async()=>{
+    "click",
+    async function(){
 
-    try{
+        try{
 
-        if(!document.fullscreenElement){
+            if(
+                !document.fullscreenElement
+            ){
 
-            await document.documentElement
-            .requestFullscreen();
+                await document.documentElement
+                    .requestFullscreen();
 
-        }
+            }else{
 
-        await landscape();
+                await document
+                    .exitFullscreen();
 
-    }catch(e){}
+            }
 
-});
+        }catch(error){}
+
+
+        try{
+
+            if(
+                screen.orientation &&
+                screen.orientation.lock
+            ){
+
+                await screen.orientation
+                    .lock("landscape");
+
+            }
+
+        }catch(error){}
+
+    }
+);
+
 
 
 /* =========================
-   RESIZE
+   СЛУЧАЙНАЯ ТЕКСТУРА
 ========================= */
 
-window.addEventListener(
-"resize",
-()=>{
+function hash(n){
 
-    camera.aspect=
-    innerWidth/innerHeight;
+    n=(n<<13)^n;
 
-    camera.updateProjectionMatrix();
+    return 1-
+    (
+        (
+            n*
+            (
+                n*n*15731+
+                789221
+            )+
+            1376312589
+        )
+        &
+        2147483647
+    )
+    /1073741824;
 
-    renderer.setSize(
-        innerWidth,
-        innerHeight
+}
+
+
+
+/* =========================
+   ОТРИСОВКА
+========================= */
+
+function render(){
+
+    const width=W;
+    const height=H;
+
+
+    /* =====================
+       ПОТОЛОК
+    ===================== */
+
+    const ceiling=
+        ctx.createLinearGradient(
+            0,
+            0,
+            0,
+            height*.52
+        );
+
+
+    ceiling.addColorStop(
+        0,
+        "#d9cf9d"
     );
 
-});
+    ceiling.addColorStop(
+        1,
+        "#9e915c"
+    );
+
+
+    ctx.fillStyle=ceiling;
+
+    ctx.fillRect(
+        0,
+        0,
+        width,
+        height*.52
+    );
+
+
+
+    /* =====================
+       ПОЛ
+    ===================== */
+
+    const floor=
+        ctx.createLinearGradient(
+            0,
+            height*.48,
+            0,
+            height
+        );
+
+
+    floor.addColorStop(
+        0,
+        "#9c9165"
+    );
+
+    floor.addColorStop(
+        1,
+        "#554d35"
+    );
+
+
+    ctx.fillStyle=floor;
+
+    ctx.fillRect(
+        0,
+        height*.48,
+        width,
+        height*.52
+    );
+
+
+
+    /* =====================
+       RAYCASTING
+    ===================== */
+
+    const horizon=
+        height*.50;
+
+
+    const rays=
+        Math.min(
+            700,
+            Math.max(
+                360,
+                Math.floor(width*.75)
+            )
+        );
+
+
+    const columnWidth=
+        width/rays;
+
+
+    for(
+        let rayNumber=0;
+        rayNumber<rays;
+        rayNumber++
+    ){
+
+        const screenPosition=
+            (rayNumber+.5)/
+            rays-
+            .5;
+
+
+        const rayAngle=
+            player.angle+
+            screenPosition*FOV;
+
+
+        const rayX=
+            Math.cos(rayAngle);
+
+        const rayY=
+            Math.sin(rayAngle);
+
+
+
+        /* DDA */
+
+        let mapX=
+            Math.floor(player.x);
+
+        let mapY=
+            Math.floor(player.y);
+
+
+        const deltaX=
+            Math.abs(1/rayX);
+
+        const deltaY=
+            Math.abs(1/rayY);
+
+
+        let stepX;
+        let stepY;
+
+        let sideDistanceX;
+        let sideDistanceY;
+
+
+        if(rayX<0){
+
+            stepX=-1;
+
+            sideDistanceX=
+                (player.x-mapX)*
+                deltaX;
+
+        }else{
+
+            stepX=1;
+
+            sideDistanceX=
+                (mapX+1-player.x)*
+                deltaX;
+
+        }
+
+
+        if(rayY<0){
+
+            stepY=-1;
+
+            sideDistanceY=
+                (player.y-mapY)*
+                deltaY;
+
+        }else{
+
+            stepY=1;
+
+            sideDistanceY=
+                (mapY+1-player.y)*
+                deltaY;
+
+        }
+
+
+        let side=0;
+
+        let hit=false;
+
+
+        for(
+            let i=0;
+            i<80;
+            i++
+        ){
+
+            if(
+                sideDistanceX<
+                sideDistanceY
+            ){
+
+                sideDistanceX+=
+                    deltaX;
+
+                mapX+=stepX;
+
+                side=0;
+
+            }else{
+
+                sideDistanceY+=
+                    deltaY;
+
+                mapY+=stepY;
+
+                side=1;
+
+            }
+
+
+            if(
+                mapX<0 ||
+                mapY<0 ||
+                mapX>=MW ||
+                mapY>=MH
+            ){
+
+                hit=true;
+
+                break;
+
+            }
+
+
+            if(
+                map[mapY][mapX]==="#"
+            ){
+
+                hit=true;
+
+                break;
+
+            }
+
+        }
+
+
+        if(!hit)
+            continue;
+
+
+
+        /* Расстояние */
+
+        let distance;
+
+
+        if(side===0){
+
+            distance=
+                (
+                    mapX-
+                    player.x+
+                    (1-stepX)/2
+                )/rayX;
+
+        }else{
+
+            distance=
+                (
+                    mapY-
+                    player.y+
+                    (1-stepY)/2
+                )/rayY;
+
+        }
+
+
+        distance=
+            Math.max(
+                .05,
+                distance
+            );
+
+
+        /* Убираем искажение */
+
+        const correctedDistance=
+            distance*
+            Math.cos(
+                rayAngle-
+                player.angle
+            );
+
+
+        /* Высота стены */
+
+        const wallHeight=
+            Math.min(
+                height*1.8,
+                height*.95/
+                correctedDistance
+            );
+
+
+        const top=
+            horizon-
+            wallHeight/2;
+
+
+        const bottom=
+            horizon+
+            wallHeight/2;
+
+
+
+        /* =================
+           ОСВЕЩЕНИЕ
+        ================= */
+
+        let brightness=
+            Math.max(
+                .18,
+                1-
+                correctedDistance/13
+            );
+
+
+        if(side)
+            brightness*=.82;
+
+
+
+        /* =================
+           ТЕКСТУРА СТЕН
+        ================= */
+
+        const wallPosition=
+            side===0
+
+            ?
+
+            player.y+
+            distance*rayY
+
+            :
+
+            player.x+
+            distance*rayX;
+
+
+        const texture=
+            Math.floor(
+                (
+                    wallPosition-
+                    Math.floor(wallPosition)
+                )*12
+            );
+
+
+        const noise=
+            hash(
+                mapX*97+
+                mapY*193+
+                texture*17
+            )*7;
+
+
+        let red=
+            208*brightness+
+            noise;
+
+
+        let green=
+            194*brightness+
+            noise;
+
+
+        let blue=
+            112*brightness+
+            noise;
+
+
+        red=Math.max(
+            35,
+            Math.min(235,red)
+        );
+
+        green=Math.max(
+            32,
+            Math.min(225,green)
+        );
+
+        blue=Math.max(
+            18,
+            Math.min(150,blue)
+        );
+
+
+        ctx.fillStyle=
+            `rgb(
+                ${red|0},
+                ${green|0},
+                ${blue|0}
+            )`;
+
+
+        ctx.fillRect(
+            rayNumber*columnWidth,
+            top,
+            columnWidth+1,
+            bottom-top
+        );
+
+
+
+        /* Вертикальные швы обоев */
+
+        if(texture===0){
+
+            ctx.fillStyle=
+                `rgba(
+                    80,
+                    65,
+                    25,
+                    ${.18*brightness}
+                )`;
+
+
+            ctx.fillRect(
+                rayNumber*columnWidth,
+                top,
+                Math.max(
+                    1,
+                    columnWidth
+                ),
+                bottom-top
+            );
+
+        }
+
+
+
+        /* Плинтус */
+
+        ctx.fillStyle=
+            `rgba(
+                75,
+                65,
+                38,
+                ${.45*brightness}
+            )`;
+
+
+        ctx.fillRect(
+            rayNumber*columnWidth,
+            bottom-wallHeight*.055,
+            columnWidth+1,
+            wallHeight*.055
+        );
+
+    }
+
+
+
+    /* =====================
+       ПЛИТКА ПОЛА
+    ===================== */
+
+    ctx.strokeStyle=
+        "rgba(55,50,32,.20)";
+
+    ctx.lineWidth=1;
+
+
+    for(
+        let distance=1;
+        distance<18;
+        distance++
+    ){
+
+        const y=
+            horizon+
+            (
+                height-horizon
+            )*
+            (
+                1-
+                Math.exp(
+                    -distance*.22
+                )
+            );
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(0,y);
+
+        ctx.lineTo(width,y);
+
+        ctx.stroke();
+
+    }
+
+
+
+    /* =====================
+       ЛАМПЫ
+    ===================== */
+
+    const lamps=[
+
+        [3.5,2.5],
+        [8.5,2.5],
+        [15.5,2.5],
+        [20.5,2.5],
+
+        [5.5,6.5],
+        [12.5,6.5],
+        [19.5,6.5],
+
+        [4.5,11.5],
+        [11.5,11.5],
+        [18.5,11.5],
+
+        [6.5,14.5],
+        [14.5,14.5]
+
+    ];
+
+
+    for(
+        const lamp
+        of lamps
+    ){
+
+        const lx=lamp[0];
+        const ly=lamp[1];
+
+
+        const dx=
+            lx-player.x;
+
+        const dy=
+            ly-player.y;
+
+
+        const distance=
+            Math.hypot(
+                dx,
+                dy
+            );
+
+
+        let angle=
+            Math.atan2(
+                dy,
+                dx
+            )-
+            player.angle;
+
+
+        angle=
+            Math.atan2(
+                Math.sin(angle),
+                Math.cos(angle)
+            );
+
+
+        if(
+            Math.abs(angle)>
+            FOV*.72
+        )
+            continue;
+
+
+        if(
+            distance>
+            16
+        )
+            continue;
+
+
+        const screenX=
+            width/2+
+            (
+                angle/FOV
+            )*
+            width;
+
+
+        const screenY=
+            height*.13+
+            Math.min(
+                height*.24,
+                distance*5
+            );
+
+
+        const alpha=
+            Math.max(
+                0,
+                .25-distance*.012
+            );
+
+
+        ctx.fillStyle=
+            `rgba(
+                255,
+                249,
+                205,
+                ${alpha}
+            )`;
+
+
+        ctx.fillRect(
+            screenX-18,
+            screenY,
+            36,
+            5
+        );
+
+
+        ctx.fillStyle=
+            `rgba(
+                255,
+                255,
+                230,
+                ${Math.min(
+                    .95,
+                    alpha*3
+                )}
+            )`;
+
+
+        ctx.fillRect(
+            screenX-11,
+            screenY+1,
+            22,
+            2
+        );
+
+    }
+
+
+
+    /* =====================
+       ТЁМНЫЕ КРАЯ
+    ===================== */
+
+    const vignette=
+        ctx.createRadialGradient(
+            width/2,
+            height*.5,
+            Math.min(width,height)*.15,
+
+            width/2,
+            height*.5,
+            Math.max(width,height)*.72
+        );
+
+
+    vignette.addColorStop(
+        0,
+        "rgba(0,0,0,0)"
+    );
+
+
+    vignette.addColorStop(
+        .72,
+        "rgba(0,0,0,.08)"
+    );
+
+
+    vignette.addColorStop(
+        1,
+        "rgba(0,0,0,.48)"
+    );
+
+
+    ctx.fillStyle=vignette;
+
+
+    ctx.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+
+    /* =====================
+       ПРИЦЕЛ
+    ===================== */
+
+    ctx.strokeStyle=
+        "rgba(255,255,255,.55)";
+
+    ctx.lineWidth=1;
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        width/2-5,
+        height/2
+    );
+
+    ctx.lineTo(
+        width/2+5,
+        height/2
+    );
+
+
+    ctx.moveTo(
+        width/2,
+        height/2-5
+    );
+
+    ctx.lineTo(
+        width/2,
+        height/2+5
+    );
+
+
+    ctx.stroke();
+
+}
+
+
+
+/* =========================
+   ИГРОВОЙ ЦИКЛ
+========================= */
+
+let lastTime=
+    performance.now();
+
+
+function gameLoop(time){
+
+    const deltaTime=
+        Math.min(
+            .04,
+            (time-lastTime)/1000
+        );
+
+
+    lastTime=time;
+
+
+
+    /* Движение */
+
+    let forward=
+        -joyY;
+
+    let strafe=
+        joyX;
+
+
+
+    /* Клавиатура */
+
+    if(
+        keys["w"] ||
+        keys["arrowup"]
+    )
+        forward=1;
+
+
+    if(
+        keys["s"] ||
+        keys["arrowdown"]
+    )
+        forward=-1;
+
+
+    if(
+        keys["a"] ||
+        keys["arrowleft"]
+    )
+        strafe=-1;
+
+
+    if(
+        keys["d"] ||
+        keys["arrowright"]
+    )
+        strafe=1;
+
+
+
+    /* Поворот ПК */
+
+    if(keys["q"])
+        player.angle-=
+            deltaTime*2.2;
+
+
+    if(keys["e"])
+        player.angle+=
+            deltaTime*2.2;
+
+
+
+    /* Скорость */
+
+    const speed=2.5;
+
+
+
+    const dx=
+        (
+            Math.cos(player.angle)*
+            forward
+
+            -
+
+            Math.sin(player.angle)*
+            strafe
+
+        )*
+        speed*
+        deltaTime;
+
+
+    const dy=
+        (
+            Math.sin(player.angle)*
+            forward
+
+            +
+
+            Math.cos(player.angle)*
+            strafe
+
+        )*
+        speed*
+        deltaTime;
+
+
+
+    movePlayer(
+        dx,
+        dy
+    );
+
+
+
+    /* Рисуем */
+
+    render();
+
+
+    requestAnimationFrame(
+        gameLoop
+    );
+
+}
+
+
+requestAnimationFrame(
+    gameLoop
+);
 
 </script>
 
 </body>
 </html>
+
