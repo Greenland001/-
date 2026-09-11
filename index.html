@@ -274,7 +274,7 @@ html,body{
 
 <div id="win-screen">
   <h1>ВЫ ПЕРЕШЛИ НА УРОВЕНЬ 2!</h1>
-  <p>Бесконечное зелёное поле... Здесь безопасно?</p>
+  <p>Бесконечное жёлтое поле... Здесь безопасно?</p>
   <button id="continue-btn">ИССЛЕДОВАТЬ УРОВЕНЬ 2</button>
 </div>
 
@@ -296,7 +296,6 @@ html,body{
 <script>
 'use strict';
 
-// --- АУДИОСИСТЕМА (Web Audio API без внешних файлов) ---
 let audioCtx = null;
 let bgMusicNode = null;
 let bgMusicGain = null;
@@ -310,14 +309,13 @@ function initAudio() {
   }
 }
 
-// Звук шага при движении
 function playStepSound() {
   if (!audioCtx) return;
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+    osc.type = currentLevel === 2 ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(currentLevel === 2 ? 80 : 120, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
 
     gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
@@ -330,7 +328,6 @@ function playStepSound() {
   } catch(e){}
 }
 
-// Звук смерти / скримера
 function playJumpscareSound() {
   if (!audioCtx) return;
   try {
@@ -351,7 +348,25 @@ function playJumpscareSound() {
   } catch(e){}
 }
 
-// Фоновая музыка для каждого уровня
+function playTeleportSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.5);
+
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
+  } catch(e){}
+}
+
 function startBGM(level) {
   if (!audioCtx) return;
   stopBGM();
@@ -360,12 +375,10 @@ function startBGM(level) {
     bgMusicGain.gain.value = level === 0 ? 0.08 : 0.04;
     bgMusicGain.connect(audioCtx.destination);
 
-    // Генерация жужжащего эмбиента
     bgMusicNode = audioCtx.createOscillator();
     bgMusicNode.type = level === 0 ? 'sawtooth' : 'sine';
     bgMusicNode.frequency.value = level === 0 ? 55 : 110;
 
-    // Добавим вибрато / фильтр для атмосферы
     const filter = audioCtx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = level === 0 ? 200 : 400;
@@ -383,7 +396,6 @@ function stopBGM() {
   }
 }
 
-// Карты лабиринта Уровня 0
 const map = [
   "##################################################",
   "#E.....................#.........................#",
@@ -438,7 +450,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
 scene.fog = new THREE.FogExp2(0x11110e, 0.035);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
@@ -571,7 +583,6 @@ for (let y = 0; y < MH; y++) {
     } else if (map[y][x] === 'E') {
       exitPos.set(posX, 1.5, posZ);
       
-      // КРАСИВЫЙ НЕОНОВЫЙ ПОРТАЛ НА УРОВНЕ 0
       exitMeshGroup = new THREE.Group();
       
       const frameMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00aaaa, roughness: 0.2 });
@@ -793,7 +804,6 @@ function updatePlayer(dt) {
   
   if (dir.length() > 0) {
     dir.normalize();
-    // Звуки шагов при движении
     stepTimer += dt;
     if (stepTimer > 0.38 && isGrounded) {
       stepTimer = 0;
@@ -807,7 +817,6 @@ function updatePlayer(dt) {
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
-  // Пульсация портала
   if (exitMeshGroup && currentLevel === 0) {
     const sc = 1 + Math.sin(performance.now() * 0.005) * 0.05;
     exitMeshGroup.scale.set(sc, sc, 1);
@@ -858,6 +867,7 @@ function updatePlayer(dt) {
     }
 
     if (camera.position.distanceTo(exitPos) < 1.0) {
+      playTeleportSound();
       triggerWin();
     }
   }
@@ -890,28 +900,18 @@ function loadLevel2() {
     scene.remove(scene.children[0]); 
   }
 
-  // НЕОБЫЧНОЕ НЕБО С ГРАДИЕНТОМ (темное в середине, голубое на дальнем плане)
-  const skyCanvas = document.createElement('canvas');
-  skyCanvas.width = 512; skyCanvas.height = 512;
-  const sCtx = skyCanvas.getContext('2d');
-  const skyGrad = sCtx.createRadialGradient(256, 256, 20, 256, 256, 300);
-  skyGrad.addColorStop(0, '#102a5c');    // Очень темное, глубокое в центре
-  skyGrad.addColorStop(0.5, '#3a72b8');  // Средний тон
-  skyGrad.addColorStop(1, '#8fc1e3');    // Голубое на краях/дальнем плане
-  sCtx.fillStyle = skyGrad; sCtx.fillRect(0, 0, 512, 512);
-  const skyTex = new THREE.CanvasTexture(skyCanvas);
-  scene.background = skyTex;
-  scene.fog = new THREE.FogExp2(0x6fa8dc, 0.003);
+  // УРОВЕНЬ 2: Классическое жёлтое поле без зелени
+  scene.background = new THREE.Color(0xf2e394);
+  scene.fog = new THREE.FogExp2(0xf2e394, 0.0006);
 
-  // Освещение с поддержкой теней
-  const sun = new THREE.DirectionalLight(0xfffaed, 1.4);
+  const sun = new THREE.DirectionalLight(0xfff6c2, 0.9);
   sun.position.set(200, 300, 150);
   sun.castShadow = true;
   sun.shadow.mapSize.width = 2048;
   sun.shadow.mapSize.height = 2048;
   sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 800;
-  const d = 200;
+  sun.shadow.camera.far = 1200;
+  const d = 300;
   sun.shadow.camera.left = -d;
   sun.shadow.camera.right = d;
   sun.shadow.camera.top = d;
@@ -919,74 +919,65 @@ function loadLevel2() {
   sun.shadow.bias = -0.0005;
   scene.add(sun);
   
-  scene.add(new THREE.AmbientLight(0x7fb3d5, 0.8));
+  scene.add(new THREE.AmbientLight(0xfff2b0, 0.7));
 
-  // ТЕМНАЯ, НЕ ВЫРВИГЛАЗНАЯ ТРАВА
   const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 512;
+  canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#2f5e1c'; ctx.fillRect(0, 0, 512, 512); // Более глубокий темный тон
-  
-  for(let i=0; i<6000; i++) {
-    const rx = Math.random() * 512;
-    const ry = Math.random() * 512;
-    const col = Math.random();
-    if(col < 0.4) ctx.fillStyle = '#1c3d10';
-    else if(col < 0.8) ctx.fillStyle = '#386e22';
-    else ctx.fillStyle = '#4c8c2e';
-    ctx.fillRect(rx, ry, 2, 8 + Math.random() * 8);
+  ctx.fillStyle = '#d4c26a'; ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = 'rgba(100,80,30,0.08)';
+  for(let i=0; i<400; i++) {
+    ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
   }
-  const grassTex = new THREE.CanvasTexture(canvas);
-  grassTex.wrapS = THREE.RepeatWrapping; grassTex.wrapT = THREE.RepeatWrapping;
-  grassTex.repeat.set(80, 80);
+  const floorTex = new THREE.CanvasTexture(canvas);
+  floorTex.wrapS = THREE.RepeatWrapping; floorTex.wrapT = THREE.RepeatWrapping;
+  floorTex.repeat.set(120, 120);
 
-  const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
+  const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.9, metalness: 0.0 });
   
-  // Холмистый ландшафт
-  const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
-  grassGeo.rotateX(-Math.PI / 2);
-  const pos = grassGeo.attributes.position;
+  const floorGeo = new THREE.PlaneGeometry(2400, 2400, 150, 150);
+  floorGeo.rotateX(-Math.PI / 2);
+  const pos = floorGeo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
     const vx = pos.getX(i);
     const vz = pos.getZ(i);
     pos.setY(i, getLevel2Height(vx, vz));
   }
-  grassGeo.computeVertexNormals();
+  floorGeo.computeVertexNormals();
 
-  const grassFloor = new THREE.Mesh(grassGeo, grassMat);
+  const grassFloor = new THREE.Mesh(floorGeo, floorMat);
   grassFloor.receiveShadow = true;
   scene.add(grassFloor);
 
-  // ИСПРАВЛЕННЫЕ ОБЛАКА: Настоящие объемные пушистые облака из множества соединенных сфер с тенями
-  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.88 });
-  const cloudSphereGeo = new THREE.SphereGeometry(4, 7, 7);
+  // Мягкие полупрозрачные облака вместо резких теней
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+  const cloudSphereGeo = new THREE.SphereGeometry(6, 7, 7);
 
-  for(let i=0; i<35; i++) {
+  for(let i=0; i<40; i++) {
     const cloudGroup = new THREE.Group();
-    const puffsCount = 8 + Math.floor(Math.random() * 6);
+    const puffsCount = 6 + Math.floor(Math.random() * 5);
     for(let p=0; p<puffsCount; p++) {
       const puff = new THREE.Mesh(cloudSphereGeo, cloudMat);
       puff.position.set(
-        (Math.random() - 0.5) * 30,
-        (Math.random() - 0.5) * 3,
-        (Math.random() - 0.5) * 20
+        (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 4,
+        (Math.random() - 0.5) * 30
       );
-      const s = 0.7 + Math.random() * 1.2;
-      puff.scale.set(s, s * 0.65, s);
-      puff.castShadow = true;
+      const s = 1.0 + Math.random() * 1.5;
+      puff.scale.set(s, s * 0.4, s);
       cloudGroup.add(puff);
     }
     cloudGroup.position.set(
-      (Math.random() - 0.5) * 700,
-      90 + Math.random() * 40,
-      (Math.random() - 0.5) * 700
+      (Math.random() - 0.5) * 1800,
+      110 + Math.random() * 40,
+      (Math.random() - 0.5) * 1800
     );
     scene.add(cloudGroup);
   }
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Тёмная трава, необычное небо, объемные облака и фоновый эмбиент активны!";
+  document.getElementById('hint').innerText = "🟨 УРОВЕНЬ 2: Бесконечные жёлтые холмы, мягкое небо и высокая дальность видимости!";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 
@@ -1069,7 +1060,6 @@ window.addEventListener('pointermove', e => {
     lastTouchX = e.clientX;
     lastTouchY = e.clientY;
 
-    // Увеличенная чувствительность камеры на ~30%
     yaw -= dx * 0.0055;
     pitch -= dy * 0.0055;
     pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
@@ -1110,8 +1100,7 @@ function animate(now) {
 
 setTimeout(() => {
   document.getElementById('hint').classList.add('hide');
-  // Старт фоновой музыки по первому клику/касанию
-  window.addEventListener('pointerdown', () => {
+  window.addEventListener('pointer0', () => {
     initAudio();
     if (!bgMusicNode && currentLevel === 0) startBGM(0);
   }, { once: true });
