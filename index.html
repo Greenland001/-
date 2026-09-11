@@ -24,7 +24,7 @@ html,body{
 canvas{
   display:block;
   width:100%;
-  height:100%;
+  height:100%
 }
 
 .hud{
@@ -128,19 +128,15 @@ canvas{
 <canvas id="game"></canvas>
 
 <div class="hud">
-
   <div id="hint" class="hint">
     🕹️ Джойстик — движение • Свайп справа — поворот
   </div>
 
-  <button id="fs" class="fs">
-    ⛶
-  </button>
+  <button id="fs" class="fs">⛶</button>
 
   <div id="joy" class="joy">
     <div id="knob" class="knob"></div>
   </div>
-
 </div>
 
 <div class="portrait">
@@ -163,11 +159,10 @@ const hint=document.getElementById('hint');
 
 
 /* =========================
-   БОЛЬШАЯ КАРТА
+   КАРТА
 ========================= */
 
 const map=[
-
 "############################################################",
 "#..........................................................#",
 "#..........................................................#",
@@ -178,7 +173,6 @@ const map=[
 "#..............#.......#.................#........#........#",
 "#......................#.................#........#........#",
 "#..###########.........#.................#........#........#",
-"#..#.........#.........#.................#........#........#",
 "#..#.........#.........#.................#........#........#",
 "#..#.........#..................##########........#........#",
 "#..#.........#..................#................#........##",
@@ -201,7 +195,6 @@ const map=[
 "#..........#..........#................................###",
 "#..........############................................###",
 "############################################################"
-
 ];
 
 const MW=map[0].length;
@@ -231,51 +224,29 @@ let moveY=0;
 let lookDX=0;
 
 let keys={};
-
 let last=performance.now();
+
+let depthBuffer=[];
 
 
 /* =========================
-   ЛАМПЫ
+   ПРОВЕРКИ СТЕН
 ========================= */
 
-const lamps=[];
-
 function isWall(x,y){
-
   const gx=Math.floor(x);
   const gy=Math.floor(y);
 
-  return(
+  if(
     gy<0 ||
     gy>=MH ||
     gx<0 ||
-    gx>=MW ||
-    map[gy][gx]==='#'
-  );
+    gx>=MW
+  ) return true;
+
+  return map[gy][gx]==='#';
 }
 
-for(let y=1;y<MH-1;y+=4){
-
-  for(let x=2;x<MW-2;x+=6){
-
-    if(!isWall(x+.5,y+.5)){
-
-      lamps.push({
-        x:x+.5,
-        y:y+.5
-      });
-
-    }
-
-  }
-
-}
-
-
-/* =========================
-   КОЛЛИЗИЯ
-========================= */
 
 function blocked(x,y){
 
@@ -313,11 +284,36 @@ function move(dx,dy){
   const nx=player.x+dx;
   const ny=player.y+dy;
 
-  if(!blocked(nx,player.y))
+  if(!blocked(nx,player.y)){
     player.x=nx;
+  }
 
-  if(!blocked(player.x,ny))
+  if(!blocked(player.x,ny)){
     player.y=ny;
+  }
+}
+
+
+/* =========================
+   ЛАМПЫ
+========================= */
+
+const lamps=[];
+
+for(let y=1;y<MH-1;y+=4){
+
+  for(let x=2;x<MW-2;x+=6){
+
+    if(!isWall(x+.5,y+.5)){
+
+      lamps.push({
+        x:x+.5,
+        y:y+.5
+      });
+
+    }
+
+  }
 }
 
 
@@ -330,7 +326,10 @@ function resize(){
   W=innerWidth;
   H=innerHeight;
 
-  DPR=Math.min(devicePixelRatio||1,1.5);
+  DPR=Math.min(
+    devicePixelRatio||1,
+    1.5
+  );
 
   canvas.width=Math.max(
     320,
@@ -343,7 +342,9 @@ function resize(){
   );
 
   ctx.setTransform(
-    DPR,0,0,DPR,0,0
+    DPR,0,
+    0,DPR,
+    0,0
   );
 }
 
@@ -353,7 +354,7 @@ resize();
 
 
 /* =========================
-   НОВАЯ ТЕКСТУРА СТЕН
+   ТЕКСТУРА СТЕН
 ========================= */
 
 const wallTex=document.createElement('canvas');
@@ -363,13 +364,9 @@ wallTex.height=256;
 
 const wt=wallTex.getContext('2d');
 
-
-/* Основной цвет старых обоев */
-
 const wallGradient=
   wt.createLinearGradient(
-    0,0,
-    256,0
+    0,0,256,0
   );
 
 wallGradient.addColorStop(
@@ -400,12 +397,11 @@ wallGradient.addColorStop(
 wt.fillStyle=wallGradient;
 
 wt.fillRect(
-  0,0,
-  256,256
+  0,0,256,256
 );
 
 
-/* Горизонтальные полосы */
+/* горизонтальные полосы */
 
 for(let y=0;y<256;y+=16){
 
@@ -413,21 +409,19 @@ for(let y=0;y<256;y+=16){
     'rgba(70,60,25,.10)';
 
   wt.fillRect(
-    0,y,
-    256,2
+    0,y,256,2
   );
 
   wt.fillStyle=
     'rgba(255,245,170,.07)';
 
   wt.fillRect(
-    0,y+2,
-    256,2
+    0,y+2,256,2
   );
 }
 
 
-/* Вертикальные стыки */
+/* вертикальные полосы */
 
 for(let x=0;x<256;x+=32){
 
@@ -435,48 +429,34 @@ for(let x=0;x<256;x+=32){
     'rgba(65,55,25,.13)';
 
   wt.fillRect(
-    x,0,
-    2,256
+    x,0,2,256
   );
 
   wt.fillStyle=
     'rgba(245,230,150,.08)';
 
   wt.fillRect(
-    x+2,0,
-    2,256
+    x+2,0,2,256
   );
 }
 
 
-/* Пятна старых обоев */
+/* мелкие пятна */
 
 for(let i=0;i<170;i++){
 
   const x=Math.random()*256;
   const y=Math.random()*256;
-
-  const w=
-    4+
-    Math.random()*30;
-
-  const h=
-    2+
-    Math.random()*18;
+  const w=4+Math.random()*30;
+  const h=2+Math.random()*18;
 
   wt.fillStyle=
-    `rgba(
-      70,55,20,
-      ${.025+Math.random()*.07}
-    )`;
+    `rgba(70,55,20,${.025+Math.random()*.07})`;
 
   wt.beginPath();
 
   wt.ellipse(
-    x,
-    y,
-    w,
-    h,
+    x,y,w,h,
     Math.random()*Math.PI,
     0,
     Math.PI*2
@@ -486,7 +466,7 @@ for(let i=0;i<170;i++){
 }
 
 
-/* Мелкие потёртости */
+/* шум */
 
 for(let i=0;i<900;i++){
 
@@ -495,10 +475,8 @@ for(let i=0;i<900;i++){
 
   wt.fillStyle=
     Math.random()<.55
-    ?
-    'rgba(255,245,170,.035)'
-    :
-    'rgba(50,40,15,.045)';
+    ? 'rgba(255,245,170,.035)'
+    : 'rgba(50,40,15,.045)';
 
   wt.fillRect(
     x,
@@ -506,21 +484,6 @@ for(let i=0;i<900;i++){
     1+Math.random()*2,
     1+Math.random()*2
   );
-}
-
-
-/* =========================
-   УГОЛ
-========================= */
-
-function normAng(a){
-
-  a%=Math.PI*2;
-
-  if(a<0)
-    a+=Math.PI*2;
-
-  return a;
 }
 
 
@@ -546,7 +509,6 @@ function castRay(angle){
 
   let stepx;
   let stepy;
-
   let sdx;
   let sdy;
 
@@ -606,27 +568,27 @@ function castRay(angle){
       my<0 ||
       mx>=MW ||
       my>=MH
-    ){
-      break;
-    }
+    ) break;
 
 
     if(map[my][mx]==='#'){
 
       dist=
         side===0
-        ?
-        (mx-player.x+(1-stepx)/2)/rx
-        :
-        (my-player.y+(1-stepy)/2)/ry;
+        ? (
+          mx-player.x+
+          (1-stepx)/2
+        )/rx
+        : (
+          my-player.y+
+          (1-stepy)/2
+        )/ry;
 
       break;
     }
   }
 
-
   return{
-
     dist:Math.min(
       Math.abs(dist),
       MAX_DIST
@@ -640,7 +602,7 @@ function castRay(angle){
 
 
 /* =========================
-   НОВОЕ ОСВЕЩЕНИЕ
+   ОСВЕЩЕНИЕ
 ========================= */
 
 function lampLight(x,y){
@@ -676,7 +638,7 @@ function lampLight(x,y){
 
 
 /* =========================
-   ОТРИСОВКА
+   ОСНОВНАЯ ОТРИСОВКА
 ========================= */
 
 function draw(){
@@ -685,14 +647,12 @@ function draw(){
   const ch=H;
 
 
-  /* =====================
-     ПОТОЛОК
-  ===================== */
+  /* НЕБО */
 
   const sky=
     ctx.createLinearGradient(
       0,0,
-      0,ch*.55
+      0,ch*.52
     );
 
   sky.addColorStop(
@@ -718,9 +678,7 @@ function draw(){
   );
 
 
-  /* =====================
-     ПОЛ
-  ===================== */
+  /* ПОЛ */
 
   const floor=
     ctx.createLinearGradient(
@@ -730,7 +688,12 @@ function draw(){
 
   floor.addColorStop(
     0,
-    '#7c7045'
+    '#81764a'
+  );
+
+  floor.addColorStop(
+    .5,
+    '#625938'
   );
 
   floor.addColorStop(
@@ -748,9 +711,7 @@ function draw(){
   );
 
 
-  /* =====================
-     RAYCASTING
-  ===================== */
+  /* СТЕНЫ */
 
   const cols=
     Math.min(
@@ -758,8 +719,9 @@ function draw(){
       900
     );
 
-  const strip=
-    cw/cols;
+  const strip=cw/cols;
+
+  depthBuffer.length=cols;
 
 
   for(let i=0;i<cols;i++){
@@ -767,22 +729,21 @@ function draw(){
     const camera=
       (i+.5)/cols-.5;
 
-    const a=
+    const angle=
       player.a+
       camera*FOV;
 
     const r=
-      castRay(a);
-
+      castRay(angle);
 
     const corrected=
       r.dist*
       Math.cos(
-        a-player.a
+        angle-player.a
       );
 
+    depthBuffer[i]=corrected;
 
-    /* Высота стены */
 
     const wallH=
       Math.min(
@@ -796,40 +757,27 @@ function draw(){
       wallH*.5;
 
 
-    /* =====================
-       ВАЖНО:
-       здесь теперь r.dist,
-       а не corrected
-    ===================== */
-
     const hitX=
       r.side===0
-      ?
-      player.y+
-      r.dist*
-      Math.sin(a)
-      :
-      player.x+
-      r.dist*
-      Math.cos(a);
-
+      ? player.y+
+        r.dist*Math.sin(angle)
+      : player.x+
+        r.dist*Math.cos(angle);
 
     const hitY=
       r.side===0
-      ?
-      player.x+
-      r.dist*
-      Math.cos(a)
-      :
-      player.y+
-      r.dist*
-      Math.sin(a);
+      ? player.x+
+        r.dist*Math.cos(angle)
+      : player.y+
+        r.dist*Math.sin(angle);
 
 
-    /* Координата текстуры */
+    let u=
+      r.side===0
+      ? hitX%1
+      : hitY%1;
 
-    const u=
-      ((hitX%1)+1)%1;
+    if(u<0)u+=1;
 
     let tx=
       Math.floor(
@@ -837,31 +785,21 @@ function draw(){
       );
 
 
-    /* Небольшая правильная ориентация */
-
     if(
-      (r.side===0 && Math.cos(a)>0) ||
-      (r.side===1 && Math.sin(a)<0)
+      (r.side===0 &&
+       Math.cos(angle)>0)
+      ||
+      (r.side===1 &&
+       Math.sin(angle)<0)
     ){
 
-      tx=
-        255-tx;
+      tx=255-tx;
     }
 
 
-    /* =====================
-       РЕАЛЬНАЯ ТЕКСТУРА
-    ===================== */
-
     ctx.drawImage(
-
       wallTex,
-
-      tx,
-      0,
-      1,
-      256,
-
+      tx,0,1,256,
       i*strip,
       top,
       strip+1,
@@ -869,9 +807,7 @@ function draw(){
     );
 
 
-    /* =====================
-       ОСВЕЩЕНИЕ
-    ===================== */
+    /* свет */
 
     const lamp=
       lampLight(
@@ -879,51 +815,36 @@ function draw(){
         hitY
       );
 
-
     let light=
       .42+
       lamp*.78;
 
-
-    /* Затухание с расстоянием */
-
     light*=
       1/
-      (1+corrected*.025);
+      (1+
+       corrected*.025);
 
-
-    /* Боковые поверхности темнее */
-
-    if(r.side)
+    if(r.side){
       light*=.82;
-
+    }
 
     light=
       Math.max(
         .25,
-        Math.min(
-          1.15,
-          light
-        )
+        Math.min(1.15,light)
       );
 
-
-    /* Затемнение поверх текстуры */
 
     const darkness=
       1-light;
 
-
     if(darkness>.01){
 
       ctx.fillStyle=
-        `rgba(
-          20,16,8,
-          ${Math.min(
-            .72,
-            darkness
-          )}
-        )`;
+        `rgba(20,16,8,${Math.min(
+          .72,
+          darkness
+        )})`;
 
       ctx.fillRect(
         i*strip,
@@ -934,9 +855,7 @@ function draw(){
     }
 
 
-    /* =====================
-       ДАЛЬНИЙ ТУМАН
-    ===================== */
+    /* дальний туман */
 
     const fog=
       Math.max(
@@ -947,14 +866,10 @@ function draw(){
         )
       );
 
-
     if(fog>.01){
 
       ctx.fillStyle=
-        `rgba(
-          48,42,22,
-          ${fog}
-        )`;
+        `rgba(48,42,22,${fog})`;
 
       ctx.fillRect(
         i*strip,
@@ -965,26 +880,21 @@ function draw(){
     }
 
 
-    /* =====================
-       ПЛИНТУС
-    ===================== */
+    /* нижняя тень стены */
 
     const baseH=
       Math.max(
         2,
         Math.min(
           12,
-          8/(corrected*.15+1)
+          8/
+          (corrected*.15+1)
         )
       );
 
-
     ctx.fillStyle=
-      `rgba(
-        74,63,31,
-        ${.38/
-          (1+corrected*.03)}
-      )`;
+      `rgba(74,63,31,${.38/
+      (1+corrected*.03)})`;
 
     ctx.fillRect(
       i*strip,
@@ -992,20 +902,15 @@ function draw(){
       strip+1,
       baseH
     );
-
   }
 
 
-  drawFloorDetails();
-
+  drawPerspectiveFloor();
   drawLamps();
-
   drawVignette();
 
 
-  /* =====================
-     ПРИЦЕЛ
-  ===================== */
+  /* прицел */
 
   ctx.strokeStyle=
     'rgba(255,255,255,.75)';
@@ -1039,42 +944,77 @@ function draw(){
 
 
 /* =========================
-   ПОЛ
+   ПЕРСПЕКТИВНЫЙ ПОЛ
 ========================= */
 
-function drawFloorDetails(){
+function drawPerspectiveFloor(){
 
-  ctx.lineWidth=1;
+  const horizon=
+    H*.505;
 
-  for(let y=0;y<8;y++){
+  const centerX=
+    W/2;
 
-    const p=
-      (y+1)/8;
 
-    const sy=
-      H*.5+
-      H*.5*
+  /* горизонтальные швы */
+
+  for(let i=1;i<=16;i++){
+
+    const p=i/16;
+
+    const y=
+      horizon+
+      (H-horizon)*
       Math.pow(
         p,
-        1.8
+        1.75
       );
 
+    const alpha=
+      .16*(1-p)+.025;
+
     ctx.strokeStyle=
-      `rgba(
-        210,196,126,
-        ${.10*(1-p)}
-      )`;
+      `rgba(220,204,135,${alpha})`;
+
+    ctx.lineWidth=1;
 
     ctx.beginPath();
 
     ctx.moveTo(
-      0,
-      sy
+      0,y
     );
 
     ctx.lineTo(
-      W,
-      sy
+      W,y
+    );
+
+    ctx.stroke();
+  }
+
+
+  /* линии перспективы */
+
+  for(let i=-9;i<=9;i++){
+
+    if(i===0)continue;
+
+    const bottomX=
+      centerX+
+      i*W*.105;
+
+    ctx.strokeStyle=
+      'rgba(205,190,120,.075)';
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      centerX,
+      horizon
+    );
+
+    ctx.lineTo(
+      bottomX,
+      H
     );
 
     ctx.stroke();
@@ -1088,6 +1028,13 @@ function drawFloorDetails(){
 
 function drawLamps(){
 
+  const focal=
+    (W/2)/
+    Math.tan(FOV/2);
+
+  const lampHeight=.22;
+
+
   for(const l of lamps){
 
     const dx=
@@ -1096,70 +1043,85 @@ function drawLamps(){
     const dy=
       l.y-player.y;
 
-    const dist=
-      Math.hypot(
-        dx,
-        dy
-      );
+
+    /* координаты относительно камеры */
+
+    const forward=
+      dx*Math.cos(player.a)+
+      dy*Math.sin(player.a);
+
+    const side=
+      -dx*Math.sin(player.a)+
+      dy*Math.cos(player.a);
 
 
-    let da=
-      normAng(
-        Math.atan2(
-          dy,
-          dx
-        )-
-        player.a
-      );
-
-
-    if(da>Math.PI)
-      da-=Math.PI*2;
-
-
-    if(
-      Math.abs(da)>FOV*.62 ||
-      dist<.5
-    )
-      continue;
+    if(forward<=.25)continue;
 
 
     const sx=
       W/2+
-      (da/FOV)*W;
+      (side/forward)*
+      focal;
+
+    const sy=
+      H*.50-
+      (lampHeight/
+       forward)*
+      focal;
 
 
     const size=
       Math.max(
-        3,
+        2,
         Math.min(
-          38,
-          22/dist
+          42,
+          9*focal/forward
         )
       );
 
 
-    const y=
-      H*.16+
-      dist*.015*H;
+    if(
+      sx<-50 ||
+      sx>W+50 ||
+      sy<-50 ||
+      sy>H
+    )continue;
 
+
+    /* проверяем стену перед лампой */
+
+    const column=
+      Math.floor(
+        (sx/W)*
+        depthBuffer.length
+      );
 
     if(
-      sx<-40 ||
-      sx>W+40
-    )
-      continue;
+      column>=0 &&
+      column<depthBuffer.length
+    ){
+
+      const wallDepth=
+        depthBuffer[column];
+
+      if(
+        wallDepth<
+        forward-.12
+      ){
+        continue;
+      }
+    }
 
 
-    /* Свечение */
+    /* свечение */
 
     const glow=
       ctx.createRadialGradient(
         sx,
-        y,
+        sy,
         0,
         sx,
-        y,
+        sy,
         size*3
       );
 
@@ -1182,33 +1144,31 @@ function drawLamps(){
 
     ctx.fillRect(
       sx-size*3,
-      y-size*3,
+      sy-size*3,
       size*6,
       size*6
     );
 
 
-    /* Лампа */
+    /* сама лампа */
 
     ctx.fillStyle=
       'rgba(255,250,207,.95)';
 
     ctx.fillRect(
       sx-size,
-      y-size*.18,
+      sy-size*.18,
       size*2,
       size*.36
     );
 
-
-    /* Яркая середина */
 
     ctx.fillStyle=
       'rgba(255,255,235,.75)';
 
     ctx.fillRect(
       sx-size*.65,
-      y-size*.08,
+      sy-size*.08,
       size*1.3,
       size*.16
     );
@@ -1224,16 +1184,13 @@ function drawVignette(){
 
   const g=
     ctx.createRadialGradient(
-
       W/2,
       H/2,
       Math.min(W,H)*.22,
-
       W/2,
       H/2,
       Math.max(W,H)*.72
     );
-
 
   g.addColorStop(
     0,
@@ -1250,360 +1207,14 @@ function drawVignette(){
     'rgba(0,0,0,.38)'
   );
 
-
   ctx.fillStyle=g;
 
   ctx.fillRect(
-    0,
-    0,
-    W,
-    H
+    0,0,W,H
   );
 }
 
 
 /* =========================
-   UPDATE
+   УПРАВЛЕНИЕ
 ========================= */
-
-function update(dt){
-
-  let sx=moveX;
-  let sy=moveY;
-
-
-  if(keys.KeyW||keys.ArrowUp)
-    sy-=1;
-
-  if(keys.KeyS||keys.ArrowDown)
-    sy+=1;
-
-  if(keys.KeyA||keys.ArrowLeft)
-    sx-=1;
-
-  if(keys.KeyD||keys.ArrowRight)
-    sx+=1;
-
-
-  const len=
-    Math.hypot(
-      sx,
-      sy
-    );
-
-
-  if(len>1){
-
-    sx/=len;
-    sy/=len;
-  }
-
-
-  const speed=2.25;
-
-  const ca=
-    Math.cos(
-      player.a
-    );
-
-  const sa=
-    Math.sin(
-      player.a
-    );
-
-
-  move(
-
-    (ca*sy-sa*sx)*
-    speed*dt,
-
-    (sa*sy+ca*sx)*
-    speed*dt
-  );
-
-
-  player.a=
-    normAng(
-      player.a+
-      lookDX*dt
-    );
-
-
-  lookDX*=
-    Math.pow(
-      .001,
-      dt
-    );
-}
-
-
-/* =========================
-   GAME LOOP
-========================= */
-
-function loop(now){
-
-  const dt=
-    Math.min(
-      .033,
-      (now-last)/1000
-    );
-
-  last=now;
-
-  update(dt);
-
-  draw();
-
-  requestAnimationFrame(
-    loop
-  );
-}
-
-
-/* =========================
-   ДЖОЙСТИК
-========================= */
-
-let joyId=null;
-let joyRect=null;
-
-
-function joySet(e){
-
-  if(!joyRect)
-    joyRect=
-      joy.getBoundingClientRect();
-
-
-  let dx=
-    e.clientX-
-    (
-      joyRect.left+
-      joyRect.width/2
-    );
-
-
-  let dy=
-    e.clientY-
-    (
-      joyRect.top+
-      joyRect.height/2
-    );
-
-
-  const max=
-    joyRect.width*.36;
-
-
-  const len=
-    Math.hypot(
-      dx,
-      dy
-    );
-
-
-  if(len>max){
-
-    dx=
-      dx/len*max;
-
-    dy=
-      dy/len*max;
-  }
-
-
-  knob.style.transform=
-    `translate(
-      calc(-50% + ${dx}px),
-      calc(-50% + ${dy}px)
-    )`;
-
-
-  moveX=dx/max;
-  moveY=dy/max;
-}
-
-
-function joyEnd(){
-
-  joyId=null;
-
-  moveX=0;
-  moveY=0;
-
-  knob.style.transform=
-    'translate(-50%,-50%)';
-}
-
-
-joy.addEventListener(
-  'pointerdown',
-  e=>{
-
-    joyId=e.pointerId;
-
-    joy.setPointerCapture(
-      joyId
-    );
-
-    joyRect=
-      joy.getBoundingClientRect();
-
-    joySet(e);
-  }
-);
-
-
-joy.addEventListener(
-  'pointermove',
-  e=>{
-
-    if(e.pointerId===joyId)
-      joySet(e);
-  }
-);
-
-
-joy.addEventListener(
-  'pointerup',
-  joyEnd
-);
-
-
-joy.addEventListener(
-  'pointercancel',
-  joyEnd
-);
-
-
-/* =========================
-   ПОВОРОТ
-========================= */
-
-let lookId=null;
-let lastLookX=0;
-
-
-addEventListener(
-  'pointerdown',
-  e=>{
-
-    if(
-      e.target===joy ||
-      joy.contains(e.target) ||
-      e.target===fs
-    )
-      return;
-
-
-    if(e.clientX>W*.42){
-
-      lookId=e.pointerId;
-
-      lastLookX=e.clientX;
-    }
-  }
-);
-
-
-addEventListener(
-  'pointermove',
-  e=>{
-
-    if(e.pointerId===lookId){
-
-      const dx=
-        e.clientX-lastLookX;
-
-      lastLookX=e.clientX;
-
-      player.a=
-        normAng(
-          player.a+
-          dx*.005
-        );
-    }
-  }
-);
-
-
-addEventListener(
-  'pointerup',
-  e=>{
-
-    if(e.pointerId===lookId)
-      lookId=null;
-  }
-);
-
-
-/* =========================
-   КЛАВИАТУРА
-========================= */
-
-addEventListener(
-  'keydown',
-  e=>{
-    keys[e.code]=true;
-  }
-);
-
-addEventListener(
-  'keyup',
-  e=>{
-    keys[e.code]=false;
-  }
-);
-
-
-/* =========================
-   FULLSCREEN
-========================= */
-
-fs.addEventListener(
-  'click',
-  async()=>{
-
-    try{
-
-      if(!document.fullscreenElement){
-
-        await document.documentElement
-          .requestFullscreen();
-      }
-
-
-      if(screen.orientation?.lock){
-
-        await screen.orientation
-          .lock('landscape');
-      }
-
-    }catch(e){}
-  }
-);
-
-
-/* =========================
-   ПОДСКАЗКА
-========================= */
-
-setTimeout(
-  ()=>{
-    hint.classList.add('hide');
-  },
-  4500
-);
-
-
-/* =========================
-   START
-========================= */
-
-requestAnimationFrame(loop);
-
-</script>
-
-</body>
-  </html>
