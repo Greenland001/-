@@ -51,19 +51,44 @@ html,body{
 
 .hint.hide{ opacity:0; }
 
-/* Кнопка прыжка справа */
+/* Кнопка Полного Экрана (Сверху справа) */
+.fs-btn{
+  pointer-events:auto;
+  position:absolute;
+  right:20px;
+  top:20px;
+  width:55px;
+  height:55px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-radius:16px;
+  background:rgba(20,19,15,.75);
+  color:white;
+  font-size:26px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  box-shadow:0 4px 10px rgba(0,0,0,0.5);
+  backdrop-filter:blur(4px);
+}
+.fs-btn:active{
+  background:rgba(100,90,50,0.8);
+  transform:scale(0.92);
+}
+
+/* Кнопка Прыжка (Снизу справа) */
 .jump-btn{
   pointer-events:auto;
   position:absolute;
   right:30px;
   bottom:30px;
-  width:80px;
-  height:80px;
+  width:75px;
+  height:75px;
   border:3px solid rgba(255,255,255,0.4);
   border-radius:50%;
   background:rgba(20,19,15,.75);
   color:white;
-  font-size:32px;
+  font-size:28px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -115,7 +140,6 @@ html,body{
 .crosshair::before{ top:4px; left:0; width:10px; height:2px; }
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 
-/* Экран с просьбой перевернуть телефон */
 #rotate-screen{
   position:fixed;
   inset:0;
@@ -156,6 +180,7 @@ html,body{
 <div class="hud">
   <div id="hint" class="hint">🕹️ Джойстик — ходить • Свайп справа — смотреть</div>
   <div class="crosshair"></div>
+  <button id="fs" class="fs-btn">⛶</button>
   <div id="jump" class="jump-btn">⬆</div>
   <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
 </div>
@@ -350,7 +375,6 @@ camera.position.set(2.5 * CELL_SIZE, 1.5, 2.5 * CELL_SIZE);
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
 
-// Переменные для прыжка
 let playerY = 1.5;
 let velocityY = 0;
 const gravity = -18;
@@ -371,7 +395,6 @@ function checkCollision(newPos) {
 }
 
 function updatePlayer(dt) {
-  // Обработка прыжка и гравитации
   velocityY += gravity * dt;
   playerY += velocityY * dt;
 
@@ -383,7 +406,6 @@ function updatePlayer(dt) {
     isGrounded = false;
   }
 
-  // Ограничение по высоте потолка
   if (playerY > 2.4) {
     playerY = 2.4;
     velocityY = 0;
@@ -414,16 +436,26 @@ function updatePlayer(dt) {
 }
 
 /* =========================
-   ТАЧ-СОБЫТИЯ I КНОПКА ПРЫЖКА
+   ТАЧ-СОБЫТИЯ
 ========================= */
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
 const jumpBtn = document.getElementById('jump');
+const fsBtn = document.getElementById('fs');
 
 let joyId = null, joyRect = null;
 let lookId = null, lastTouchX = 0, lastTouchY = 0;
 
-// Событие прыжка
+// Включение полного экрана
+fsBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen().catch(()=>{});
+  }
+  if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(()=>{});
+});
+
 jumpBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation();
   if (isGrounded) {
@@ -462,7 +494,7 @@ joy.addEventListener('pointerup', resetJoy);
 joy.addEventListener('pointercancel', resetJoy);
 
 window.addEventListener('pointerdown', e => {
-  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn) return;
+  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn) return;
   if (e.clientX > window.innerWidth * 0.3) {
     lookId = e.pointerId;
     lastTouchX = e.clientX;
@@ -486,7 +518,7 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
 
 /* =========================
-   ПРОВЕРКА ОРИЕНТАЦИИ ЭКРАНА
+   ПРОВЕРКА ОРИЕНТАЦИИ
 ========================= */
 function checkOrientation() {
   const rotateScreen = document.getElementById('rotate-screen');
@@ -527,4 +559,3 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
-
