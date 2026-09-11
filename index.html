@@ -51,18 +51,28 @@ html,body{
 
 .hint.hide{ opacity:0; }
 
-.fs{
+/* Кнопка прыжка справа */
+.jump-btn{
   pointer-events:auto;
   position:absolute;
-  right:28px;
+  right:30px;
   bottom:30px;
-  width:70px;
-  height:70px;
-  border:0;
-  border-radius:20px;
-  background:rgba(20,19,15,.82);
+  width:80px;
+  height:80px;
+  border:3px solid rgba(255,255,255,0.4);
+  border-radius:50%;
+  background:rgba(20,19,15,.75);
   color:white;
-  font-size:30px;
+  font-size:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
+}
+.jump-btn:active{
+  background:rgba(100,90,50,0.8);
+  transform:scale(0.92);
 }
 
 .joy{
@@ -104,6 +114,30 @@ html,body{
 }
 .crosshair::before{ top:4px; left:0; width:10px; height:2px; }
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
+
+/* Экран с просьбой перевернуть телефон */
+#rotate-screen{
+  position:fixed;
+  inset:0;
+  background:#0e0d0a;
+  color:#f0e6c2;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+  text-align:center;
+  padding:20px;
+}
+#rotate-screen .icon{
+  font-size:60px;
+  margin-bottom:15px;
+  animation:rotateAnim 2s infinite ease-in-out;
+}
+@keyframes rotateAnim {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -111,12 +145,18 @@ html,body{
 
 <body>
 
+<div id="rotate-screen">
+  <div class="icon">🔄</div>
+  <h2>Поверните устройство</h2>
+  <p>Для удобной игры переверните телефон горизонтально</p>
+</div>
+
 <div id="webgl-container"></div>
 
 <div class="hud">
   <div id="hint" class="hint">🕹️ Джойстик — ходить • Свайп справа — смотреть</div>
   <div class="crosshair"></div>
-  <button id="fs" class="fs">⛶</button>
+  <div id="jump" class="jump-btn">⬆</div>
   <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
 </div>
 
@@ -166,7 +206,7 @@ const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
 scene.add(ambientLight);
 
 /* =========================
-   ТЕКСТУРЫ БЕЗ БОКОВЫХ ШВОВ
+   ТЕКСТУРЫ И СВЕТ
 ========================= */
 function createWallTexture() {
   const canvas = document.createElement('canvas');
@@ -176,7 +216,6 @@ function createWallTexture() {
   ctx.fillStyle = '#c5b565';
   ctx.fillRect(0, 0, 256, 256);
   
-  // Рисунок обоев
   ctx.fillStyle = 'rgba(80,70,30,0.12)';
   for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
   for(let i=0; i<400; i++) {
@@ -184,7 +223,6 @@ function createWallTexture() {
     ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
   }
 
-  // Мягкое затемнение ТОЛЬКО сверху и снизу (стык с полом и потолком)
   let gradTop = ctx.createLinearGradient(0, 0, 0, 30);
   gradTop.addColorStop(0, 'rgba(0,0,0,0.35)');
   gradTop.addColorStop(1, 'rgba(0,0,0,0)');
@@ -234,9 +272,6 @@ function createCeilingTexture() {
   return texture;
 }
 
-/* =========================
-   ТЕКСТУРА СВЕЧЕНИЯ (GLOW)
-========================= */
 function createGlowTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
@@ -272,7 +307,6 @@ const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
 const lampGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
 const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-// Эффект объемного света под лампой
 const glowMat = new THREE.MeshBasicMaterial({
   map: createGlowTexture(),
   transparent: true,
@@ -295,12 +329,10 @@ for (let y = 0; y < MH; y++) {
       walls.push(wall);
     } else {
       if ((x + y) % 3 === 0) {
-        // Лампа
         const lamp = new THREE.Mesh(lampGeo, lampMat);
         lamp.position.set(posX, 2.97, posZ);
         scene.add(lamp);
 
-        // Светящееся пятно под лампой на потолке
         const glow = new THREE.Mesh(glowGeo, glowMat);
         glow.rotation.x = Math.PI / 2;
         glow.position.set(posX, 2.94, posZ);
@@ -313,10 +345,17 @@ for (let y = 0; y < MH; y++) {
 camera.position.set(2.5 * CELL_SIZE, 1.5, 2.5 * CELL_SIZE);
 
 /* =========================
-   УПРАВЛЕНИЕ И ФИЗИКА
+   УПРАВЛЕНИЕ, ФИЗИКА И ПРЫЖОК
 ========================= */
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
+
+// Переменные для прыжка
+let playerY = 1.5;
+let velocityY = 0;
+const gravity = -18;
+const jumpForce = 6.5;
+let isGrounded = true;
 
 function checkCollision(newPos) {
   const radius = 0.4;
@@ -332,6 +371,26 @@ function checkCollision(newPos) {
 }
 
 function updatePlayer(dt) {
+  // Обработка прыжка и гравитации
+  velocityY += gravity * dt;
+  playerY += velocityY * dt;
+
+  if (playerY <= 1.5) {
+    playerY = 1.5;
+    velocityY = 0;
+    isGrounded = true;
+  } else {
+    isGrounded = false;
+  }
+
+  // Ограничение по высоте потолка
+  if (playerY > 2.4) {
+    playerY = 2.4;
+    velocityY = 0;
+  }
+
+  camera.position.y = playerY;
+
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
@@ -355,12 +414,23 @@ function updatePlayer(dt) {
 }
 
 /* =========================
-   ТАЧ-СОБЫТИЯ
+   ТАЧ-СОБЫТИЯ I КНОПКА ПРЫЖКА
 ========================= */
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
+const jumpBtn = document.getElementById('jump');
+
 let joyId = null, joyRect = null;
 let lookId = null, lastTouchX = 0, lastTouchY = 0;
+
+// Событие прыжка
+jumpBtn.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  if (isGrounded) {
+    velocityY = jumpForce;
+    isGrounded = false;
+  }
+});
 
 joy.addEventListener('pointerdown', e => {
   joyId = e.pointerId;
@@ -392,7 +462,7 @@ joy.addEventListener('pointerup', resetJoy);
 joy.addEventListener('pointercancel', resetJoy);
 
 window.addEventListener('pointerdown', e => {
-  if (e.target === joy || joy.contains(e.target) || e.target.id === 'fs') return;
+  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn) return;
   if (e.clientX > window.innerWidth * 0.3) {
     lookId = e.pointerId;
     lastTouchX = e.clientX;
@@ -416,6 +486,27 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
 
 /* =========================
+   ПРОВЕРКА ОРИЕНТАЦИИ ЭКРАНА
+========================= */
+function checkOrientation() {
+  const rotateScreen = document.getElementById('rotate-screen');
+  if (window.innerHeight > window.innerWidth) {
+    rotateScreen.style.display = 'flex';
+  } else {
+    rotateScreen.style.display = 'none';
+  }
+}
+
+window.addEventListener('resize', () => {
+  checkOrientation();
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+checkOrientation();
+
+/* =========================
    ИГРОВОЙ ЦИКЛ
 ========================= */
 let lastTime = performance.now();
@@ -429,17 +520,6 @@ function animate(now) {
 
   requestAnimationFrame(animate);
 }
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-document.getElementById('fs').addEventListener('click', () => {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-  if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(()=>{});
-});
 
 setTimeout(() => document.getElementById('hint').classList.add('hide'), 4000);
 
