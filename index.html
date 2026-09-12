@@ -183,13 +183,14 @@ scene.background = new THREE.Color(0x11110e);
 scene.fog = new THREE.FogExp2(0x11110e, 0.035);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0x999988, 1.0));
+scene.add(new THREE.AmbientLight(0xffea9f, 0.35));
 
 function createWallTexture() {
   const canvas = document.createElement('canvas');
@@ -237,14 +238,15 @@ function createMonsterTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
-const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
-const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
+const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.9 });
+const floorMat = new THREE.MeshStandardMaterial({ map: createCarpetTexture(), roughness: 0.8 });
+const ceilingMat = new THREE.MeshStandardMaterial({ map: createCeilingTexture(), roughness: 0.9 });
 
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
+floor.receiveShadow = true;
 scene.add(floor);
 
 const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
@@ -265,6 +267,8 @@ for (let y = 0; y < MH; y++) {
     if (map[y][x] === '#') {
       const wall = new THREE.Mesh(wallGeo, wallMat);
       wall.position.set(posX, 1.5, posZ);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
       scene.add(wall);
       walls.push(wall);
     } else if (map[y][x] === 'E') {
@@ -291,6 +295,21 @@ for (let y = 0; y < MH; y++) {
       const exitLight = new THREE.PointLight(0x00ffff, 3, 10);
       exitLight.position.set(posX, 2.0, posZ);
       scene.add(exitLight);
+    }
+  }
+}
+
+// Добавляем лампы на потолке для красивых объёмных теней (в ключевых точках лабиринта)
+for (let y = 3; y < MH; y += 7) {
+  for (let x = 3; x < MW; x += 7) {
+    if (map[y][x] !== '#') {
+      const pLight = new THREE.PointLight(0xfffaed, 0.8, 14);
+      pLight.position.set(x * CELL_SIZE + CELL_SIZE/2, 2.7, y * CELL_SIZE + CELL_SIZE/2);
+      pLight.castShadow = true;
+      pLight.shadow.bias = -0.002;
+      pLight.shadow.mapSize.width = 512;
+      pLight.shadow.mapSize.height = 512;
+      scene.add(pLight);
     }
   }
 }
