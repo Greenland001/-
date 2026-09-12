@@ -526,6 +526,10 @@ const MH = map.length;
 const CELL_SIZE = 3;
 
 let audioCtx = null;
+let currentAmbienceLevel = null;
+let ambienceNodes = [];
+let ambienceGain = null;
+let ambienceCreakTimer = null;
 
 function initAudio() {
   if (!audioCtx) {
@@ -533,6 +537,170 @@ function initAudio() {
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
+  }
+  if (currentAmbienceLevel === null) {
+    startAmbience('level0');
+  } else if (ambienceNodes.length === 0) {
+    startAmbience(currentAmbienceLevel);
+  }
+}
+
+function createNoiseBuffer() {
+  const bufferSize = audioCtx.sampleRate * 2;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+function stopAmbience() {
+  if (ambienceCreakTimer) { clearTimeout(ambienceCreakTimer); ambienceCreakTimer = null; }
+  ambienceNodes.forEach(n => {
+    try { n.stop && n.stop(); } catch(e) {}
+    try { n.disconnect && n.disconnect(); } catch(e) {}
+  });
+  ambienceNodes = [];
+  if (ambienceGain) {
+    try { ambienceGain.disconnect(); } catch(e) {}
+    ambienceGain = null;
+  }
+}
+
+function startAmbience(level) {
+  currentAmbienceLevel = level;
+  if (!audioCtx) return;
+  stopAmbience();
+
+  ambienceGain = audioCtx.createGain();
+  ambienceGain.gain.value = 0.0001;
+  ambienceGain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+
+  if (level === 'level0') {
+    // Fluorescent-light hum: two slightly detuned low tones beating against
+    // each other, plus a faint buzzy overtone.
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sine'; osc1.frequency.value = 54;
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine'; osc2.frequency.value = 57;
+    const buzz = audioCtx.createOscillator();
+    buzz.type = 'square'; buzz.frequency.value = 118;
+    const buzzGain = audioCtx.createGain();
+    buzzGain.gain.value = 0.04;
+    buzz.connect(buzzGain).connect(ambienceGain);
+    osc1.connect(ambienceGain);
+    osc2.connect(ambienceGain);
+    osc1.start(); osc2.start(); buzz.start();
+    ambienceNodes.push(osc1, osc2, buzz, buzzGain);
+    ambienceGain.gain.linearRampToValueAtTime(0.09, now + 2.5);
+
+  } else if (level === 'level2') {
+    // Open-air wind: filtered looping noise with a slow, gentle volume swell.
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = createNoiseBuffer();
+    noise.loop = true;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 500;
+    filter.Q.value = 0.6;
+    const windLFOGain = audioCtx.createGain();
+    windLFOGain.gain.value = 0.11;
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine'; lfo.frequency.value = 0.08;
+    const lfoDepth = audioCtx.createGain();
+    lfoDepth.gain.value = 0.05;
+    lfo.connect(lfoDepth).connect(windLFOGain.gain);
+    noise.connect(filter).connect(windLFOGain).connect(ambienceGain);
+    noise.start(); lfo.start();
+    ambienceNodes.push(noise, filter, windLFOGain, lfo, lfoDepth);
+    ambienceGain.gain.linearRampToValueAtTime(0.16, now + 2.5);
+
+  } else if (level === 'level3') {
+    // Uneasy, dissonant low drone with occasional distant creaks.
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sawtooth'; osc1.frequency.value = 42;
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine'; osc2.frequency.value = 63;
+    const lowpass = audioCtx.createBiquadFilter();
+    lowpass.type = 'lowpass'; lowpass.frequency.value = 220;
+    osc1.connect(lowpass); osc2.connect(lowpass);
+    lowpass.connect(ambienceGain);
+    osc1.start(); osc2.start();
+    ambienceNodes.push(osc1, osc2, lowpass);
+    ambienceGain.gain.linearRampToValueAtTime(0.08, now + 2.5);
+
+    const scheduleCreak = () => {
+      if (currentAmbienceLevel !== 'level3' || !audioCtx) return;
+      try {
+        const c = audioCtx.createOscillator();
+        const cg = audioCtx.createGain();
+        c.type = 'triangle';
+        c.frequency.setValueAtTime(90 + Math.random()*40, audioCtx.currentTime);
+        c.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 1.1);
+        cg.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        cg.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.15);
+        cg.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 1.1);
+        c.connect(cg).connect(audioCtx.destination);
+        c.start(); c.stop(audioCtx.currentTime + 1.2);
+      } catch(e) {}
+      ambienceCreakTimer = setTimeout(scheduleCreak, 5000 + Math.random()*9000);
+    };
+    ambienceCreakTimer = setTimeout(scheduleCreak, 4000 + Math.random()*4000);
+
+  } else if (level === 'level4') {
+    // Muffled underwater ambience: heavily low-passed noise with a slow
+    // wobble, evoking being submerged.
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = createNoiseBuffer();
+    noise.loop = true;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 300;
+    const wobble = audioCtx.createOscillator();
+    wobble.type = 'sine'; wobble.frequency.value = 0.15;
+    const wobbleDepth = audioCtx.createGain();
+    wobbleDepth.gain.value = 60;
+    wobble.connect(wobbleDepth).connect(filter.frequency);
+    noise.connect(filter).connect(ambienceGain);
+    noise.start(); wobble.start();
+    ambienceNodes.push(noise, filter, wobble, wobbleDepth);
+    ambienceGain.gain.linearRampToValueAtTime(0.13, now + 2.5);
+  }
+}
+
+let heartbeatTimer = 0;
+
+function playHeartbeatThump() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(58, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(28, audioCtx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.32, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.25);
+  } catch(e) {}
+}
+
+// Heartbeat gets faster the closer the monster is (danger zone starts at 15
+// units); silent outside that range.
+function updateHeartbeat(dist, dt) {
+  if (dist >= 15) {
+    heartbeatTimer = 0;
+    return;
+  }
+  heartbeatTimer -= dt;
+  if (heartbeatTimer <= 0) {
+    const proximity = 1 - Math.max(0, dist) / 15; // 0 (far) .. 1 (touching)
+    const interval = 1.05 - proximity * 0.8; // ~1.05s far -> ~0.25s very close
+    heartbeatTimer = interval;
+    playHeartbeatThump();
   }
 }
 
@@ -656,9 +824,10 @@ const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
+const ambientLight = new THREE.AmbientLight(0x999988, 0.72);
 scene.add(ambientLight);
 
 function createWallTexture(hasGraffiti) {
@@ -795,11 +964,13 @@ const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
+floor.receiveShadow = true;
 scene.add(floor);
 
 const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
 ceiling.rotation.x = Math.PI / 2;
 ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
+ceiling.receiveShadow = true;
 scene.add(ceiling);
 
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
@@ -831,6 +1002,8 @@ for (let y = 0; y < MH; y++) {
 
       const wall = new THREE.Mesh(wallGeo, chosenMat);
       wall.position.set(posX, 1.5, posZ);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
       scene.add(wall);
       walls.push(wall);
     } else if (map[y][x] === 'E') {
@@ -853,6 +1026,10 @@ for (let y = 0; y < MH; y++) {
         glow.rotation.x = Math.PI / 2;
         glow.position.set(posX, 2.94, posZ);
         scene.add(glow);
+
+        const lampLight = new THREE.PointLight(0xfff2c4, 0.55, 6.5, 2);
+        lampLight.position.set(posX, 2.8, posZ);
+        scene.add(lampLight);
       }
     }
   }
@@ -957,6 +1134,9 @@ const LEVEL2_RUN_TARGET = 20;
 let specialHouse = null;
 let houseChunks = new Map();
 let poolChunks = new Map();
+let level2Sun = null;
+let level3Moon = null;
+let level4SkyLight = null;
 
 function createBatteryTexture() {
   const canvas = document.createElement('canvas');
@@ -1008,6 +1188,11 @@ function updateBatteryPickups(dt) {
 // Flashlight: spotlight attached to the camera
 const flashlight = new THREE.SpotLight(0xfff2cc, 0, 22, Math.PI/6.2, 0.4, 1.2);
 flashlight.position.set(0, 0, 0);
+flashlight.castShadow = true;
+flashlight.shadow.mapSize.set(512, 512);
+flashlight.shadow.bias = -0.004;
+flashlight.shadow.camera.near = 0.5;
+flashlight.shadow.camera.far = 22;
 const flashlightTarget = new THREE.Object3D();
 camera.add(flashlightTarget);
 flashlightTarget.position.set(0, 0, -1);
@@ -1085,6 +1270,8 @@ function makeHouse(cx, cz, isSpecial) {
   const bodyGeo = new THREE.BoxGeometry(8, 6, 8);
   const body = new THREE.Mesh(bodyGeo, wallMat);
   body.position.y = 3;
+  body.castShadow = true;
+  body.receiveShadow = true;
   group.add(body);
 
   const roofGeo = new THREE.ConeGeometry(6.5, 3.5, 4);
@@ -1092,6 +1279,7 @@ function makeHouse(cx, cz, isSpecial) {
   const roof = new THREE.Mesh(roofGeo, roofMat);
   roof.rotation.y = Math.PI / 4;
   roof.position.y = 7.7;
+  roof.castShadow = true;
   group.add(roof);
 
   if (isSpecial) {
@@ -1146,6 +1334,7 @@ function updateHouseChunks() {
 
 function loadLevel3() {
   currentLevel = 3;
+  startAmbience('level3');
   clearBatteries();
   houseChunks = new Map();
   specialHouse = null;
@@ -1162,7 +1351,19 @@ function loadLevel3() {
   scene.add(new THREE.AmbientLight(0x998866, 0.8));
   const moon = new THREE.DirectionalLight(0xccccee, 0.5);
   moon.position.set(100, 150, 80);
+  moon.castShadow = true;
+  moon.shadow.mapSize.set(1024, 1024);
+  moon.shadow.camera.left = -140;
+  moon.shadow.camera.right = 140;
+  moon.shadow.camera.top = 140;
+  moon.shadow.camera.bottom = -140;
+  moon.shadow.camera.near = 20;
+  moon.shadow.camera.far = 400;
+  moon.shadow.bias = -0.0015;
+  moon.target.position.set(0, 0, 0);
+  scene.add(moon.target);
   scene.add(moon);
+  level3Moon = moon;
 
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
@@ -1177,6 +1378,7 @@ function loadLevel3() {
   const groundGeo = new THREE.PlaneGeometry(20000, 20000);
   groundGeo.rotateX(-Math.PI/2);
   const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.receiveShadow = true;
   scene.add(ground);
 
   playerY = 1.5;
@@ -1204,6 +1406,8 @@ function makePillar(cx, cz) {
   const geo = new THREE.BoxGeometry(1.4, 8, 1.4);
   const mat = new THREE.MeshStandardMaterial({ color: 0xdfe9ea, roughness: 0.3, metalness: 0.1 });
   const pillar = new THREE.Mesh(geo, mat);
+  pillar.castShadow = true;
+  pillar.receiveShadow = true;
   const wx = cx * POOL_CHUNK + POOL_CHUNK/2;
   const wz = cz * POOL_CHUNK + POOL_CHUNK/2;
   pillar.position.set(wx, 4, wz);
@@ -1238,6 +1442,7 @@ function updatePoolChunks() {
 
 function loadLevel4() {
   currentLevel = 4;
+  startAmbience('level4');
   clearBatteries();
   poolChunks = new Map();
   document.getElementById('minimap-container').style.display = 'none';
@@ -1254,7 +1459,19 @@ function loadLevel4() {
   scene.add(new THREE.AmbientLight(0xdff5f7, 1.1));
   const skyLight = new THREE.DirectionalLight(0xffffff, 0.6);
   skyLight.position.set(50, 100, 50);
+  skyLight.castShadow = true;
+  skyLight.shadow.mapSize.set(1024, 1024);
+  skyLight.shadow.camera.left = -100;
+  skyLight.shadow.camera.right = 100;
+  skyLight.shadow.camera.top = 100;
+  skyLight.shadow.camera.bottom = -100;
+  skyLight.shadow.camera.near = 20;
+  skyLight.shadow.camera.far = 300;
+  skyLight.shadow.bias = -0.0015;
+  skyLight.target.position.set(0, 0, 0);
+  scene.add(skyLight.target);
   scene.add(skyLight);
+  level4SkyLight = skyLight;
 
   const tileCanvas = document.createElement('canvas');
   tileCanvas.width = 128; tileCanvas.height = 128;
@@ -1271,6 +1488,7 @@ function loadLevel4() {
   floorGeoPool.rotateX(-Math.PI/2);
   const poolFloor = new THREE.Mesh(floorGeoPool, floorMatPool);
   poolFloor.position.y = -2.4;
+  poolFloor.receiveShadow = true;
   scene.add(poolFloor);
 
   const waterMat = new THREE.MeshPhysicalMaterial({
@@ -1540,31 +1758,6 @@ function updatePlayer(dt) {
     }
   }
 
-  velocityY += gravity * dt;
-  playerY += velocityY * dt;
-
-  if (currentLevel === 2) {
-    const terrainHeight = getLevel2Height(camera.position.x, camera.position.z) + 1.8;
-    if (playerY <= terrainHeight) {
-      playerY = terrainHeight;
-      velocityY = 0;
-      isGrounded = true;
-    } else {
-      isGrounded = false;
-    }
-  } else {
-    if (playerY <= 1.5) {
-      playerY = 1.5;
-      velocityY = 0;
-      isGrounded = true;
-    } else {
-      isGrounded = false;
-    }
-  }
-
-  if (playerY > 15.0) { playerY = 15.0; velocityY = 0; }
-
-  camera.position.y = playerY;
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
@@ -1591,15 +1784,57 @@ function updatePlayer(dt) {
     }
   }
 
+  // Horizontal movement happens BEFORE the vertical/terrain snap below, so the
+  // ground-height check always uses this frame's up-to-date x/z position
+  // instead of lagging a frame behind (this was the cause of the run-timer
+  // flickering off while sprinting downhill on level 2).
   const nextPosX = camera.position.clone().addScaledVector(new THREE.Vector3(dir.x, 0, 0), speed);
   if (!checkObjectCollision(nextPosX, 0.4)) camera.position.x = nextPosX.x;
 
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
+  velocityY += gravity * dt;
+  playerY += velocityY * dt;
+
+  if (currentLevel === 2) {
+    const terrainHeight = getLevel2Height(camera.position.x, camera.position.z) + 1.8;
+    // Generous tolerance: as long as we're not actively rising from a jump
+    // (velocityY <= 0.1), snap to the slope even if playerY is briefly a bit
+    // above or below it. This keeps isGrounded stable while sprinting across
+    // bumpy hills, instead of flickering false for a frame on steep terrain.
+    if (velocityY <= 0.1 && Math.abs(playerY - terrainHeight) < 1.4) {
+      playerY = terrainHeight;
+      velocityY = 0;
+      isGrounded = true;
+    } else if (playerY <= terrainHeight) {
+      playerY = terrainHeight;
+      velocityY = 0;
+      isGrounded = true;
+    } else {
+      isGrounded = false;
+    }
+  } else {
+    if (playerY <= 1.5) {
+      playerY = 1.5;
+      velocityY = 0;
+      isGrounded = true;
+    } else {
+      isGrounded = false;
+    }
+  }
+
+  if (playerY > 15.0) { playerY = 15.0; velocityY = 0; }
+
+  camera.position.y = playerY;
+
   updateMinimap();
 
   if (currentLevel === 2) {
+    if (level2Sun) {
+      level2Sun.position.set(camera.position.x + 200, camera.position.y + 300, camera.position.z + 150);
+      level2Sun.target.position.set(camera.position.x, camera.position.y, camera.position.z);
+    }
     clouds.forEach(cloud => {
       cloud.position.x += dt * 1.5;
       if (cloud.position.x > 400) cloud.position.x = -400;
@@ -1614,6 +1849,10 @@ function updatePlayer(dt) {
   }
 
   if (currentLevel === 3) {
+    if (level3Moon) {
+      level3Moon.position.set(camera.position.x + 100, camera.position.y + 150, camera.position.z + 80);
+      level3Moon.target.position.set(camera.position.x, camera.position.y, camera.position.z);
+    }
     updateHouseChunks();
     if (specialHouse) {
       const d = camera.position.distanceTo(specialHouse.position);
@@ -1632,6 +1871,10 @@ function updatePlayer(dt) {
   }
 
   if (currentLevel === 4) {
+    if (level4SkyLight) {
+      level4SkyLight.position.set(camera.position.x + 50, camera.position.y + 100, camera.position.z + 50);
+      level4SkyLight.target.position.set(camera.position.x, camera.position.y, camera.position.z);
+    }
     updatePoolChunks();
   }
 
@@ -1645,6 +1888,7 @@ function updatePlayer(dt) {
     } else {
       dangerOverlay.style.opacity = '0';
     }
+    updateHeartbeat(dist, dt);
 
     pathTimer += dt;
     if (pathTimer > 0.4) {
@@ -1722,6 +1966,7 @@ function triggerWin() {
 
 function loadLevel2() {
   currentLevel = 2;
+  startAmbience('level2');
   clouds = [];
   giants = [];
   idleTimer = 0;
@@ -1742,8 +1987,19 @@ function loadLevel2() {
   const sun = new THREE.DirectionalLight(0xfffaed, 1.5);
   sun.position.set(200, 300, 150);
   sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -140;
+  sun.shadow.camera.right = 140;
+  sun.shadow.camera.top = 140;
+  sun.shadow.camera.bottom = -140;
+  sun.shadow.camera.near = 50;
+  sun.shadow.camera.far = 600;
+  sun.shadow.bias = -0.0015;
+  sun.target.position.set(0, 0, 0);
+  scene.add(sun.target);
   scene.add(sun);
   scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
+  level2Sun = sun;
 
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 512;
