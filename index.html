@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D — Level 0 & Level 2 (Audio)</title>
+<title>Backrooms 3D — Level 0 (Graffiti Guide)</title>
 
 <style>
 *{
@@ -289,7 +289,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Найди зелёную дверь неподалёку, чтобы перейти на Уровень 2!</div>
+  <div id="hint" class="hint">Ищи на стенах красные метки и рисунки странников — они ведут к выходу!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
@@ -349,7 +349,6 @@ const MW = map[0].length;
 const MH = map.length;
 const CELL_SIZE = 3;
 
-// Аудио менеджер на Web Audio API
 let audioCtx = null;
 
 function initAudio() {
@@ -369,10 +368,8 @@ function playFootstepSound() {
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(80, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
-
     gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -388,10 +385,8 @@ function playJumpSound() {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(150, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
-
     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
     gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -407,10 +402,8 @@ function playJumpscareSound() {
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(120, audioCtx.currentTime);
     osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.8);
-
     gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
     gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
-
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -432,13 +425,13 @@ const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
 scene.add(ambientLight);
 
-function createWallTexture() {
+// Текстура стены с возможностью нанести граффити-метку
+function createWallTexture(hasGraffiti) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
@@ -450,6 +443,26 @@ function createWallTexture() {
     ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
     ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
   }
+
+  // Если это стена с подсказкой — рисуем пугающие знаки / кресты / стрелочки краской
+  if (hasGraffiti) {
+    ctx.save();
+    ctx.strokeStyle = '#8b0000';
+    ctx.fillStyle = '#8b0000';
+    ctx.lineWidth = 6;
+    ctx.font = 'bold 36px monospace';
+
+    // Рисуем зловещий крест или знаки выживших
+    ctx.beginPath();
+    ctx.moveTo(100, 100); ctx.lineTo(156, 156);
+    ctx.moveTo(156, 100); ctx.lineTo(100, 156);
+    ctx.stroke();
+
+    // Текстовая подсказка краской
+    ctx.fillText("EXIT ->", 70, 200);
+    ctx.restore();
+  }
+
   let gradTop = ctx.createLinearGradient(0, 0, 0, 30);
   gradTop.addColorStop(0, 'rgba(0,0,0,0.35)');
   gradTop.addColorStop(1, 'rgba(0,0,0,0)');
@@ -530,7 +543,9 @@ function createExitDoorTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
+const standardWallMat = new THREE.MeshLambertMaterial({ map: createWallTexture(false) });
+const guideWallMat = new THREE.MeshLambertMaterial({ map: createWallTexture(true) });
+
 const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
 const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
 
@@ -557,13 +572,24 @@ const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
 const walls = [];
 let exitPos = new THREE.Vector3();
 
+// Координаты стен-подсказок (где нарисованы граффити, ведущие к выходу близко к старту)
+const guideCoords = [
+  {x: 3, y: 1},
+  {x: 5, y: 1},
+  {x: 7, y: 3}
+];
+
 for (let y = 0; y < MH; y++) {
   for (let x = 0; x < MW; x++) {
     const posX = x * CELL_SIZE + CELL_SIZE/2;
     const posZ = y * CELL_SIZE + CELL_SIZE/2;
 
     if (map[y][x] === '#') {
-      const wall = new THREE.Mesh(wallGeo, wallMat);
+      // Проверяем, есть ли здесь метка-подсказка
+      const isGuide = guideCoords.some(c => c.x === x && c.y === y);
+      const chosenMat = isGuide ? guideWallMat : standardWallMat;
+
+      const wall = new THREE.Mesh(wallGeo, chosenMat);
       wall.position.set(posX, 1.5, posZ);
       scene.add(wall);
       walls.push(wall);
@@ -633,7 +659,6 @@ function findPathBFS(startGrid, targetGrid) {
 
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
-
 let playerY = 1.5;
 let velocityY = 0;
 const gravity = -18;
@@ -756,19 +781,15 @@ function updatePlayer(dt) {
       if (idleTimer > 3.5) {
         dangerOverlay.style.opacity = Math.min(1, (idleTimer - 3.5) / 2.5).toFixed(2);
       }
-
       if (idleTimer >= 6.0 && !level2MonsterFlying) {
         level2MonsterFlying = true;
-        
         const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
         level2Monster = new THREE.Sprite(monsterMat);
         level2Monster.scale.set(12, 12, 1);
         level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 15);
         scene.add(level2Monster);
-
         document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
         document.getElementById('jumpscare-desc').innerText = "Гигант поймал тебя в открытом поле...";
-        
         triggerJumpscare();
         return;
       }
@@ -797,20 +818,15 @@ function updatePlayer(dt) {
     }
   }
 
-  if (playerY > 15.0) {
-    playerY = 15.0;
-    velocityY = 0;
-  }
+  if (playerY > 15.0) { playerY = 15.0; velocityY = 0; }
 
   camera.position.y = playerY;
-
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
   const speed = 4.5 * dt;
   const dir = new THREE.Vector3();
-  
   const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
   const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
 
@@ -841,12 +857,10 @@ function updatePlayer(dt) {
       cloud.position.x += dt * 1.5;
       if (cloud.position.x > 400) cloud.position.x = -400;
     });
-
     giants.forEach(g => {
       g.position.x += g.userData.vx * dt;
       g.position.z += g.userData.vz * dt;
       g.position.y = getLevel2Height(g.position.x, g.position.z) + 12;
-      
       if (Math.abs(g.position.x) > 300) g.userData.vx *= -1;
       if (Math.abs(g.position.z) > 300) g.userData.vz *= -1;
     });
@@ -949,14 +963,12 @@ function loadLevel2() {
   sun.shadow.camera.bottom = -d;
   sun.shadow.bias = -0.0005;
   scene.add(sun);
-  
   scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
 
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 512;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#428a2a'; ctx.fillRect(0, 0, 512, 512);
-  
   for(let i=0; i<8000; i++) {
     const rx = Math.random() * 512;
     const ry = Math.random() * 512;
@@ -971,7 +983,6 @@ function loadLevel2() {
   grassTex.repeat.set(80, 80);
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
-  
   const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
@@ -1061,7 +1072,7 @@ jumpBtn.addEventListener('pointerdown', (e) => {
   if (isGrounded && !isGameOver) {
     velocityY = jumpForce;
     isGrounded = false;
-    playJumpSound();
+    playJumpSample = playJumpSound();
   }
 });
 
