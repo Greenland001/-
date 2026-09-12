@@ -282,14 +282,14 @@ html,body{
 
 <div id="win-screen">
   <h1>ВЫ ПЕРЕШЛИ НА УРОВЕНЬ 2!</h1>
-  <p>Бесконечное зелёное поле... Здесь безопасно?</p>
-  <button id="continue-btn">ИССЛЕДОВАТЬ УРОВЕНЬ 2</button>
+  <p>Зелёные холмы... Но вдали кто-то бродит. Не останавливайся!</p>
+  <button id="continue-btn">ВЫЖИВАТЬ НА УРОВНЕ 2</button>
 </div>
 
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Дверь прямо перед тобой! Зайди в нее, чтобы перейти на Уровень 2.</div>
+  <div id="hint" class="hint">Найди выход в глубине коридоров, чтобы перейти на Уровень 2!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
@@ -306,7 +306,7 @@ html,body{
 
 const map = [
   "##################################################",
-  "#E.....................#.........................#",
+  "#......................#.........................#",
   "#..##################..#..#####################..#",
   "#..#................#..#..#...................#..#",
   "#..#..############..#..#..#..###############..#..#",
@@ -341,7 +341,7 @@ const map = [
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
   "#..#######..##############..#..####..##########..#",
-  "#................................................#",
+  "#...................E............................#",
   "##################################################"
 ];
 
@@ -576,9 +576,9 @@ let currentLevel = 0;
 let pathTimer = 0;
 let currentMonsterPath = [];
 
-// Переменные для Уровня 2 (облака, портал, таймер бездействия)
+// Переменные для Уровня 2 (облака, гиганты, таймер бездействия)
 let clouds = [];
-let portalPos = new THREE.Vector3(50, 0, 50);
+let giants = [];
 let idleTimer = 0;
 let level2Monster = null;
 let level2MonsterFlying = false;
@@ -672,38 +672,34 @@ function getLevel2Height(x, z) {
 
 function updatePlayer(dt) {
   if (isGameOver) {
-    // Анимация прилета монстра к лицу игрока при смерти от бездействия
     if (level2MonsterFlying && level2Monster) {
       level2Monster.position.lerp(camera.position, dt * 6.0);
     }
     return;
   }
 
-  // Проверка движения для таймера бездействия на Уровне 2
+  // Проверка бездействия на Уровне 2 (6 секунд)
   if (currentLevel === 2) {
     if (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05 || !isGrounded) {
       idleTimer = 0;
       dangerOverlay.style.opacity = '0';
     } else {
       idleTimer += dt;
-      // Начинаем пугать красным экраном за 2 секунды до атаки
-      if (idleTimer > 4.0) {
-        dangerOverlay.style.opacity = Math.min(1, (idleTimer - 4.0) / 2.0).toFixed(2);
+      if (idleTimer > 3.5) {
+        dangerOverlay.style.opacity = Math.min(1, (idleTimer - 3.5) / 2.5).toFixed(2);
       }
 
-      if (idleTimer > 6.0 && !level2MonsterFlying) {
+      if (idleTimer >= 6.0 && !level2MonsterFlying) {
         level2MonsterFlying = true;
         
-        // Спавним монстра вдалеке прямо по курсу взгляда игрока
         const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
         level2Monster = new THREE.Sprite(monsterMat);
-        level2Monster.scale.set(6, 6, 1);
-        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 12);
+        level2Monster.scale.set(12, 12, 1);
+        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 15);
         scene.add(level2Monster);
 
-        // Настраиваем текст скримера под бездействие
         document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
-        document.getElementById('jumpscare-desc').innerText = "Сущность нашла тебя в зелёном поле...";
+        document.getElementById('jumpscare-desc').innerText = "Гигант поймал тебя в открытом поле...";
         
         triggerJumpscare();
         return;
@@ -763,19 +759,22 @@ function updatePlayer(dt) {
 
   updateMinimap();
 
-  // Анимация облаков на Уровне 2
+  // Анимация облаков и блуждающих гигантов на Уровне 2
   if (currentLevel === 2) {
     clouds.forEach(cloud => {
       cloud.position.x += dt * 1.5;
       if (cloud.position.x > 400) cloud.position.x = -400;
     });
 
-    // Проверка портала
-    portalPos.y = getLevel2Height(portalPos.x, portalPos.z) + 2.0;
-    if (camera.position.distanceTo(portalPos) < 2.0) {
-      alert("Поздравляем! Вы прошли демо-версию и сбежали из Backrooms!");
-      location.reload();
-    }
+    giants.forEach(g => {
+      g.position.x += g.userData.vx * dt;
+      g.position.z += g.userData.vz * dt;
+      g.position.y = getLevel2Height(g.position.x, g.position.z) + 12;
+      
+      // Ограничим область блуждания гигантов
+      if (Math.abs(g.position.x) > 300) g.userData.vx *= -1;
+      if (Math.abs(g.position.z) > 300) g.userData.vz *= -1;
+    });
   }
 
   if (currentLevel === 0) {
@@ -849,6 +848,7 @@ document.getElementById('continue-btn').addEventListener('click', () => {
 function loadLevel2() {
   currentLevel = 2;
   clouds = [];
+  giants = [];
   idleTimer = 0;
   level2MonsterFlying = false;
 
@@ -938,28 +938,24 @@ function loadLevel2() {
     clouds.push(cloudGroup);
   }
 
-  // Портал
-  portalPos.set(40, getLevel2Height(40, 40) + 2.0, 40);
-  const portalGroup = new THREE.Group();
-  portalGroup.position.copy(portalPos);
-  
-  const ringGeo = new THREE.TorusGeometry(2.5, 0.2, 16, 100);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-  portalGroup.add(ringMesh);
-
-  const coreGeo = new THREE.PlaneGeometry(4, 4);
-  const coreMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
-  const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-  portalGroup.add(coreMesh);
-
-  const portalLight = new THREE.PointLight(0xff00ff, 3, 10);
-  portalGroup.add(portalLight);
-  scene.add(portalGroup);
+  // Огромные монстры на горизонте
+  for(let i=0; i<5; i++) {
+    const giant = new THREE.Sprite(monsterMat);
+    giant.scale.set(25, 25, 1); // Очень большие
+    const gx = (Math.random() - 0.5) * 300;
+    const gz = (Math.random() - 0.5) * 300;
+    giant.position.set(gx, getLevel2Height(gx, gz) + 12, gz);
+    giant.userData = {
+      vx: (Math.random() - 0.5) * 2.0,
+      vz: (Math.random() - 0.5) * 2.0
+    };
+    scene.add(giant);
+    giants.push(giant);
+  }
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Найди фиолетово-неоновый портал! Не стой долго на одном месте.";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Огромные монстры бродят вдалеке. НЕ СТОЙ НА МЕСТЕ 6 секунд!";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
