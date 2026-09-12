@@ -321,7 +321,7 @@ const map = [
   "#..#..####################..#..####..#..#####..#.#",
   "#..#..#..................#..#..#..#..#......#..#.#",
   "#..#..#..##############..#..#..#..#..#####..#..#.#",
-  "#.....#..#............#..#..#     #......#..#....#",
+  "#     #..#............#..#..#     #......#..#....#",
   "########.#..########..#..#..###########..#..######",
   "#........#..#......#..#..#...............#.......#",
   "#..#######..#......#..#..######################..#",
@@ -329,7 +329,7 @@ const map = [
   "#..#..#######..#####..######################..#..#",
   "#..#..#     #.........#....................#..#..#",
   "#..#..#     ########..#..################..#..#..#",
-  "#.....#...............#..#..............#.....#..#",
+  "#     #...............#..#..............#.....#..#",
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
   "#..#######..##############..#..####..##########..#",
@@ -568,6 +568,13 @@ let currentLevel = 0;
 let pathTimer = 0;
 let currentMonsterPath = [];
 
+// Переменные для Уровня 2 (облака, портал, таймер бездействия)
+let clouds = [];
+let portalPos = new THREE.Vector3(50, 0, 50);
+let idleTimer = 0;
+let level2Monster = null;
+let level2MonsterActive = false;
+
 function checkObjectCollision(pos, radius = 0.4) {
   if (currentLevel === 2) return false;
   for (let wall of walls) {
@@ -658,6 +665,31 @@ function getLevel2Height(x, z) {
 function updatePlayer(dt) {
   if (isGameOver) return;
 
+  // Проверка движения для таймера бездействия на Уровне 2
+  if (currentLevel === 2) {
+    if (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05 || !isGrounded) {
+      idleTimer = 0;
+      if (level2MonsterActive) {
+        level2MonsterActive = false;
+        scene.remove(level2Monster);
+      }
+    } else {
+      idleTimer += dt;
+      if (idleTimer > 6.0 && !level2MonsterActive) {
+        // Спавним монстра перед лицом игрока / сзади и пугаем
+        level2MonsterActive = true;
+        const spawnDir = new THREE.Vector3(0, 0, -3).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+        level2Monster = new THREE.Sprite(monsterMat);
+        level2Monster.scale.set(4, 4, 1);
+        level2Monster.position.copy(camera.position).add(spawnDir);
+        level2Monster.position.y = camera.position.y;
+        scene.add(level2Monster);
+        triggerJumpscare();
+        return;
+      }
+    }
+  }
+
   velocityY += gravity * dt;
   playerY += velocityY * dt;
 
@@ -709,6 +741,21 @@ function updatePlayer(dt) {
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
   updateMinimap();
+
+  // Анимация облаков на Уровне 2
+  if (currentLevel === 2) {
+    clouds.forEach(cloud => {
+      cloud.position.x += dt * 1.5;
+      if (cloud.position.x > 400) cloud.position.x = -400;
+    });
+
+    // Проверка портала
+    portalPos.y = getLevel2Height(portalPos.x, portalPos.z) + 2.0;
+    if (camera.position.distanceTo(portalPos) < 2.0) {
+      alert("Поздравляем! Вы прошли демо-версию и сбежали из Backrooms!");
+      location.reload();
+    }
+  }
 
   if (currentLevel === 0) {
     const mPos = monster.position;
@@ -778,6 +825,7 @@ document.getElementById('continue-btn').addEventListener('click', () => {
 
 function loadLevel2() {
   currentLevel = 2;
+  clouds = [];
 
   while(scene.children.length > 0){ 
     scene.remove(scene.children[0]); 
@@ -786,7 +834,6 @@ function loadLevel2() {
   scene.background = new THREE.Color(0x5ca2ff);
   scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
 
-  // Освещение с поддержкой теней
   const sun = new THREE.DirectionalLight(0xfffaed, 1.5);
   sun.position.set(200, 300, 150);
   sun.castShadow = true;
@@ -804,7 +851,6 @@ function loadLevel2() {
   
   scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
 
-  // Текстура травы
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 512;
   const ctx = canvas.getContext('2d');
@@ -825,7 +871,6 @@ function loadLevel2() {
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
   
-  // Холмистый ландшафт
   const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
@@ -840,7 +885,7 @@ function loadLevel2() {
   grassFloor.receiveShadow = true;
   scene.add(grassFloor);
 
-  // ИСПРАВЛЕНИЕ ДЛЯ ОБЛАКОВ: Используем кубические блоки с MeshLambertMaterial вместо сферы
+  // Движущиеся облака
   const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
   const cloudBlockGeo = new THREE.BoxGeometry(10, 6, 10);
 
@@ -856,7 +901,6 @@ function loadLevel2() {
       );
       const s = 0.6 + Math.random() * 0.9;
       part.scale.set(s, s * 0.6, s);
-      // Облака тоже должны отбрасывать тени на ландшафт!
       part.castShadow = true;
       cloudGroup.add(part);
     }
@@ -866,11 +910,31 @@ function loadLevel2() {
       (Math.random() - 0.5) * 600
     );
     scene.add(cloudGroup);
+    clouds.push(cloudGroup);
   }
+
+  // Красивый портал
+  portalPos.set(40, getLevel2Height(40, 40) + 2.0, 40);
+  const portalGroup = new THREE.Group();
+  portalGroup.position.copy(portalPos);
+  
+  const ringGeo = new THREE.TorusGeometry(2.5, 0.2, 16, 100);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+  portalGroup.add(ringMesh);
+
+  const coreGeo = new THREE.PlaneGeometry(4, 4);
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+  const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+  portalGroup.add(coreMesh);
+
+  const portalLight = new THREE.PointLight(0xff00ff, 3, 10);
+  portalGroup.add(portalLight);
+  scene.add(portalGroup);
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Облака заменены на кубические (видны всегда), тени активированы!";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Найди фиолетово-неоновый портал на холмах! Не стой на месте долго.";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
