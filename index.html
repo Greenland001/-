@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D — Level 0 & Level 2</title>
+<title>Backrooms 3D — Full Game</title>
 
 <style>
 *{
@@ -70,10 +70,6 @@ html,body{
   box-shadow:0 4px 10px rgba(0,0,0,0.5);
   backdrop-filter:blur(4px);
 }
-.fs-btn:active{
-  background:rgba(100,90,50,0.8);
-  transform:scale(0.92);
-}
 
 .jump-btn{
   pointer-events:auto;
@@ -92,10 +88,6 @@ html,body{
   justify-content:center;
   user-select:none;
   box-shadow:0 4px 15px rgba(0,0,0,0.5);
-}
-.jump-btn:active{
-  background:rgba(100,90,50,0.8);
-  transform:scale(0.92);
 }
 
 .joy{
@@ -152,61 +144,71 @@ html,body{
   overflow:hidden;
   box-shadow:0 0 10px rgba(0,0,0,0.8);
   backdrop-filter:blur(4px);
-  transition: transform 0.2s;
 }
-#minimap-container:active {
-  transform: scale(0.95);
+#minimap-canvas{ width:100%; height:100%; }
+
+/* Элементы Выносливости и Заряда Фонарика */
+#stamina-container {
+  position: absolute;
+  bottom: 30px;
+  left: 200px;
+  width: 160px;
+  height: 14px;
+  background: rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.5);
+  border-radius: 8px;
+  overflow: hidden;
 }
-#minimap-canvas{
-  width:100%;
-  height:100%;
+#stamina-bar {
+  width: 100%;
+  height: 100%;
+  background: #00ffcc;
+}
+#battery-txt {
+  position: absolute;
+  top: 140px;
+  left: 20px;
+  color: #fff;
+  font-size: 16px;
+  text-shadow: 1px 1px 3px #000;
 }
 
-#fullmap-screen{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.88);
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:1500;
-  color:#fff;
-  font-family:sans-serif;
-  backdrop-filter:blur(8px);
+/* Инвентарь */
+#inventory-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  pointer-events: auto;
+}
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 90px);
+  gap: 15px;
+  background: rgba(20,20,20,0.9);
   padding: 20px;
+  border-radius: 12px;
+  border: 2px solid #555;
+}
+.inv-slot {
+  width: 90px;
+  height: 90px;
+  background: #111;
+  border: 2px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  text-align: center;
   cursor: pointer;
 }
-.fullmap-card{
-  background:rgba(20,20,15,0.95);
-  border:2px solid rgba(255,255,255,0.2);
-  border-radius:16px;
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  box-shadow:0 10px 30px rgba(0,0,0,0.8);
-  max-width: 95vw;
-  max-height: 95vh;
-}
-.fullmap-card h2{
-  margin:0 0 10px 0;
-  font-size:20px;
-  color:#f0e6c2;
-  letter-spacing: 1px;
-}
-.fullmap-card p{
-  margin:10px 0 0 0;
-  font-size:14px;
-  color:#aaa;
-}
-#fullmap-canvas{
-  width: 320px;
-  height: 250px;
-  background: #0d0c0a;
-  border: 2px solid #554a2b;
-  border-radius: 8px;
-}
+.inv-slot:hover { border-color: #fff; }
 
 #danger-overlay{
   position:fixed;
@@ -217,99 +219,42 @@ html,body{
   transition:opacity 0.2s;
 }
 
-#rotate-screen{
+#rotate-screen, #jumpscare-screen, #win-screen, #fullmap-screen {
   position:fixed;
   inset:0;
-  background:#0e0d0a;
-  color:#f0e6c2;
   display:none;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  z-index:999;
+  z-index:1500;
   text-align:center;
   padding:20px;
 }
-#rotate-screen .icon{
-  font-size:60px;
-  margin-bottom:15px;
-  animation:rotateAnim 2s infinite ease-in-out;
-}
-@keyframes rotateAnim {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(90deg); }
-}
+#rotate-screen { background:#0e0d0a; color:#f0e6c2; z-index:999; }
+#jumpscare-screen { background:black; color:red; font-family:monospace; }
+#win-screen { background:rgba(0,40,0,0.85); color:#75ff75; backdrop-filter:blur(6px); }
+#fullmap-screen { background:rgba(0,0,0,0.88); backdrop-filter:blur(8px); }
 
-#jumpscare-screen{
-  position:fixed;
-  inset:0;
-  background:black;
-  display:none;
+.fullmap-card{
+  background:rgba(20,20,15,0.95);
+  border:2px solid rgba(255,255,255,0.2);
+  border-radius:16px;
+  padding:20px;
+  display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
-  z-index:1000;
-  color:red;
-  font-family:monospace;
-  padding: 20px;
-  text-align: center;
 }
-#jumpscare-screen h1{
-  font-size:42px;
-  margin-bottom:10px;
-  text-shadow:0 0 10px red;
-}
-#jumpscare-screen p{
-  font-size:20px;
-  color:#ff8888;
-  margin-bottom:25px;
-}
-#restart-btn{
+#fullmap-canvas{ width: 320px; height: 250px; background: #0d0c0a; border: 2px solid #554a2b; }
+
+button {
   pointer-events:auto;
   padding:12px 28px;
-  font-size:20px;
+  font-size:18px;
   background:#111;
   color:#fff;
-  border:2px solid red;
+  border:2px solid #888;
   border-radius:10px;
   cursor:pointer;
-}
-
-#win-screen{
-  position:fixed;
-  inset:0;
-  background:rgba(0,40,0,0.85);
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:1000;
-  color:#75ff75;
-  font-family:sans-serif;
-  text-align:center;
-  padding:20px;
-  backdrop-filter:blur(6px);
-}
-#win-screen h1{
-  font-size:36px;
-  margin-bottom:10px;
-  text-shadow:0 0 10px #00ff00;
-}
-#win-screen p{
-  font-size:20px;
-  color:#e0ffe0;
-  margin-bottom:25px;
-}
-#continue-btn{
-  pointer-events:auto;
-  padding:14px 32px;
-  font-size:20px;
-  background:#1b4d1b;
-  color:#fff;
-  border:2px solid #55ff55;
-  border-radius:12px;
-  cursor:pointer;
-  box-shadow:0 0 15px rgba(0,255,0,0.4);
 }
 </style>
 
@@ -321,7 +266,6 @@ html,body{
 <div id="danger-overlay"></div>
 
 <div id="rotate-screen">
-  <div class="icon">🔄</div>
   <h2>Поверните устройство</h2>
   <p>Для удобной игры переверните телефон горизонтально</p>
 </div>
@@ -329,21 +273,27 @@ html,body{
 <div id="jumpscare-screen">
   <h1 id="jumpscare-title">ВАС ПОЙМАЛИ</h1>
   <p id="jumpscare-desc">Вы стали добычей сущности...</p>
-  <button id="restart-btn">ПОПРОБОВАТЬ СНОВА</button>
+  <button onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
 </div>
 
 <div id="win-screen">
-  <h1>ВЫ ПЕРЕШЛИ НА УРОВЕНЬ 2!</h1>
-  <p>Зелёные холмы... Но вдали ходят ОГРОМНЫЕ сущности!</p>
-  <button id="continue-btn">ВЫЖИВАТЬ НА УРОВНЕ 2</button>
+  <h1 id="win-title">ВЫ ПЕРЕШЛИ НА СЛЕДУЮЩИЙ УРОВЕНЬ!</h1>
+  <p id="win-desc">Зелёные холмы... Но вдали ходят ОГРОМНЫЕ сущности!</p>
+  <button id="continue-btn">ПРОДОЛЖИТЬ</button>
 </div>
 
 <div id="fullmap-screen">
   <div class="fullmap-card">
-    <h2>КАРТА УРОВНЯ 0</h2>
+    <h2>КАРТА УРОВНЯ</h2>
     <canvas id="fullmap-canvas" width="400" height="300"></canvas>
     <p>Нажми в любое место, чтобы закрыть</p>
   </div>
+</div>
+
+<div id="inventory-screen">
+  <h2 style="color:#fff; margin-bottom:15px;">ИНВЕНТАРЬ (I)</h2>
+  <div class="inv-grid" id="inv-grid"></div>
+  <p style="color:#aaa; font-size:14px; margin-top:15px;">Нажми на предмет, чтобы использовать</p>
 </div>
 
 <div id="webgl-container"></div>
@@ -354,6 +304,12 @@ html,body{
   
   <div id="minimap-container">
     <canvas id="minimap-canvas" width="110" height="110"></canvas>
+  </div>
+
+  <div id="battery-txt">Фонарик: --</div>
+
+  <div id="stamina-container">
+    <div id="stamina-bar"></div>
   </div>
 
   <button id="fs" class="fs-btn">⛶</button>
@@ -410,64 +366,45 @@ const MH = map.length;
 const CELL_SIZE = 3;
 
 let audioCtx = null;
-
 function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-function playFootstepSound() {
+function playSound(type) {
   if (!audioCtx) return;
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(80, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.08);
-  } catch(e) {}
-}
-
-function playJumpSound() {
-  if (!audioCtx) return;
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.15);
-  } catch(e) {}
-}
-
-function playJumpscareSound() {
-  if (!audioCtx) return;
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.8);
-    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.8);
+    
+    if (type === 'step') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+    } else if (type === 'jump') {
+      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+    } else if (type === 'pickup') {
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+    } else if (type === 'jumpscare') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.8);
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+    }
   } catch(e) {}
 }
 
@@ -483,14 +420,10 @@ let isFullMapOpen = false;
 
 document.getElementById('minimap-container').addEventListener('click', (e) => {
   e.stopPropagation();
-  if (currentLevel === 2) return;
+  if (currentLevel !== 0 && !hasMapItem) return;
   isFullMapOpen = !isFullMapOpen;
-  if (isFullMapOpen) {
-    fullmapScreen.style.display = 'flex';
-    drawFullMap();
-  } else {
-    fullmapScreen.style.display = 'none';
-  }
+  fullmapScreen.style.display = isFullMapOpen ? 'flex' : 'none';
+  if (isFullMapOpen) drawFullMap();
 });
 
 fullmapScreen.addEventListener('click', () => {
@@ -506,90 +439,29 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-renderer.shadowMap.enabled = true;
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
+const ambientLight = new THREE.AmbientLight(0x999988, 0.8);
 scene.add(ambientLight);
 
-function createWallTexture(hasGraffiti) {
+// Фонарик игрока (SpotLight)
+const flashlight = new THREE.SpotLight(0xffffff, 0, 25, Math.PI / 5, 0.5);
+camera.add(flashlight);
+flashlight.position.set(0, 0, 0);
+flashlight.target.position.set(0, 0, -1);
+camera.add(flashlight.target);
+scene.add(camera);
+
+function createWallTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#c5b565';
-  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = '#c5b565'; ctx.fillRect(0, 0, 256, 256);
   ctx.fillStyle = 'rgba(80,70,30,0.12)';
   for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
-  for(let i=0; i<400; i++) {
-    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-    ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
-  }
-
-  if (hasGraffiti) {
-    ctx.save();
-    ctx.strokeStyle = '#8b0000';
-    ctx.fillStyle = '#8b0000';
-    ctx.lineWidth = 6;
-    ctx.font = 'bold 36px monospace';
-    ctx.beginPath();
-    ctx.moveTo(100, 100); ctx.lineTo(156, 156);
-    ctx.moveTo(156, 100); ctx.lineTo(100, 156);
-    ctx.stroke();
-    ctx.fillText("EXIT ->", 70, 200);
-    ctx.restore();
-  }
-
-  let gradTop = ctx.createLinearGradient(0, 0, 0, 30);
-  gradTop.addColorStop(0, 'rgba(0,0,0,0.35)');
-  gradTop.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = gradTop; ctx.fillRect(0, 0, 256, 30);
-  let gradBot = ctx.createLinearGradient(0, 226, 0, 256);
-  gradBot.addColorStop(0, 'rgba(0,0,0,0)');
-  gradBot.addColorStop(1, 'rgba(0,0,0,0.45)');
-  ctx.fillStyle = gradBot; ctx.fillRect(0, 226, 256, 30);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  return texture;
-}
-
-function createCarpetTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#635936'; ctx.fillRect(0, 0, 128, 128);
-  ctx.fillStyle = 'rgba(30,25,10,0.2)';
-  for(let i=0; i<300; i++) ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(MW * 2, MH * 2);
   return texture;
-}
-
-function createCeilingTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#8f886b'; ctx.fillRect(0, 0, 128, 128);
-  ctx.strokeStyle = '#57523c'; ctx.lineWidth = 5;
-  ctx.strokeRect(0, 0, 128, 128);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(MW, MH);
-  return texture;
-}
-
-function createGlowTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(255, 255, 210, 0.6)');
-  grad.addColorStop(0.4, 'rgba(255, 240, 160, 0.2)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(canvas);
 }
 
 function loadTransparentTexture(url) {
@@ -598,22 +470,16 @@ function loadTransparentTexture(url) {
   img.crossOrigin = "Anonymous";
   img.onload = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
+    canvas.width = img.width; canvas.height = img.height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
     const imgData = ctx.getImageData(0, 0, img.width, img.height);
     const data = imgData.data;
-
     for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i+1], b = data[i+2];
-      if (r > 200 && g > 200 && b > 200) {
-        data[i+3] = 0;
-      } else if (r < 40 && g < 40 && b < 40) {
+      if ((data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) || (data[i] < 40 && data[i+1] < 40 && data[i+2] < 40)) {
         data[i+3] = 0;
       }
     }
-
     ctx.putImageData(imgData, 0, 0);
     texture.image = canvas;
     texture.needsUpdate = true;
@@ -625,153 +491,150 @@ function loadTransparentTexture(url) {
 const monsterLvl0Texture = loadTransparentTexture('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
 const monsterLvl2Texture = loadTransparentTexture('86bf03f68feea75ac0f75dd9cf0d46e3 (4).jpg');
 
-function createExitDoorTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#00ffcc'; ctx.fillRect(0,0,128,256);
-  ctx.fillStyle = '#004433'; ctx.fillRect(10,10,108,236);
-  ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 20px Arial';
-  ctx.textAlign = 'center'; ctx.fillText('ВЫХОД', 64, 128);
-  return new THREE.CanvasTexture(canvas);
-}
-
-const standardWallMat = new THREE.MeshLambertMaterial({ map: createWallTexture(false) });
-const guideWallMat = new THREE.MeshLambertMaterial({ map: createWallTexture(true) });
-
-const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
-const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
-
+const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
+const floorMat = new THREE.MeshLambertMaterial({ color: 0x554422 });
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
 scene.add(floor);
 
-const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
-ceiling.rotation.x = Math.PI / 2;
-ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
-scene.add(ceiling);
-
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
-const lampGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
-const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-
-const glowMat = new THREE.MeshBasicMaterial({
-  map: createGlowTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
-});
-const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
-
 const walls = [];
 let exitPos = new THREE.Vector3();
-
-const guideCoords = [
-  {x: 3, y: 1},
-  {x: 5, y: 1},
-  {x: 7, y: 3}
-];
 
 for (let y = 0; y < MH; y++) {
   for (let x = 0; x < MW; x++) {
     const posX = x * CELL_SIZE + CELL_SIZE/2;
     const posZ = y * CELL_SIZE + CELL_SIZE/2;
-
     if (map[y][x] === '#') {
-      const isGuide = guideCoords.some(c => c.x === x && c.y === y);
-      const chosenMat = isGuide ? guideWallMat : standardWallMat;
-
-      const wall = new THREE.Mesh(wallGeo, chosenMat);
+      const wall = new THREE.Mesh(wallGeo, wallMat);
       wall.position.set(posX, 1.5, posZ);
       scene.add(wall);
       walls.push(wall);
     } else if (map[y][x] === 'E') {
       exitPos.set(posX, 1.5, posZ);
-      const exitMat = new THREE.MeshBasicMaterial({ map: createExitDoorTexture() });
-      const exitMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), exitMat);
-      exitMesh.position.set(posX, 1.5, posZ);
-      scene.add(exitMesh);
-
-      const exitLight = new THREE.PointLight(0x00ffcc, 2, 8);
-      exitLight.position.set(posX, 2.5, posZ);
-      scene.add(exitLight);
-    } else {
-      if ((x + y) % 4 === 0) {
-        const lamp = new THREE.Mesh(lampGeo, lampMat);
-        lamp.position.set(posX, 2.97, posZ);
-        scene.add(lamp);
-
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.rotation.x = Math.PI / 2;
-        glow.position.set(posX, 2.94, posZ);
-        scene.add(glow);
-      }
     }
   }
 }
 
 const monsterMatLvl0 = new THREE.SpriteMaterial({ map: monsterLvl0Texture, transparent: true });
 const monsterMatLvl2 = new THREE.SpriteMaterial({ map: monsterLvl2Texture, transparent: true });
-
 const monster = new THREE.Sprite(monsterMatLvl0);
 monster.scale.set(2.2, 2.2, 1);
 scene.add(monster);
-
-function respawnMonster() {
-  monster.position.set(15 * CELL_SIZE + CELL_SIZE/2, 1.2, 15 * CELL_SIZE + CELL_SIZE/2);
-}
-respawnMonster();
+monster.position.set(15 * CELL_SIZE, 1.2, 15 * CELL_SIZE);
 
 camera.position.set(1.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
 
-function findPathBFS(startGrid, targetGrid) {
-  const queue = [[startGrid]];
-  const visited = new Set();
-  visited.add(`${startGrid.x},${startGrid.y}`);
-  const dirs = [{x:0, y:-1}, {x:0, y:1}, {x:-1, y:0}, {x:1, y:0}];
+// ИНВЕНТАРЬ И ПРЕДМЕТЫ
+const inventory = [];
+let hasFlashlight = false;
+let flashlightBattery = 0;
+let hasMapItem = false;
+let isInvOpen = false;
 
-  while (queue.length > 0) {
-    const path = queue.shift();
-    const curr = path[path.length - 1];
-
-    if (curr.x === targetGrid.x && curr.y === targetGrid.y) return path;
-
-    for (let d of dirs) {
-      const nx = curr.x + d.x;
-      const ny = curr.y + d.y;
-      if (nx >= 0 && nx < MW && ny >= 0 && ny < MH && map[ny][nx] !== '#') {
-        const key = `${nx},${ny}`;
-        if (!visited.has(key)) {
-          visited.add(key);
-          queue.push([...path, {x: nx, y: ny}]);
-        }
-      }
-    }
-  }
-  return null;
+// Предметы на уровне 1 (Фонарик и Батарейка)
+const itemsMesh = [];
+function spawnWorldItem(type, pos, name) {
+  const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+  const mat = new THREE.MeshBasicMaterial({ color: type === 'flashlight' ? 0xffff00 : 0x0000ff });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  mesh.userData = { type, name };
+  scene.add(mesh);
+  itemsMesh.push(mesh);
 }
 
+spawnWorldItem('flashlight', new THREE.Vector3(6, 0.3, 6), 'Фонарик');
+spawnWorldItem('battery', new THREE.Vector3(12, 0.3, 6), 'Батарейка (+30%)');
+
+function toggleInventory() {
+  isInvOpen = !isInvOpen;
+  document.getElementById('inventory-screen').style.display = isInvOpen ? 'flex' : 'none';
+  if (isInvOpen) renderInventory();
+}
+
+function renderInventory() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    if (inventory[i]) {
+      slot.innerText = inventory[i].name;
+      slot.onclick = () => useItem(i);
+    } else {
+      slot.innerText = '[Пусто]';
+    }
+    grid.appendChild(slot);
+  }
+}
+
+function useItem(idx) {
+  const item = inventory[idx];
+  if (item.type === 'battery') {
+    if (hasFlashlight) {
+      flashlightBattery = Math.min(100, flashlightBattery + 30);
+      inventory.splice(idx, 1);
+      playSound('pickup');
+      renderInventory();
+    }
+  }
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyI') toggleInventory();
+  if (e.code === 'KeyE') interactItem();
+  if (e.code === 'ShiftLeft') isShift = true;
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'ShiftLeft') isShift = false;
+  keys[e.code] = false;
+});
+
+const keys = {};
+let isShift = false;
+
+function interactItem() {
+  itemsMesh.forEach((mesh, idx) => {
+    if (mesh.position.distanceTo(camera.position) < 2.0) {
+      if (mesh.userData.type === 'flashlight') {
+        hasFlashlight = true;
+        flashlightBattery = 100;
+        flashlight.intensity = 2;
+        playSound('pickup');
+      } else if (mesh.userData.type === 'map') {
+        hasMapItem = true;
+        playSound('pickup');
+      } else {
+        if (inventory.length < 6) {
+          inventory.push(mesh.userData);
+          playSound('pickup');
+        }
+      }
+      scene.remove(mesh);
+      itemsMesh.splice(idx, 1);
+    }
+  });
+}
+
+// ПЕРЕМЕННЫЕ ИГРОКА И МЕХАНИК
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
 let playerY = 1.5;
 let velocityY = 0;
-const gravity = -18;
-const jumpForce = 6.5;
 let isGrounded = true;
 let isGameOver = false;
 let currentLevel = 0;
 
-let pathTimer = 0;
-let currentMonsterPath = [];
-let footstepTimer = 0;
-
-let clouds = [];
-let giants = [];
-let idleTimer = 0;
-let level2Monster = null;
-let level2MonsterFlying = false;
+let stamina = 100;
+let continuousRunTimer = 0;
+let specialHouseMesh = null;
 
 function checkObjectCollision(pos, radius = 0.4) {
-  if (currentLevel === 2) return false;
+  if (currentLevel === 2 || currentLevel === 4) return false;
   for (let wall of walls) {
     const box = new THREE.Box3().setFromObject(wall);
     const objBox = new THREE.Box3(
@@ -783,436 +646,225 @@ function checkObjectCollision(pos, radius = 0.4) {
   return false;
 }
 
-function updateMinimap() {
-  if (currentLevel === 2) {
-    document.getElementById('minimap-container').style.display = 'none';
-    return;
-  }
-
-  mmCtx.clearRect(0, 0, 110, 110);
-  const px = camera.position.x;
-  const pz = camera.position.z;
-
-  mmCtx.save();
-  mmCtx.translate(55, 55);
-
-  const viewRadius = 18;
-  const scale = 110 / (viewRadius * 2);
-
-  mmCtx.fillStyle = '#887744';
-  for (let y = 0; y < MH; y++) {
-    for (let x = 0; x < MW; x++) {
-      if (map[y][x] === '#') {
-        const wx = x * CELL_SIZE + CELL_SIZE/2 - px;
-        const wz = y * CELL_SIZE + CELL_SIZE/2 - pz;
-        if (Math.abs(wx) < viewRadius && Math.abs(wz) < viewRadius) {
-          mmCtx.fillRect(
-            wx * scale - (CELL_SIZE*scale)/2,
-            wz * scale - (CELL_SIZE*scale)/2,
-            CELL_SIZE * scale,
-            CELL_SIZE * scale
-          );
-        }
-      }
-    }
-  }
-
-  const dx = exitPos.x - px;
-  const dz = exitPos.z - pz;
-  if (Math.abs(dx) < viewRadius && Math.abs(dz) < viewRadius) {
-    mmCtx.fillStyle = '#00ffcc';
-    mmCtx.beginPath();
-    mmCtx.arc(dx * scale, dz * scale, 4, 0, Math.PI * 2);
-    mmCtx.fill();
-  }
-
-  const mx = monster.position.x - px;
-  const mz = monster.position.z - pz;
-  if (Math.abs(mx) < viewRadius && Math.abs(mz) < viewRadius) {
-    mmCtx.fillStyle = '#ff0000';
-    mmCtx.beginPath();
-    mmCtx.arc(mx * scale, mz * scale, 4, 0, Math.PI * 2);
-    mmCtx.fill();
-  }
-
-  mmCtx.fillStyle = '#00ff00';
-  mmCtx.beginPath();
-  mmCtx.arc(0, 0, 4, 0, Math.PI * 2);
-  mmCtx.fill();
-
-  mmCtx.strokeStyle = '#00ff00';
-  mmCtx.lineWidth = 2;
-  mmCtx.beginPath();
-  mmCtx.moveTo(0, 0);
-  mmCtx.lineTo(-Math.sin(yaw) * 10, -Math.cos(yaw) * 10);
-  mmCtx.stroke();
-
-  mmCtx.restore();
-
-  if (isFullMapOpen) {
-    drawFullMap();
-  }
-}
-
-function drawFullMap() {
-  const w = fullmapCanvas.width;
-  const h = fullmapCanvas.height;
-  fmCtx.clearRect(0, 0, w, h);
-
-  const cellW = w / MW;
-  const cellH = h / MH;
-
-  fmCtx.fillStyle = '#655530';
-  for (let y = 0; y < MH; y++) {
-    for (let x = 0; x < MW; x++) {
-      if (map[y][x] === '#') {
-        fmCtx.fillRect(x * cellW, y * cellH, cellW + 0.5, cellH + 0.5);
-      }
-    }
-  }
-
-  const ex = exitPos.x / (MW * CELL_SIZE) * w;
-  const ez = exitPos.z / (MH * CELL_SIZE) * h;
-  fmCtx.fillStyle = '#00ffcc';
-  fmCtx.beginPath();
-  fmCtx.arc(ex, ez, 5, 0, Math.PI * 2);
-  fmCtx.fill();
-
-  const mx = monster.position.x / (MW * CELL_SIZE) * w;
-  const mz = monster.position.z / (MH * CELL_SIZE) * h;
-  fmCtx.fillStyle = '#ff0000';
-  fmCtx.beginPath();
-  fmCtx.arc(mx, mz, 5, 0, Math.PI * 2);
-  fmCtx.fill();
-
-  const px = camera.position.x / (MW * CELL_SIZE) * w;
-  const pz = camera.position.z / (MH * CELL_SIZE) * h;
-  fmCtx.fillStyle = '#00ff00';
-  fmCtx.beginPath();
-  fmCtx.arc(px, pz, 6, 0, Math.PI * 2);
-  fmCtx.fill();
-}
-
-function getLevel2Height(x, z) {
-  let h = Math.sin(x * 0.03) * Math.cos(z * 0.03) * 4.0;
-  h += Math.sin(x * 0.08 + 1.5) * Math.sin(z * 0.08) * 1.5;
-  h += Math.cos(x * 0.015) * Math.cos(z * 0.015) * 6.0;
-  return h;
-}
-
 function updatePlayer(dt) {
-  if (isGameOver) {
-    if (level2MonsterFlying && level2Monster) {
-      level2Monster.position.lerp(camera.position, dt * 6.0);
-    }
-    return;
-  }
+  if (isGameOver || isInvOpen) return;
 
-  if (currentLevel === 2) {
-    if (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05 || !isGrounded) {
-      idleTimer = 0;
-      dangerOverlay.style.opacity = '0';
-    } else {
-      idleTimer += dt;
-      if (idleTimer > 3.5) {
-        dangerOverlay.style.opacity = Math.min(1, (idleTimer - 3.5) / 2.5).toFixed(2);
-      }
-      if (idleTimer >= 6.0 && !level2MonsterFlying) {
-        level2MonsterFlying = true;
-        const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        level2Monster = new THREE.Sprite(monsterMatLvl2);
-        level2Monster.scale.set(40, 40, 1);
-        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 25);
-        scene.add(level2Monster);
-        document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
-        document.getElementById('jumpscare-desc').innerText = "Огромная сущность поймала тебя...";
-        triggerJumpscare();
-        return;
-      }
-    }
-  }
-
-  velocityY += gravity * dt;
-  playerY += velocityY * dt;
-
-  if (currentLevel === 2) {
-    const terrainHeight = getLevel2Height(camera.position.x, camera.position.z) + 1.8;
-    if (playerY <= terrainHeight) {
-      playerY = terrainHeight;
-      velocityY = 0;
-      isGrounded = true;
-    } else {
-      isGrounded = false;
-    }
+  // Бег и Передышка
+  let speed = 4.5 * dt;
+  if (isShift && stamina > 0 && (moveX !== 0 || moveY !== 0 || keys['KeyW'] || keys['KeyS'])) {
+    speed *= 1.8;
+    stamina = Math.max(0, stamina - 25 * dt);
   } else {
-    if (playerY <= 1.5) {
-      playerY = 1.5;
-      velocityY = 0;
-      isGrounded = true;
-    } else {
-      isGrounded = false;
-    }
+    stamina = Math.min(100, stamina + 15 * dt);
+  }
+  document.getElementById('stamina-bar').style.width = stamina + '%';
+
+  // Фонарик
+  if (hasFlashlight && flashlightBattery > 0) {
+    flashlightBattery -= 0.5 * dt;
+    flashlight.intensity = 2;
+    document.getElementById('battery-txt').innerText = `Фонарик: ${Math.ceil(flashlightBattery)}%`;
+  } else {
+    flashlight.intensity = 0;
+    document.getElementById('battery-txt').innerText = hasFlashlight ? 'Фонарик: Разряжен' : 'Фонарик: --';
   }
 
-  if (playerY > 15.0) { playerY = 15.0; velocityY = 0; }
+  // Движение по клавиатуре
+  let kx = 0, ky = 0;
+  if (keys['KeyW']) ky -= 1;
+  if (keys['KeyS']) ky += 1;
+  if (keys['KeyA']) kx -= 1;
+  if (keys['KeyD']) kx += 1;
 
-  camera.position.y = playerY;
-  camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
+  const inputX = moveX || kx;
+  const inputY = moveY || ky;
 
-  const speed = 4.5 * dt;
   const dir = new THREE.Vector3();
   const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
   const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
 
-  dir.addScaledVector(forward, -moveY);
-  dir.addScaledVector(side, moveX);
-  
+  dir.addScaledVector(forward, -inputY);
+  dir.addScaledVector(side, inputX);
+
   if (dir.length() > 0) {
     dir.normalize();
-    if (isGrounded) {
-      footstepTimer += dt;
-      if (footstepTimer > 0.4) {
-        footstepTimer = 0;
-        playFootstepSound();
+    if (Math.random() < 0.1) playSound('step');
+
+    // Уровень 2: 20 секунд бега без остановки -> Уровень 3
+    if (currentLevel === 2) {
+      continuousRunTimer += dt;
+      if (continuousRunTimer >= 20) {
+        continuousRunTimer = 0;
+        loadLevel3();
       }
     }
+  } else {
+    if (currentLevel === 2) continuousRunTimer = 0;
   }
 
   const nextPosX = camera.position.clone().addScaledVector(new THREE.Vector3(dir.x, 0, 0), speed);
-  if (!checkObjectCollision(nextPosX, 0.4)) camera.position.x = nextPosX.x;
+  if (!checkObjectCollision(nextPosX)) camera.position.x = nextPosX.x;
 
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
-  if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
+  if (!checkObjectCollision(nextPosZ)) camera.position.z = nextPosZ.z;
 
-  updateMinimap();
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = yaw;
+  camera.rotation.x = pitch;
 
-  if (currentLevel === 2) {
-    clouds.forEach(cloud => {
-      cloud.position.x += dt * 1.5;
-      if (cloud.position.x > 400) cloud.position.x = -400;
-    });
-    giants.forEach(g => {
-      g.position.x += g.userData.vx * dt;
-      g.position.z += g.userData.vz * dt;
-      g.position.y = getLevel2Height(g.position.x, g.position.z) + 35;
-      if (Math.abs(g.position.x) > 350) g.userData.vx *= -1;
-      if (Math.abs(g.position.z) > 350) g.userData.vz *= -1;
-    });
-  }
-
+  // Логика по уровням
   if (currentLevel === 0) {
-    const mPos = monster.position;
-    const pPos = camera.position;
-    const dist = mPos.distanceTo(pPos);
-
-    if (dist < 15) {
-      dangerOverlay.style.opacity = (1 - dist / 15).toFixed(2);
-    } else {
-      dangerOverlay.style.opacity = '0';
-    }
-
-    pathTimer += dt;
-    if (pathTimer > 0.4) {
-      pathTimer = 0;
-      const mGrid = { x: Math.floor(mPos.x / CELL_SIZE), y: Math.floor(mPos.z / CELL_SIZE) };
-      const pGrid = { x: Math.floor(pPos.x / CELL_SIZE), y: Math.floor(pPos.z / CELL_SIZE) };
-      const path = findPathBFS(mGrid, pGrid);
-      if (path && path.length > 1) currentMonsterPath = path;
-    }
-
-    const monsterSpeed = 3.2 * dt;
-    if (currentMonsterPath.length > 1) {
-      const nextCell = currentMonsterPath[1];
-      const targetPos = new THREE.Vector3(
-        nextCell.x * CELL_SIZE + CELL_SIZE/2, 1.2, nextCell.y * CELL_SIZE + CELL_SIZE/2
-      );
-      const mDir = new THREE.Vector3().subVectors(targetPos, mPos);
-      if (mDir.length() < 0.2) {
-        currentMonsterPath.shift();
-      } else {
-        mDir.normalize();
-        mPos.addScaledVector(mDir, monsterSpeed);
-      }
-    } else {
-      const directDir = new THREE.Vector3().subVectors(pPos, mPos).normalize();
-      mPos.addScaledVector(directDir, monsterSpeed);
-    }
-
-    if (dist < 1.3) {
-      document.getElementById('jumpscare-title').innerText = "ВАС ПОЙМАЛИ";
-      document.getElementById('jumpscare-desc').innerText = "Сущность настигла вас в коридорах...";
-      triggerJumpscare();
-    }
-
-    if (camera.position.distanceTo(exitPos) < 1.2) {
-      triggerWin();
+    if (camera.position.distanceTo(monster.position) < 1.3) triggerJumpscare();
+    if (camera.position.distanceTo(exitPos) < 1.2) triggerWin(2);
+  } else if (currentLevel === 3) {
+    if (specialHouseMesh && camera.position.distanceTo(specialHouseMesh.position) < 4.0) {
+      loadLevel4();
     }
   }
 }
 
 function triggerJumpscare() {
   isGameOver = true;
-  dangerOverlay.style.opacity = '0';
-  playJumpscareSound();
+  playSound('jumpscare');
   document.getElementById('jumpscare-screen').style.display = 'flex';
 }
 
-function triggerWin() {
+function triggerWin(nextLvl) {
   isGameOver = true;
-  dangerOverlay.style.opacity = '0';
   document.getElementById('win-screen').style.display = 'flex';
+  document.getElementById('continue-btn').onclick = () => {
+    document.getElementById('win-screen').style.display = 'none';
+    isGameOver = false;
+    if (nextLvl === 2) loadLevel2();
+  };
 }
 
-document.getElementById('continue-btn').addEventListener('click', () => {
-  document.getElementById('win-screen').style.display = 'none';
-  loadLevel2();
-  isGameOver = false;
-});
-
+// --- УРОВЕНЬ 2 (Гиганты далеко и меньше) ---
 function loadLevel2() {
   currentLevel = 2;
-  clouds = [];
-  giants = [];
-  idleTimer = 0;
-  level2MonsterFlying = false;
-
-  while(scene.children.length > 0){ 
-    scene.remove(scene.children[0]); 
-  }
-
   scene.background = new THREE.Color(0x5ca2ff);
-  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.002);
+  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
 
-  const sun = new THREE.DirectionalLight(0xfffaed, 1.5);
-  sun.position.set(200, 300, 150);
-  sun.castShadow = true;
-  scene.add(sun);
-  scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
+  // Карта спавнится на 2 уровне
+  spawnWorldItem('map', new THREE.Vector3(0, 0.5, -5), 'Карта');
+  spawnWorldItem('battery', new THREE.Vector3(10, 0.5, 10), 'Батарейка (+30%)');
 
-  const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#428a2a'; ctx.fillRect(0, 0, 512, 512);
-  for(let i=0; i<8000; i++) {
-    const rx = Math.random() * 512;
-    const ry = Math.random() * 512;
-    const col = Math.random();
-    if(col < 0.3) ctx.fillStyle = '#2d6318';
-    else if(col < 0.7) ctx.fillStyle = '#55a834';
-    else ctx.fillStyle = '#65c23d';
-    ctx.fillRect(rx, ry, 2, 10 + Math.random() * 10);
-  }
-  const grassTex = new THREE.CanvasTexture(canvas);
-  grassTex.wrapS = THREE.RepeatWrapping; grassTex.wrapT = THREE.RepeatWrapping;
-  grassTex.repeat.set(80, 80);
-
-  const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
-  const grassGeo = new THREE.PlaneGeometry(1000, 1000, 150, 150);
-  grassGeo.rotateX(-Math.PI / 2);
-  const pos = grassGeo.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    const vx = pos.getX(i);
-    const vz = pos.getZ(i);
-    pos.setY(i, getLevel2Height(vx, vz));
-  }
-  grassGeo.computeVertexNormals();
-
-  const grassFloor = new THREE.Mesh(grassGeo, grassMat);
-  grassFloor.receiveShadow = true;
-  scene.add(grassFloor);
-
-  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
-  const cloudBlockGeo = new THREE.BoxGeometry(10, 6, 10);
-
-  for(let i=0; i<30; i++) {
-    const cloudGroup = new THREE.Group();
-    const partsCount = 6 + Math.floor(Math.random() * 6);
-    for(let p=0; p<partsCount; p++) {
-      const part = new THREE.Mesh(cloudBlockGeo, cloudMat);
-      part.position.set(
-        (Math.random() - 0.5) * 35,
-        (Math.random() - 0.5) * 4,
-        (Math.random() - 0.5) * 25
-      );
-      const s = 0.6 + Math.random() * 0.9;
-      part.scale.set(s, s * 0.6, s);
-      cloudGroup.add(part);
-    }
-    cloudGroup.position.set(
-      (Math.random() - 0.5) * 600,
-      100 + Math.random() * 40,
-      (Math.random() - 0.5) * 600
-    );
-    scene.add(cloudGroup);
-    clouds.push(cloudGroup);
-  }
-
-  for(let i=0; i<6; i++) {
+  // Огромные монстры СДЕЛАНО ДАЛЬШЕ И МЕНЬШЕ
+  for (let i = 0; i < 4; i++) {
     const giant = new THREE.Sprite(monsterMatLvl2);
-    giant.scale.set(75, 75, 1);
-    const gx = (Math.random() - 0.5) * 400;
-    const gz = (Math.random() - 0.5) * 400;
-    giant.position.set(gx, getLevel2Height(gx, gz) + 35, gz);
-    giant.userData = {
-      vx: (Math.random() - 0.5) * 2.5,
-      vz: (Math.random() - 0.5) * 2.5
-    };
+    giant.scale.set(30, 30, 1); // Меньше размером (было 75)
+    giant.position.set((Math.random() - 0.5) * 600, 15, (Math.random() - 0.5) * 600); // Были дальше
     scene.add(giant);
-    giants.push(giant);
   }
 
-  camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
-
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Гигантские сущности бродят повсюду!";
+  document.getElementById('hint').innerText = "Идите 20 секунд без остановки, чтобы сбежать!";
   document.getElementById('hint').classList.remove('hide');
-  setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
 }
 
-document.getElementById('restart-btn').addEventListener('click', () => {
-  location.reload();
-});
+// --- УРОВЕНЬ 3 (Бесконечные дома + отличающийся дом) ---
+function loadLevel3() {
+  currentLevel = 3;
+  while(scene.children.length > 0) scene.remove(scene.children[0]);
 
+  scene.background = new THREE.Color(0x0a0a10);
+  scene.fog = new THREE.FogExp2(0x0a0a10, 0.02);
+  scene.add(ambientLight);
+  scene.add(camera);
+
+  const houseGeo = new THREE.BoxGeometry(10, 8, 10);
+  const houseMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+
+  // Бесконечные одинаковые дома
+  for (let x = -200; x <= 200; x += 30) {
+    for (let z = -200; z <= 200; z += 30) {
+      if (Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+      const house = new THREE.Mesh(houseGeo, houseMat);
+      house.position.set(x, 4, z);
+      scene.add(house);
+    }
+  }
+
+  // Отличающийся дом (Не далеко и не близко - например на дистанции 50)
+  const specialMat = new THREE.MeshLambertMaterial({ color: 0x8b0000 });
+  specialHouseMesh = new THREE.Mesh(houseGeo, specialMat);
+  specialHouseMesh.position.set(45, 4, 45);
+  scene.add(specialHouseMesh);
+
+  camera.position.set(0, 1.5, 0);
+  document.getElementById('hint').innerText = "Найдите дом, отличающийся от остальных!";
+  document.getElementById('hint').classList.remove('hide');
+}
+
+// --- УРОВЕНЬ 4 (Бесконечный бассейн) ---
+function loadLevel4() {
+  currentLevel = 4;
+  while(scene.children.length > 0) scene.remove(scene.children[0]);
+
+  scene.background = new THREE.Color(0x66ccff);
+  scene.fog = new THREE.FogExp2(0x66ccff, 0.01);
+
+  const light = new THREE.DirectionalLight(0xffffff, 1.2);
+  light.position.set(50, 100, 50);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0x99ddff, 0.8));
+
+  // Плитка бассейна
+  const poolGeo = new THREE.PlaneGeometry(500, 500);
+  const poolMat = new THREE.MeshStandardMaterial({ color: 0x0088aa, roughness: 0.1 });
+  const poolFloor = new THREE.Mesh(poolGeo, poolMat);
+  poolFloor.rotation.x = -Math.PI / 2;
+  scene.add(poolFloor);
+
+  // Колонны в бассейне
+  const colGeo = new THREE.CylinderGeometry(1.5, 1.5, 20);
+  const colMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  for (let x = -200; x <= 200; x += 25) {
+    for (let z = -200; z <= 200; z += 25) {
+      const col = new THREE.Mesh(colGeo, colMat);
+      col.position.set(x, 10, z);
+      scene.add(col);
+    }
+  }
+
+  camera.position.set(0, 1.8, 0);
+  document.getElementById('hint').innerText = "УРОВЕНЬ 4: Бесконечный Бассейн";
+  document.getElementById('hint').classList.remove('hide');
+}
+
+function updateMinimap() {
+  if (currentLevel !== 0 && !hasMapItem) {
+    document.getElementById('minimap-container').style.display = 'none';
+    return;
+  }
+  document.getElementById('minimap-container').style.display = 'block';
+}
+
+function drawFullMap() {
+  fmCtx.clearRect(0, 0, fullmapCanvas.width, fullmapCanvas.height);
+  fmCtx.fillStyle = '#00ff00';
+  fmCtx.fillRect(150, 100, 20, 20);
+}
+
+// УПРАВЛЕНИЕ И СЕНСОР
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
-const jumpBtn = document.getElementById('jump');
-const fsBtn = document.getElementById('fs');
+let joyId = null, joyRect = null, lookId = null, lastTouchX = 0, lastTouchY = 0;
 
-let joyId = null, joyRect = null;
-let lookId = null, lastTouchX = 0, lastTouchY = 0;
-
-fsBtn.addEventListener('click', () => {
+document.getElementById('fs').addEventListener('click', () => {
   initAudio();
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(()=>{});
-  } else {
-    document.exitFullscreen().catch(()=>{});
-  }
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
 });
 
-jumpBtn.addEventListener('pointerdown', (e) => {
-  e.stopPropagation();
-  initAudio();
-  if (isGrounded && !isGameOver) {
-    velocityY = jumpForce;
-    isGrounded = false;
-    playJumpSound();
-  }
+document.getElementById('jump').addEventListener('pointerdown', () => {
+  if (isGrounded) { velocityY = 6.5; playSound('jump'); }
 });
 
 joy.addEventListener('pointerdown', e => {
-  initAudio();
-  joyId = e.pointerId;
-  joy.setPointerCapture(joyId);
-  joyRect = joy.getBoundingClientRect();
-  updateJoy(e);
+  initAudio(); joyId = e.pointerId; joy.setPointerCapture(joyId);
+  joyRect = joy.getBoundingClientRect(); updateJoy(e);
 });
-
-joy.addEventListener('pointermove', e => {
-  if (e.pointerId === joyId) updateJoy(e);
-});
-
+joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) updateJoy(e); });
 function updateJoy(e) {
   let dx = e.clientX - (joyRect.left + joyRect.width/2);
   let dy = e.clientY - (joyRect.top + joyRect.height/2);
@@ -1220,75 +872,36 @@ function updateJoy(e) {
   const len = Math.hypot(dx, dy);
   if (len > max) { dx = (dx/len)*max; dy = (dy/len)*max; }
   knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  moveX = dx / max;
-  moveY = dy / max;
+  moveX = dx / max; moveY = dy / max;
 }
-
-function resetJoy() {
-  joyId = null; moveX = 0; moveY = 0;
-  knob.style.transform = 'translate(-50%, -50%)';
-}
-joy.addEventListener('pointerup', resetJoy);
-joy.addEventListener('pointercancel', resetJoy);
+joy.addEventListener('pointerup', () => { joyId = null; moveX = 0; moveY = 0; knob.style.transform = 'translate(-50%, -50%)'; });
 
 window.addEventListener('pointerdown', e => {
   initAudio();
-  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn || e.target === minimapCanvas || e.target.closest('#minimap-container')) return;
-  if (e.clientX > window.innerWidth * 0.3) {
-    lookId = e.pointerId;
-    lastTouchX = e.clientX;
-    lastTouchY = e.clientY;
-  }
+  if (e.target.closest('#joy') || e.target.closest('#jump') || e.target.closest('#fs')) return;
+  if (e.clientX > window.innerWidth * 0.3) { lookId = e.pointerId; lastTouchX = e.clientX; lastTouchY = e.clientY; }
 });
 
 window.addEventListener('pointermove', e => {
   if (e.pointerId === lookId) {
-    const dx = e.clientX - lastTouchX;
-    const dy = e.clientY - lastTouchY;
-    lastTouchX = e.clientX;
-    lastTouchY = e.clientY;
-
-    yaw -= dx * 0.004;
-    pitch -= dy * 0.004;
-    pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
+    yaw -= (e.clientX - lastTouchX) * 0.004;
+    pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch - (e.clientY - lastTouchY) * 0.004));
+    lastTouchX = e.clientX; lastTouchY = e.clientY;
   }
 });
-
 window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
 
-function checkOrientation() {
-  const rotateScreen = document.getElementById('rotate-screen');
-  if (window.innerHeight > window.innerWidth) {
-    rotateScreen.style.display = 'flex';
-  } else {
-    rotateScreen.style.display = 'none';
-  }
-}
-
-window.addEventListener('resize', () => {
-  checkOrientation();
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-checkOrientation();
-
 let lastTime = performance.now();
-
 function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
-
   updatePlayer(dt);
+  updateMinimap();
   renderer.render(scene, camera);
-
   requestAnimationFrame(animate);
 }
-
-setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
-
 requestAnimationFrame(animate);
 </script>
 </body>
 </html>
+here,
