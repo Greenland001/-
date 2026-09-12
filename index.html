@@ -592,21 +592,9 @@ function createGlowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-function createMonsterTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,0)'; ctx.fillRect(0,0,256,256);
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(70, 90, 25, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(186, 90, 25, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#000000';
-  ctx.beginPath(); ctx.arc(70, 90, 8, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(186, 90, 8, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 12;
-  ctx.beginPath(); ctx.arc(128, 130, 80, 0.1 * Math.PI, 0.9 * Math.PI, false); ctx.stroke();
-  return new THREE.CanvasTexture(canvas);
-}
+// Загружаем текстуру для персонажа первого уровня из GitHub
+const textureLoader = new THREE.TextureLoader();
+const monsterTexture = textureLoader.load('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
 
 function createExitDoorTexture() {
   const canvas = document.createElement('canvas');
@@ -692,7 +680,8 @@ for (let y = 0; y < MH; y++) {
   }
 }
 
-const monsterMat = new THREE.SpriteMaterial({ map: createMonsterTexture() });
+// Новый спавн персонажа на базе твоей картинки
+const monsterMat = new THREE.SpriteMaterial({ map: monsterTexture, transparent: true });
 const monster = new THREE.Sprite(monsterMat);
 monster.scale.set(2.2, 2.2, 1);
 scene.add(monster);
