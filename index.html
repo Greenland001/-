@@ -3,258 +3,90 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D — Full Game</title>
+<title>Backrooms 3D</title>
 
 <style>
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#000;
-  font-family:Arial,sans-serif;
-  touch-action:none;
-}
-
-#webgl-container{
-  width:100%;
-  height:100%;
-  display:block;
-}
-
-.hud{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:sans-serif; touch-action:none; }
+#webgl-container{ width:100%; height:100%; display:block; }
+.hud{ position:fixed; inset:0; pointer-events:none; }
 
 .hint{
-  position:absolute;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  padding:12px 22px;
-  border-radius:18px;
-  background:rgba(28,26,17,.72);
-  color:#eee;
-  font-size:16px;
-  backdrop-filter:blur(8px);
-  text-align:center;
-  max-width:85%;
-  transition:opacity .8s;
+  position:absolute; top:20px; left:50%; transform:translateX(-50%);
+  padding:12px 22px; border-radius:18px; background:rgba(28,26,17,.8);
+  color:#eee; font-size:16px; text-align:center; max-width:85%; z-index:10;
 }
 
-.hint.hide{ opacity:0; }
-
 .fs-btn{
-  pointer-events:auto;
-  position:absolute;
-  right:20px;
-  top:20px;
-  width:55px;
-  height:55px;
-  border:2px solid rgba(255,255,255,0.3);
-  border-radius:16px;
-  background:rgba(20,19,15,.75);
-  color:white;
-  font-size:26px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  user-select:none;
-  box-shadow:0 4px 10px rgba(0,0,0,0.5);
-  backdrop-filter:blur(4px);
+  pointer-events:auto; position:absolute; right:20px; top:20px;
+  width:50px; height:50px; border:2px solid rgba(255,255,255,0.3);
+  border-radius:12px; background:rgba(20,19,15,.75); color:white; font-size:24px;
+  display:flex; align-items:center; justify-content:center;
 }
 
 .jump-btn{
-  pointer-events:auto;
-  position:absolute;
-  right:30px;
-  bottom:30px;
-  width:75px;
-  height:75px;
-  border:3px solid rgba(255,255,255,0.4);
-  border-radius:50%;
-  background:rgba(20,19,15,.75);
-  color:white;
-  font-size:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  user-select:none;
-  box-shadow:0 4px 15px rgba(0,0,0,0.5);
+  pointer-events:auto; position:absolute; right:30px; bottom:30px;
+  width:70px; height:70px; border:2px solid rgba(255,255,255,0.4);
+  border-radius:50%; background:rgba(20,19,15,.75); color:white; font-size:26px;
+  display:flex; align-items:center; justify-content:center;
 }
 
 .joy{
-  pointer-events:auto;
-  position:absolute;
-  left:30px;
-  bottom:30px;
-  width:150px;
-  height:150px;
-  border-radius:50%;
-  background:rgba(28,27,23,.62);
-  border:3px solid rgba(190,190,190,.55);
+  pointer-events:auto; position:absolute; left:30px; bottom:30px;
+  width:140px; height:140px; border-radius:50%; background:rgba(28,27,23,.6);
+  border:2px solid rgba(190,190,190,.5);
 }
 
 .knob{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:70px;
-  height:70px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  background:rgba(190,190,190,.9);
+  position:absolute; left:50%; top:50%; width:60px; height:60px;
+  transform:translate(-50%,-50%); border-radius:50%; background:rgba(190,190,190,.9);
 }
 
 .crosshair{
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:10px;
-  height:10px;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
+  position:absolute; top:50%; left:50%; width:10px; height:10px;
+  transform:translate(-50%,-50%); pointer-events:none;
 }
-.crosshair::before, .crosshair::after{
-  content:'';
-  position:absolute;
-  background:rgba(255,255,255,.6);
-}
+.crosshair::before, .crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,.6); }
 .crosshair::before{ top:4px; left:0; width:10px; height:2px; }
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 
-#minimap-container{
-  pointer-events:auto;
-  cursor:pointer;
-  position:absolute;
-  top:20px;
-  left:20px;
-  width:110px;
-  height:110px;
-  border-radius:50%;
-  border:3px solid rgba(255,255,255,0.5);
-  background:rgba(0,0,0,0.65);
-  overflow:hidden;
-  box-shadow:0 0 10px rgba(0,0,0,0.8);
-  backdrop-filter:blur(4px);
-}
-#minimap-canvas{ width:100%; height:100%; }
-
-/* Элементы Выносливости и Заряда Фонарика */
 #stamina-container {
-  position: absolute;
-  bottom: 30px;
-  left: 200px;
-  width: 160px;
-  height: 14px;
-  background: rgba(0,0,0,0.6);
-  border: 2px solid rgba(255,255,255,0.5);
-  border-radius: 8px;
-  overflow: hidden;
+  position: absolute; bottom: 35px; left: 190px;
+  width: 140px; height: 12px; background: rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.5); border-radius: 6px; overflow: hidden;
 }
-#stamina-bar {
-  width: 100%;
-  height: 100%;
-  background: #00ffcc;
-}
+#stamina-bar { width: 100%; height: 100%; background: #00ffcc; }
+
 #battery-txt {
-  position: absolute;
-  top: 140px;
-  left: 20px;
-  color: #fff;
-  font-size: 16px;
-  text-shadow: 1px 1px 3px #000;
+  position: absolute; top: 20px; left: 20px;
+  color: #fff; font-size: 16px; text-shadow: 1px 1px 3px #000;
 }
 
-/* Инвентарь */
 #inventory-screen {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  pointer-events: auto;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 2000; pointer-events: auto;
 }
 .inv-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 90px);
-  gap: 15px;
-  background: rgba(20,20,20,0.9);
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid #555;
+  display: grid; grid-template-columns: repeat(3, 85px); gap: 12px;
+  background: rgba(20,20,20,0.9); padding: 18px; border-radius: 12px; border: 2px solid #555;
 }
 .inv-slot {
-  width: 90px;
-  height: 90px;
-  background: #111;
-  border: 2px solid #444;
-  border-radius: 8px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  text-align: center;
-  cursor: pointer;
-}
-.inv-slot:hover { border-color: #fff; }
-
-#danger-overlay{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background:radial-gradient(circle, transparent 40%, rgba(255,0,0,0.4) 100%);
-  opacity:0;
-  transition:opacity 0.2s;
+  width: 85px; height: 85px; background: #111; border: 2px solid #444;
+  border-radius: 8px; color: #fff; display: flex; align-items: center;
+  justify-content: center; font-size: 12px; text-align: center; cursor: pointer;
 }
 
-#rotate-screen, #jumpscare-screen, #win-screen, #fullmap-screen {
-  position:fixed;
-  inset:0;
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:1500;
-  text-align:center;
-  padding:20px;
+#jumpscare-screen, #win-screen {
+  position:fixed; inset:0; display:none; flex-direction:column;
+  align-items:center; justify-content:center; z-index:1500; text-align:center; padding:20px;
 }
-#rotate-screen { background:#0e0d0a; color:#f0e6c2; z-index:999; }
 #jumpscare-screen { background:black; color:red; font-family:monospace; }
-#win-screen { background:rgba(0,40,0,0.85); color:#75ff75; backdrop-filter:blur(6px); }
-#fullmap-screen { background:rgba(0,0,0,0.88); backdrop-filter:blur(8px); }
-
-.fullmap-card{
-  background:rgba(20,20,15,0.95);
-  border:2px solid rgba(255,255,255,0.2);
-  border-radius:16px;
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-#fullmap-canvas{ width: 320px; height: 250px; background: #0d0c0a; border: 2px solid #554a2b; }
+#win-screen { background:rgba(0,40,0,0.9); color:#75ff75; }
 
 button {
-  pointer-events:auto;
-  padding:12px 28px;
-  font-size:18px;
-  background:#111;
-  color:#fff;
-  border:2px solid #888;
-  border-radius:10px;
-  cursor:pointer;
+  pointer-events:auto; padding:12px 24px; font-size:16px;
+  background:#111; color:#fff; border:2px solid #888; border-radius:8px; cursor:pointer; margin-top:15px;
 }
 </style>
 
@@ -263,54 +95,29 @@ button {
 
 <body>
 
-<div id="danger-overlay"></div>
-
-<div id="rotate-screen">
-  <h2>Поверните устройство</h2>
-  <p>Для удобной игры переверните телефон горизонтально</p>
-</div>
-
 <div id="jumpscare-screen">
-  <h1 id="jumpscare-title">ВАС ПОЙМАЛИ</h1>
-  <p id="jumpscare-desc">Вы стали добычей сущности...</p>
+  <h1>ВАС ПОЙМАЛИ</h1>
   <button onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
 </div>
 
 <div id="win-screen">
-  <h1 id="win-title">ВЫ ПЕРЕШЛИ НА СЛЕДУЮЩИЙ УРОВЕНЬ!</h1>
-  <p id="win-desc">Зелёные холмы... Но вдали ходят ОГРОМНЫЕ сущности!</p>
+  <h1 id="win-title">УРОВЕНЬ ПРОЙДЕН!</h1>
   <button id="continue-btn">ПРОДОЛЖИТЬ</button>
 </div>
 
-<div id="fullmap-screen">
-  <div class="fullmap-card">
-    <h2>КАРТА УРОВНЯ</h2>
-    <canvas id="fullmap-canvas" width="400" height="300"></canvas>
-    <p>Нажми в любое место, чтобы закрыть</p>
-  </div>
-</div>
-
 <div id="inventory-screen">
-  <h2 style="color:#fff; margin-bottom:15px;">ИНВЕНТАРЬ (I)</h2>
+  <h2 style="color:#fff; margin-bottom:15px;">ИНВЕНТАРЬ (Нажми I для закрытия)</h2>
   <div class="inv-grid" id="inv-grid"></div>
-  <p style="color:#aaa; font-size:14px; margin-top:15px;">Нажми на предмет, чтобы использовать</p>
 </div>
 
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Портал 'E' прямо перед тобой!</div>
+  <div id="hint" class="hint">Уровень 1: Найдите выход из лабиринта!</div>
   <div class="crosshair"></div>
-  
-  <div id="minimap-container">
-    <canvas id="minimap-canvas" width="110" height="110"></canvas>
-  </div>
-
   <div id="battery-txt">Фонарик: --</div>
 
-  <div id="stamina-container">
-    <div id="stamina-bar"></div>
-  </div>
+  <div id="stamina-container"><div id="stamina-bar"></div></div>
 
   <button id="fs" class="fs-btn">⛶</button>
   <div id="jump" class="jump-btn">⬆</div>
@@ -365,139 +172,48 @@ const MW = map[0].length;
 const MH = map.length;
 const CELL_SIZE = 3;
 
-let audioCtx = null;
-function initAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-
-function playSound(type) {
-  if (!audioCtx) return;
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    if (type === 'step') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(90, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.08);
-    } else if (type === 'jump') {
-      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-    } else if (type === 'pickup') {
-      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.12);
-    } else if (type === 'jumpscare') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(140, audioCtx.currentTime);
-      osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.8);
-      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.8);
-    }
-  } catch(e) {}
-}
-
 const container = document.getElementById('webgl-container');
-const dangerOverlay = document.getElementById('danger-overlay');
-const minimapCanvas = document.getElementById('minimap-canvas');
-const mmCtx = minimapCanvas.getContext('2d');
-
-const fullmapScreen = document.getElementById('fullmap-screen');
-const fullmapCanvas = document.getElementById('fullmap-canvas');
-const fmCtx = fullmapCanvas.getContext('2d');
-let isFullMapOpen = false;
-
-document.getElementById('minimap-container').addEventListener('click', (e) => {
-  e.stopPropagation();
-  if (currentLevel !== 0 && !hasMapItem) return;
-  isFullMapOpen = !isFullMapOpen;
-  fullmapScreen.style.display = isFullMapOpen ? 'flex' : 'none';
-  if (isFullMapOpen) drawFullMap();
-});
-
-fullmapScreen.addEventListener('click', () => {
-  isFullMapOpen = false;
-  fullmapScreen.style.display = 'none';
-});
-
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
 scene.fog = new THREE.FogExp2(0x11110e, 0.035);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0x999988, 0.8);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambientLight);
 
-// Фонарик игрока (SpotLight)
-const flashlight = new THREE.SpotLight(0xffffff, 0, 25, Math.PI / 5, 0.5);
+const flashlight = new THREE.SpotLight(0xffffff, 0, 30, Math.PI / 4, 0.5);
 camera.add(flashlight);
 flashlight.position.set(0, 0, 0);
 flashlight.target.position.set(0, 0, -1);
 camera.add(flashlight.target);
 scene.add(camera);
 
+// Текстуры и объекты уровня 1
 function createWallTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
+  canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#c5b565'; ctx.fillRect(0, 0, 256, 256);
-  ctx.fillStyle = 'rgba(80,70,30,0.12)';
-  for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
-  return texture;
+  ctx.fillStyle = '#c5b565'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = 'rgba(80,70,30,0.15)';
+  for(let i=0; i<128; i+=16) ctx.fillRect(0, i, 128, 2);
+  return new THREE.CanvasTexture(canvas);
 }
-
-function loadTransparentTexture(url) {
-  const texture = new THREE.Texture();
-  const img = new Image();
-  img.crossOrigin = "Anonymous";
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width; canvas.height = img.height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    const imgData = ctx.getImageData(0, 0, img.width, img.height);
-    const data = imgData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      if ((data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) || (data[i] < 40 && data[i+1] < 40 && data[i+2] < 40)) {
-        data[i+3] = 0;
-      }
-    }
-    ctx.putImageData(imgData, 0, 0);
-    texture.image = canvas;
-    texture.needsUpdate = true;
-  };
-  img.src = url;
-  return texture;
-}
-
-const monsterLvl0Texture = loadTransparentTexture('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
-const monsterLvl2Texture = loadTransparentTexture('86bf03f68feea75ac0f75dd9cf0d46e3 (4).jpg');
 
 const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
+const levelGroup = new THREE.Group();
+scene.add(levelGroup);
+
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
 const floorMat = new THREE.MeshLambertMaterial({ color: 0x554422 });
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
-scene.add(floor);
+levelGroup.add(floor);
 
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
 const walls = [];
@@ -510,7 +226,7 @@ for (let y = 0; y < MH; y++) {
     if (map[y][x] === '#') {
       const wall = new THREE.Mesh(wallGeo, wallMat);
       wall.position.set(posX, 1.5, posZ);
-      scene.add(wall);
+      levelGroup.add(wall);
       walls.push(wall);
     } else if (map[y][x] === 'E') {
       exitPos.set(posX, 1.5, posZ);
@@ -518,36 +234,48 @@ for (let y = 0; y < MH; y++) {
   }
 }
 
-const monsterMatLvl0 = new THREE.SpriteMaterial({ map: monsterLvl0Texture, transparent: true });
-const monsterMatLvl2 = new THREE.SpriteMaterial({ map: monsterLvl2Texture, transparent: true });
-const monster = new THREE.Sprite(monsterMatLvl0);
-monster.scale.set(2.2, 2.2, 1);
-scene.add(monster);
-monster.position.set(15 * CELL_SIZE, 1.2, 15 * CELL_SIZE);
+// Игровые переменные
+let currentLevel = 1;
+let isGameOver = false;
+let stamina = 100;
+let runTimer = 0;
 
-camera.position.set(1.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
-
-// ИНВЕНТАРЬ И ПРЕДМЕТЫ
 const inventory = [];
 let hasFlashlight = false;
 let flashlightBattery = 0;
-let hasMapItem = false;
 let isInvOpen = false;
 
-// Предметы на уровне 1 (Фонарик и Батарейка)
-const itemsMesh = [];
-function spawnWorldItem(type, pos, name) {
-  const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+const items = [];
+function spawnItem(type, pos, name) {
+  const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
   const mat = new THREE.MeshBasicMaterial({ color: type === 'flashlight' ? 0xffff00 : 0x0000ff });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.copy(pos);
   mesh.userData = { type, name };
   scene.add(mesh);
-  itemsMesh.push(mesh);
+  items.push(mesh);
 }
 
-spawnWorldItem('flashlight', new THREE.Vector3(6, 0.3, 6), 'Фонарик');
-spawnWorldItem('battery', new THREE.Vector3(12, 0.3, 6), 'Батарейка (+30%)');
+// Предметы на Уровне 1
+spawnItem('flashlight', new THREE.Vector3(6, 0.5, 6), 'Фонарик');
+spawnItem('battery', new THREE.Vector3(12, 0.5, 6), 'Батарейка (+30%)');
+
+camera.position.set(1.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
+
+// Инвентарь
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyI') toggleInventory();
+  if (e.code === 'KeyE') interactItem();
+  if (e.code === 'ShiftLeft') isShift = true;
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'ShiftLeft') isShift = false;
+  keys[e.code] = false;
+});
+
+const keys = {};
+let isShift = false;
 
 function toggleInventory() {
   isInvOpen = !isInvOpen;
@@ -573,75 +301,37 @@ function renderInventory() {
 
 function useItem(idx) {
   const item = inventory[idx];
-  if (item.type === 'battery') {
-    if (hasFlashlight) {
-      flashlightBattery = Math.min(100, flashlightBattery + 30);
-      inventory.splice(idx, 1);
-      playSound('pickup');
-      renderInventory();
-    }
+  if (item.type === 'battery' && hasFlashlight) {
+    flashlightBattery = Math.min(100, flashlightBattery + 30);
+    inventory.splice(idx, 1);
+    renderInventory();
   }
 }
 
-window.addEventListener('keydown', e => {
-  if (e.code === 'KeyI') toggleInventory();
-  if (e.code === 'KeyE') interactItem();
-  if (e.code === 'ShiftLeft') isShift = true;
-  keys[e.code] = true;
-});
-window.addEventListener('keyup', e => {
-  if (e.code === 'ShiftLeft') isShift = false;
-  keys[e.code] = false;
-});
-
-const keys = {};
-let isShift = false;
-
 function interactItem() {
-  itemsMesh.forEach((mesh, idx) => {
-    if (mesh.position.distanceTo(camera.position) < 2.0) {
+  items.forEach((mesh, idx) => {
+    if (mesh.position.distanceTo(camera.position) < 2.5) {
       if (mesh.userData.type === 'flashlight') {
         hasFlashlight = true;
         flashlightBattery = 100;
-        flashlight.intensity = 2;
-        playSound('pickup');
-      } else if (mesh.userData.type === 'map') {
-        hasMapItem = true;
-        playSound('pickup');
       } else {
-        if (inventory.length < 6) {
-          inventory.push(mesh.userData);
-          playSound('pickup');
-        }
+        if (inventory.length < 6) inventory.push(mesh.userData);
       }
       scene.remove(mesh);
-      itemsMesh.splice(idx, 1);
+      items.splice(idx, 1);
     }
   });
 }
 
-// ПЕРЕМЕННЫЕ ИГРОКА И МЕХАНИК
+// Управление игроком
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
-let playerY = 1.5;
-let velocityY = 0;
-let isGrounded = true;
-let isGameOver = false;
-let currentLevel = 0;
 
-let stamina = 100;
-let continuousRunTimer = 0;
-let specialHouseMesh = null;
-
-function checkObjectCollision(pos, radius = 0.4) {
-  if (currentLevel === 2 || currentLevel === 4) return false;
+function checkWallCollision(pos) {
+  if (currentLevel !== 1) return false;
   for (let wall of walls) {
     const box = new THREE.Box3().setFromObject(wall);
-    const objBox = new THREE.Box3(
-      new THREE.Vector3(pos.x - radius, 0, pos.z - radius),
-      new THREE.Vector3(pos.x + radius, 3, pos.z + radius)
-    );
-    if (box.intersectsBox(objBox)) return true;
+    if (box.containsPoint(pos)) return true;
   }
   return false;
 }
@@ -649,13 +339,14 @@ function checkObjectCollision(pos, radius = 0.4) {
 function updatePlayer(dt) {
   if (isGameOver || isInvOpen) return;
 
-  // Бег и Передышка
+  // Бег
   let speed = 4.5 * dt;
-  if (isShift && stamina > 0 && (moveX !== 0 || moveY !== 0 || keys['KeyW'] || keys['KeyS'])) {
-    speed *= 1.8;
-    stamina = Math.max(0, stamina - 25 * dt);
+  const isMoving = moveX !== 0 || moveY !== 0 || keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
+  if (isShift && stamina > 0 && isMoving) {
+    speed *= 1.7;
+    stamina = Math.max(0, stamina - 30 * dt);
   } else {
-    stamina = Math.min(100, stamina + 15 * dt);
+    stamina = Math.min(100, stamina + 20 * dt);
   }
   document.getElementById('stamina-bar').style.width = stamina + '%';
 
@@ -669,7 +360,7 @@ function updatePlayer(dt) {
     document.getElementById('battery-txt').innerText = hasFlashlight ? 'Фонарик: Разряжен' : 'Фонарик: --';
   }
 
-  // Движение по клавиатуре
+  // Движение
   let kx = 0, ky = 0;
   if (keys['KeyW']) ky -= 1;
   if (keys['KeyS']) ky += 1;
@@ -688,180 +379,131 @@ function updatePlayer(dt) {
 
   if (dir.length() > 0) {
     dir.normalize();
-    if (Math.random() < 0.1) playSound('step');
-
-    // Уровень 2: 20 секунд бега без остановки -> Уровень 3
     if (currentLevel === 2) {
-      continuousRunTimer += dt;
-      if (continuousRunTimer >= 20) {
-        continuousRunTimer = 0;
+      runTimer += dt;
+      if (runTimer >= 20) {
+        runTimer = 0;
         loadLevel3();
       }
     }
   } else {
-    if (currentLevel === 2) continuousRunTimer = 0;
+    if (currentLevel === 2) runTimer = 0;
   }
 
-  const nextPosX = camera.position.clone().addScaledVector(new THREE.Vector3(dir.x, 0, 0), speed);
-  if (!checkObjectCollision(nextPosX)) camera.position.x = nextPosX.x;
-
-  const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
-  if (!checkObjectCollision(nextPosZ)) camera.position.z = nextPosZ.z;
+  const nextPos = camera.position.clone().addScaledVector(dir, speed);
+  if (!checkWallCollision(nextPos)) {
+    camera.position.x = nextPos.x;
+    camera.position.z = nextPos.z;
+  }
 
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  // Логика по уровням
-  if (currentLevel === 0) {
-    if (camera.position.distanceTo(monster.position) < 1.3) triggerJumpscare();
-    if (camera.position.distanceTo(exitPos) < 1.2) triggerWin(2);
-  } else if (currentLevel === 3) {
-    if (specialHouseMesh && camera.position.distanceTo(specialHouseMesh.position) < 4.0) {
-      loadLevel4();
-    }
+  // Проверка переходов
+  if (currentLevel === 1 && camera.position.distanceTo(exitPos) < 1.5) {
+    triggerWin();
+  } else if (currentLevel === 3 && specialHouse && camera.position.distanceTo(specialHouse.position) < 4.0) {
+    loadLevel4();
   }
 }
 
-function triggerJumpscare() {
-  isGameOver = true;
-  playSound('jumpscare');
-  document.getElementById('jumpscare-screen').style.display = 'flex';
-}
-
-function triggerWin(nextLvl) {
+function triggerWin() {
   isGameOver = true;
   document.getElementById('win-screen').style.display = 'flex';
   document.getElementById('continue-btn').onclick = () => {
     document.getElementById('win-screen').style.display = 'none';
     isGameOver = false;
-    if (nextLvl === 2) loadLevel2();
+    loadLevel2();
   };
 }
 
-// --- УРОВЕНЬ 2 (Гиганты далеко и меньше) ---
+// ПЕРЕХОДЫ МЕЖДУ УРОВНЯМИ
 function loadLevel2() {
   currentLevel = 2;
-  scene.background = new THREE.Color(0x5ca2ff);
-  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
+  scene.remove(levelGroup); // Убираем лабиринт 1 уровня
+  
+  scene.background = new THREE.Color(0x60a0ff);
+  scene.fog = new THREE.FogExp2(0x60a0ff, 0.005);
 
-  // Карта спавнится на 2 уровне
-  spawnWorldItem('map', new THREE.Vector3(0, 0.5, -5), 'Карта');
-  spawnWorldItem('battery', new THREE.Vector3(10, 0.5, 10), 'Батарейка (+30%)');
+  const planeGeo = new THREE.PlaneGeometry(1000, 1000);
+  const planeMat = new THREE.MeshLambertMaterial({ color: 0x33aa33 });
+  const plane = new THREE.Mesh(planeGeo, planeMat);
+  plane.rotation.x = -Math.PI / 2;
+  scene.add(plane);
 
-  // Огромные монстры СДЕЛАНО ДАЛЬШЕ И МЕНЬШЕ
-  for (let i = 0; i < 4; i++) {
-    const giant = new THREE.Sprite(monsterMatLvl2);
-    giant.scale.set(30, 30, 1); // Меньше размером (было 75)
-    giant.position.set((Math.random() - 0.5) * 600, 15, (Math.random() - 0.5) * 600); // Были дальше
-    scene.add(giant);
-  }
+  spawnItem('map', new THREE.Vector3(0, 0.5, -5), 'Карта');
+  spawnItem('battery', new THREE.Vector3(10, 0.5, 10), 'Батарейка (+30%)');
 
+  camera.position.set(0, 1.5, 0);
   document.getElementById('hint').innerText = "Идите 20 секунд без остановки, чтобы сбежать!";
-  document.getElementById('hint').classList.remove('hide');
 }
 
-// --- УРОВЕНЬ 3 (Бесконечные дома + отличающийся дом) ---
+let specialHouse = null;
 function loadLevel3() {
   currentLevel = 3;
-  while(scene.children.length > 0) scene.remove(scene.children[0]);
+  scene.background = new THREE.Color(0x111115);
+  scene.fog = new THREE.FogExp2(0x111115, 0.015);
 
-  scene.background = new THREE.Color(0x0a0a10);
-  scene.fog = new THREE.FogExp2(0x0a0a10, 0.02);
-  scene.add(ambientLight);
-  scene.add(camera);
+  const houseGeo = new THREE.BoxGeometry(8, 6, 8);
+  const houseMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
 
-  const houseGeo = new THREE.BoxGeometry(10, 8, 10);
-  const houseMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
-
-  // Бесконечные одинаковые дома
-  for (let x = -200; x <= 200; x += 30) {
-    for (let z = -200; z <= 200; z += 30) {
-      if (Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+  for (let x = -150; x <= 150; x += 25) {
+    for (let z = -150; z <= 150; z += 25) {
+      if (Math.abs(x) < 15 && Math.abs(z) < 15) continue;
       const house = new THREE.Mesh(houseGeo, houseMat);
-      house.position.set(x, 4, z);
+      house.position.set(x, 3, z);
       scene.add(house);
     }
   }
 
-  // Отличающийся дом (Не далеко и не близко - например на дистанции 50)
+  // Особый дом с красной дверью
   const specialMat = new THREE.MeshLambertMaterial({ color: 0x8b0000 });
-  specialHouseMesh = new THREE.Mesh(houseGeo, specialMat);
-  specialHouseMesh.position.set(45, 4, 45);
-  scene.add(specialHouseMesh);
+  specialHouse = new THREE.Mesh(houseGeo, specialMat);
+  specialHouse.position.set(40, 3, 40);
+  scene.add(specialHouse);
 
   camera.position.set(0, 1.5, 0);
-  document.getElementById('hint').innerText = "Найдите дом, отличающийся от остальных!";
-  document.getElementById('hint').classList.remove('hide');
+  document.getElementById('hint').innerText = "Найдите отличающийся дом с дверью!";
 }
 
-// --- УРОВЕНЬ 4 (Бесконечный бассейн) ---
 function loadLevel4() {
   currentLevel = 4;
-  while(scene.children.length > 0) scene.remove(scene.children[0]);
+  scene.background = new THREE.Color(0x44ccff);
+  scene.fog = new THREE.FogExp2(0x44ccff, 0.008);
 
-  scene.background = new THREE.Color(0x66ccff);
-  scene.fog = new THREE.FogExp2(0x66ccff, 0.01);
-
-  const light = new THREE.DirectionalLight(0xffffff, 1.2);
-  light.position.set(50, 100, 50);
-  scene.add(light);
-  scene.add(new THREE.AmbientLight(0x99ddff, 0.8));
-
-  // Плитка бассейна
   const poolGeo = new THREE.PlaneGeometry(500, 500);
   const poolMat = new THREE.MeshStandardMaterial({ color: 0x0088aa, roughness: 0.1 });
   const poolFloor = new THREE.Mesh(poolGeo, poolMat);
   poolFloor.rotation.x = -Math.PI / 2;
   scene.add(poolFloor);
 
-  // Колонны в бассейне
-  const colGeo = new THREE.CylinderGeometry(1.5, 1.5, 20);
+  const colGeo = new THREE.CylinderGeometry(1.2, 1.2, 15);
   const colMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-  for (let x = -200; x <= 200; x += 25) {
-    for (let z = -200; z <= 200; z += 25) {
+  for (let x = -150; x <= 150; x += 20) {
+    for (let z = -150; z <= 150; z += 20) {
       const col = new THREE.Mesh(colGeo, colMat);
-      col.position.set(x, 10, z);
+      col.position.set(x, 7.5, z);
       scene.add(col);
     }
   }
 
   camera.position.set(0, 1.8, 0);
-  document.getElementById('hint').innerText = "УРОВЕНЬ 4: Бесконечный Бассейн";
-  document.getElementById('hint').classList.remove('hide');
+  document.getElementById('hint').innerText = "УРОВЕНЬ 4: Бесконечный бассейн";
 }
 
-function updateMinimap() {
-  if (currentLevel !== 0 && !hasMapItem) {
-    document.getElementById('minimap-container').style.display = 'none';
-    return;
-  }
-  document.getElementById('minimap-container').style.display = 'block';
-}
-
-function drawFullMap() {
-  fmCtx.clearRect(0, 0, fullmapCanvas.width, fullmapCanvas.height);
-  fmCtx.fillStyle = '#00ff00';
-  fmCtx.fillRect(150, 100, 20, 20);
-}
-
-// УПРАВЛЕНИЕ И СЕНСОР
+// Тач-управление
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
 let joyId = null, joyRect = null, lookId = null, lastTouchX = 0, lastTouchY = 0;
 
 document.getElementById('fs').addEventListener('click', () => {
-  initAudio();
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
   else document.exitFullscreen();
 });
 
-document.getElementById('jump').addEventListener('pointerdown', () => {
-  if (isGrounded) { velocityY = 6.5; playSound('jump'); }
-});
-
 joy.addEventListener('pointerdown', e => {
-  initAudio(); joyId = e.pointerId; joy.setPointerCapture(joyId);
+  joyId = e.pointerId; joy.setPointerCapture(joyId);
   joyRect = joy.getBoundingClientRect(); updateJoy(e);
 });
 joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) updateJoy(e); });
@@ -877,7 +519,6 @@ function updateJoy(e) {
 joy.addEventListener('pointerup', () => { joyId = null; moveX = 0; moveY = 0; knob.style.transform = 'translate(-50%, -50%)'; });
 
 window.addEventListener('pointerdown', e => {
-  initAudio();
   if (e.target.closest('#joy') || e.target.closest('#jump') || e.target.closest('#fs')) return;
   if (e.clientX > window.innerWidth * 0.3) { lookId = e.pointerId; lastTouchX = e.clientX; lastTouchY = e.clientY; }
 });
@@ -896,7 +537,6 @@ function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
   updatePlayer(dt);
-  updateMinimap();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
@@ -904,4 +544,4 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
-here,
+
