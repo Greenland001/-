@@ -54,7 +54,7 @@ html,body{ margin:0; width:100%; height:100%; overflow:hidden; background:#222; 
 
 <div id="win-screen">
   <h1>ПОРТАЛ АКТИВИРОВАН!</h1>
-  <p>Переход на бесконечное зелёное поле...</p>
+  <p>Переход на бесконечное поле...</p>
   <button id="continue-btn">ВЫЙТИ НА ПОЛЕ</button>
 </div>
 
@@ -179,8 +179,8 @@ const minimapCanvas = document.getElementById('minimap-canvas');
 const mmCtx = minimapCanvas.getContext('2d');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xd4c475);
-scene.fog = new THREE.FogExp2(0xd4c475, 0.02);
+scene.background = new THREE.Color(0xb5b5b5);
+scene.fog = new THREE.FogExp2(0xb5b5b5, 0.015);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -190,17 +190,17 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-// Настройка красивого освещения с тенями
-scene.add(new THREE.AmbientLight(0xfff6d1, 0.45));
+// Возвращаем то самое мягкое освещение с тенями из первого успешного варианта
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 
-const dirLight = new THREE.DirectionalLight(0xfffaed, 0.9);
-dirLight.position.set(40, 80, 40);
+const dirLight = new THREE.DirectionalLight(0xfffaed, 0.5);
+dirLight.position.set(30, 70, 30);
 dirLight.castShadow = true;
-dirLight.shadow.mapSize.width = 1024;
-dirLight.shadow.mapSize.height = 1024;
+dirLight.shadow.mapSize.width = 512;
+dirLight.shadow.mapSize.height = 512;
 dirLight.shadow.camera.near = 0.5;
-dirLight.shadow.camera.far = 250;
-const d = 45;
+dirLight.shadow.camera.far = 200;
+const d = 40;
 dirLight.shadow.camera.left = -d;
 dirLight.shadow.camera.right = d;
 dirLight.shadow.camera.top = d;
@@ -212,28 +212,32 @@ function createWallTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#dfcf80'; ctx.fillRect(0, 0, 256, 256);
-  ctx.fillStyle = 'rgba(80,70,30,0.18)';
-  for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 3);
+  ctx.fillStyle = '#e8d785'; ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = 'rgba(100,90,50,0.12)';
+  for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
   return new THREE.CanvasTexture(canvas);
 }
 
-function createCarpetTexture() {
+// Серый цвет для пола
+function createFloorTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#726742'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = '#6b6b6b'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = 'rgba(50,50,50,0.15)';
+  for(let i=0; i<128; i+=16) ctx.fillRect(0, i, 128, 2);
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(MW * 2, MH * 2);
   return texture;
 }
 
+// Серый цвет для потолка
 function createCeilingTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#9c9370'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = '#787878'; ctx.fillRect(0, 0, 128, 128);
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(MW, MH);
@@ -254,9 +258,9 @@ function createMonsterTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.85 });
-const floorMat = new THREE.MeshStandardMaterial({ map: createCarpetTexture(), roughness: 0.9 });
-const ceilingMat = new THREE.MeshStandardMaterial({ map: createCeilingTexture(), roughness: 0.9 });
+const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.8 });
+const floorMat = new THREE.MeshStandardMaterial({ map: createFloorTexture(), roughness: 0.8 });
+const ceilingMat = new THREE.MeshStandardMaterial({ map: createCeilingTexture(), roughness: 0.8 });
 
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
 const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -629,3 +633,4 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
+
