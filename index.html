@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D — Level 0 & Level 2</title>
+<title>Backrooms 3D — Level 0 & Level 2 (Audio)</title>
 
 <style>
 *{
@@ -289,7 +289,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Найди выход в глубине коридоров, чтобы перейти на Уровень 2!</div>
+  <div id="hint" class="hint">Найди зелёную дверь неподалёку, чтобы перейти на Уровень 2!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
@@ -333,7 +333,7 @@ const map = [
   "########.#..########..#..#..###########..#..######",
   "#........#..#......#..#..#...............#.......#",
   "#..#######..#......#..#..######################..#",
-  "#..#........#......#..#.......................#..#",
+  "#..#........#......#..#...................E...#..#",
   "#..#..#######..#####..######################..#..#",
   "#..#..#     #.........#....................#..#..#",
   "#..#..#     ########..#..################..#..#..#",
@@ -341,13 +341,82 @@ const map = [
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
   "#..#######..##############..#..####..##########..#",
-  "#...................E............................#",
+  "#................................................#",
   "##################################################"
 ];
 
 const MW = map[0].length;
 const MH = map.length;
 const CELL_SIZE = 3;
+
+// Аудио менеджер на Web Audio API
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function playFootstepSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.08);
+  } catch(e) {}
+}
+
+function playJumpSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
+
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+function playJumpscareSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.8);
+
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.8);
+  } catch(e) {}
+}
 
 const container = document.getElementById('webgl-container');
 const dangerOverlay = document.getElementById('danger-overlay');
@@ -575,8 +644,8 @@ let currentLevel = 0;
 
 let pathTimer = 0;
 let currentMonsterPath = [];
+let footstepTimer = 0;
 
-// Переменные для Уровня 2 (облака, гиганты, таймер бездействия)
 let clouds = [];
 let giants = [];
 let idleTimer = 0;
@@ -678,7 +747,6 @@ function updatePlayer(dt) {
     return;
   }
 
-  // Проверка бездействия на Уровне 2 (6 секунд)
   if (currentLevel === 2) {
     if (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05 || !isGrounded) {
       idleTimer = 0;
@@ -749,7 +817,16 @@ function updatePlayer(dt) {
   dir.addScaledVector(forward, -moveY);
   dir.addScaledVector(side, moveX);
   
-  if (dir.length() > 0) dir.normalize();
+  if (dir.length() > 0) {
+    dir.normalize();
+    if (isGrounded) {
+      footstepTimer += dt;
+      if (footstepTimer > 0.4) {
+        footstepTimer = 0;
+        playFootstepSound();
+      }
+    }
+  }
 
   const nextPosX = camera.position.clone().addScaledVector(new THREE.Vector3(dir.x, 0, 0), speed);
   if (!checkObjectCollision(nextPosX, 0.4)) camera.position.x = nextPosX.x;
@@ -759,7 +836,6 @@ function updatePlayer(dt) {
 
   updateMinimap();
 
-  // Анимация облаков и блуждающих гигантов на Уровне 2
   if (currentLevel === 2) {
     clouds.forEach(cloud => {
       cloud.position.x += dt * 1.5;
@@ -771,7 +847,6 @@ function updatePlayer(dt) {
       g.position.z += g.userData.vz * dt;
       g.position.y = getLevel2Height(g.position.x, g.position.z) + 12;
       
-      // Ограничим область блуждания гигантов
       if (Math.abs(g.position.x) > 300) g.userData.vx *= -1;
       if (Math.abs(g.position.z) > 300) g.userData.vz *= -1;
     });
@@ -830,6 +905,7 @@ function updatePlayer(dt) {
 function triggerJumpscare() {
   isGameOver = true;
   dangerOverlay.style.opacity = '0';
+  playJumpscareSound();
   document.getElementById('jumpscare-screen').style.display = 'flex';
 }
 
@@ -910,7 +986,6 @@ function loadLevel2() {
   grassFloor.receiveShadow = true;
   scene.add(grassFloor);
 
-  // Движущиеся облака
   const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
   const cloudBlockGeo = new THREE.BoxGeometry(10, 6, 10);
 
@@ -938,10 +1013,9 @@ function loadLevel2() {
     clouds.push(cloudGroup);
   }
 
-  // Огромные монстры на горизонте
   for(let i=0; i<5; i++) {
     const giant = new THREE.Sprite(monsterMat);
-    giant.scale.set(25, 25, 1); // Очень большие
+    giant.scale.set(25, 25, 1);
     const gx = (Math.random() - 0.5) * 300;
     const gz = (Math.random() - 0.5) * 300;
     giant.position.set(gx, getLevel2Height(gx, gz) + 12, gz);
@@ -973,6 +1047,7 @@ let joyId = null, joyRect = null;
 let lookId = null, lastTouchX = 0, lastTouchY = 0;
 
 fsBtn.addEventListener('click', () => {
+  initAudio();
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().catch(()=>{});
   } else {
@@ -982,13 +1057,16 @@ fsBtn.addEventListener('click', () => {
 
 jumpBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation();
+  initAudio();
   if (isGrounded && !isGameOver) {
     velocityY = jumpForce;
     isGrounded = false;
+    playJumpSound();
   }
 });
 
 joy.addEventListener('pointerdown', e => {
+  initAudio();
   joyId = e.pointerId;
   joy.setPointerCapture(joyId);
   joyRect = joy.getBoundingClientRect();
@@ -1018,6 +1096,7 @@ joy.addEventListener('pointerup', resetJoy);
 joy.addEventListener('pointercancel', resetJoy);
 
 window.addEventListener('pointerdown', e => {
+  initAudio();
   if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn) return;
   if (e.clientX > window.innerWidth * 0.3) {
     lookId = e.pointerId;
