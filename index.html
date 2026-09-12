@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D — Level 0 (Graffiti Guide)</title>
+<title>Backrooms 3D — Level 0 (Full Map)</title>
 
 <style>
 *{
@@ -139,6 +139,8 @@ html,body{
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 
 #minimap-container{
+  pointer-events:auto;
+  cursor:pointer;
   position:absolute;
   top:20px;
   left:20px;
@@ -150,10 +152,60 @@ html,body{
   overflow:hidden;
   box-shadow:0 0 10px rgba(0,0,0,0.8);
   backdrop-filter:blur(4px);
+  transition: transform 0.2s;
+}
+#minimap-container:active {
+  transform: scale(0.95);
 }
 #minimap-canvas{
   width:100%;
   height:100%;
+}
+
+#fullmap-screen{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.88);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:1500;
+  color:#fff;
+  font-family:sans-serif;
+  backdrop-filter:blur(8px);
+  padding: 20px;
+  cursor: pointer;
+}
+.fullmap-card{
+  background:rgba(20,20,15,0.95);
+  border:2px solid rgba(255,255,255,0.2);
+  border-radius:16px;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  box-shadow:0 10px 30px rgba(0,0,0,0.8);
+  max-width: 95vw;
+  max-height: 95vh;
+}
+.fullmap-card h2{
+  margin:0 0 10px 0;
+  font-size:20px;
+  color:#f0e6c2;
+  letter-spacing: 1px;
+}
+.fullmap-card p{
+  margin:10px 0 0 0;
+  font-size:14px;
+  color:#aaa;
+}
+#fullmap-canvas{
+  width: 320px;
+  height: 250px;
+  background: #0d0c0a;
+  border: 2px solid #554a2b;
+  border-radius: 8px;
 }
 
 #danger-overlay{
@@ -286,10 +338,18 @@ html,body{
   <button id="continue-btn">ВЫЖИВАТЬ НА УРОВНЕ 2</button>
 </div>
 
+<div id="fullmap-screen">
+  <div class="fullmap-card">
+    <h2>КАРТА УРОВНЯ 0</h2>
+    <canvas id="fullmap-canvas" width="400" height="300"></canvas>
+    <p>Нажми в любое место, чтобы закрыть</p>
+  </div>
+</div>
+
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Ищи на стенах красные метки и рисунки странников — они ведут к выходу!</div>
+  <div id="hint" class="hint">Нажми на мини-карту слева сверху, чтобы развернуть всю карту целиком!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
@@ -416,6 +476,28 @@ const dangerOverlay = document.getElementById('danger-overlay');
 const minimapCanvas = document.getElementById('minimap-canvas');
 const mmCtx = minimapCanvas.getContext('2d');
 
+const fullmapScreen = document.getElementById('fullmap-screen');
+const fullmapCanvas = document.getElementById('fullmap-canvas');
+const fmCtx = fullmapCanvas.getContext('2d');
+let isFullMapOpen = false;
+
+document.getElementById('minimap-container').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (currentLevel === 2) return;
+  isFullMapOpen = !isFullMapOpen;
+  if (isFullMapOpen) {
+    fullmapScreen.style.display = 'flex';
+    drawFullMap();
+  } else {
+    fullmapScreen.style.display = 'none';
+  }
+});
+
+fullmapScreen.addEventListener('click', () => {
+  isFullMapOpen = false;
+  fullmapScreen.style.display = 'none';
+});
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
 scene.fog = new THREE.FogExp2(0x11110e, 0.035);
@@ -430,7 +512,6 @@ container.appendChild(renderer.domElement);
 const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
 scene.add(ambientLight);
 
-// Текстура стены с возможностью нанести граффити-метку
 function createWallTexture(hasGraffiti) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
@@ -444,21 +525,16 @@ function createWallTexture(hasGraffiti) {
     ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
   }
 
-  // Если это стена с подсказкой — рисуем пугающие знаки / кресты / стрелочки краской
   if (hasGraffiti) {
     ctx.save();
     ctx.strokeStyle = '#8b0000';
     ctx.fillStyle = '#8b0000';
     ctx.lineWidth = 6;
     ctx.font = 'bold 36px monospace';
-
-    // Рисуем зловещий крест или знаки выживших
     ctx.beginPath();
     ctx.moveTo(100, 100); ctx.lineTo(156, 156);
     ctx.moveTo(156, 100); ctx.lineTo(100, 156);
     ctx.stroke();
-
-    // Текстовая подсказка краской
     ctx.fillText("EXIT ->", 70, 200);
     ctx.restore();
   }
@@ -572,7 +648,6 @@ const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
 const walls = [];
 let exitPos = new THREE.Vector3();
 
-// Координаты стен-подсказок (где нарисованы граффити, ведущие к выходу близко к старту)
 const guideCoords = [
   {x: 3, y: 1},
   {x: 5, y: 1},
@@ -585,7 +660,6 @@ for (let y = 0; y < MH; y++) {
     const posZ = y * CELL_SIZE + CELL_SIZE/2;
 
     if (map[y][x] === '#') {
-      // Проверяем, есть ли здесь метка-подсказка
       const isGuide = guideCoords.some(c => c.x === x && c.y === y);
       const chosenMat = isGuide ? guideWallMat : standardWallMat;
 
@@ -755,6 +829,49 @@ function updateMinimap() {
   mmCtx.stroke();
 
   mmCtx.restore();
+
+  if (isFullMapOpen) {
+    drawFullMap();
+  }
+}
+
+function drawFullMap() {
+  const w = fullmapCanvas.width;
+  const h = fullmapCanvas.height;
+  fmCtx.clearRect(0, 0, w, h);
+
+  const cellW = w / MW;
+  const cellH = h / MH;
+
+  fmCtx.fillStyle = '#655530';
+  for (let y = 0; y < MH; y++) {
+    for (let x = 0; x < MW; x++) {
+      if (map[y][x] === '#') {
+        fmCtx.fillRect(x * cellW, y * cellH, cellW + 0.5, cellH + 0.5);
+      }
+    }
+  }
+
+  const ex = exitPos.x / (MW * CELL_SIZE) * w;
+  const ez = exitPos.z / (MH * CELL_SIZE) * h;
+  fmCtx.fillStyle = '#00ffcc';
+  fmCtx.beginPath();
+  fmCtx.arc(ex, ez, 5, 0, Math.PI * 2);
+  fmCtx.fill();
+
+  const mx = monster.position.x / (MW * CELL_SIZE) * w;
+  const mz = monster.position.z / (MH * CELL_SIZE) * h;
+  fmCtx.fillStyle = '#ff0000';
+  fmCtx.beginPath();
+  fmCtx.arc(mx, mz, 5, 0, Math.PI * 2);
+  fmCtx.fill();
+
+  const px = camera.position.x / (MW * CELL_SIZE) * w;
+  const pz = camera.position.z / (MH * CELL_SIZE) * h;
+  fmCtx.fillStyle = '#00ff00';
+  fmCtx.beginPath();
+  fmCtx.arc(px, pz, 6, 0, Math.PI * 2);
+  fmCtx.fill();
 }
 
 function getLevel2Height(x, z) {
@@ -1040,9 +1157,9 @@ function loadLevel2() {
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Огромные монстры бродят вдалеке. НЕ СТОЙ НА МЕСТЕ 6 секунд!";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Открытая местность. Не стой на месте!";
   document.getElementById('hint').classList.remove('hide');
-  setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
 }
 
 document.getElementById('restart-btn').addEventListener('click', () => {
@@ -1072,7 +1189,7 @@ jumpBtn.addEventListener('pointerdown', (e) => {
   if (isGrounded && !isGameOver) {
     velocityY = jumpForce;
     isGrounded = false;
-    playJumpSample = playJumpSound();
+    playJumpSound();
   }
 });
 
@@ -1108,7 +1225,7 @@ joy.addEventListener('pointercancel', resetJoy);
 
 window.addEventListener('pointerdown', e => {
   initAudio();
-  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn) return;
+  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn || e.target === minimapCanvas || e.target.closest('#minimap-container')) return;
   if (e.clientX > window.innerWidth * 0.3) {
     lookId = e.pointerId;
     lastTouchX = e.clientX;
