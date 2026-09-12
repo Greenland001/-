@@ -447,7 +447,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Портал 'E' где-то в лабиринте!</div>
+  <div id="hint" class="hint">Портал 'E' прямо перед тобой!</div>
   <div class="crosshair"></div>
 
   <div id="minimap-container">
@@ -482,7 +482,7 @@ html,body{
 
 const map = [
   "##################################################",
-  "#.................E....#.........................#",
+  "#..E...................#.........................#",
   "#..##################..#..#####################..#",
   "#..#................#..#..#...................#..#",
   "#..#..############..#..#..#..###############..#..#",
@@ -531,7 +531,7 @@ function initAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (audioCtx.state === 'suspended
+  if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
 }
