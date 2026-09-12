@@ -199,11 +199,18 @@ html,body{
   z-index:1000;
   color:red;
   font-family:monospace;
+  padding: 20px;
+  text-align: center;
 }
 #jumpscare-screen h1{
-  font-size:48px;
-  margin-bottom:20px;
+  font-size:42px;
+  margin-bottom:10px;
   text-shadow:0 0 10px red;
+}
+#jumpscare-screen p{
+  font-size:20px;
+  color:#ff8888;
+  margin-bottom:25px;
 }
 #restart-btn{
   pointer-events:auto;
@@ -268,7 +275,8 @@ html,body{
 </div>
 
 <div id="jumpscare-screen">
-  <h1>ВАС ПОЙМАЛИ</h1>
+  <h1 id="jumpscare-title">ВАС ПОЙМАЛИ</h1>
+  <p id="jumpscare-desc">Вы стали добычей сущности...</p>
   <button id="restart-btn">ПОПРОБОВАТЬ СНОВА</button>
 </div>
 
@@ -573,7 +581,7 @@ let clouds = [];
 let portalPos = new THREE.Vector3(50, 0, 50);
 let idleTimer = 0;
 let level2Monster = null;
-let level2MonsterActive = false;
+let level2MonsterFlying = false;
 
 function checkObjectCollision(pos, radius = 0.4) {
   if (currentLevel === 2) return false;
@@ -663,27 +671,40 @@ function getLevel2Height(x, z) {
 }
 
 function updatePlayer(dt) {
-  if (isGameOver) return;
+  if (isGameOver) {
+    // Анимация прилета монстра к лицу игрока при смерти от бездействия
+    if (level2MonsterFlying && level2Monster) {
+      level2Monster.position.lerp(camera.position, dt * 6.0);
+    }
+    return;
+  }
 
   // Проверка движения для таймера бездействия на Уровне 2
   if (currentLevel === 2) {
     if (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05 || !isGrounded) {
       idleTimer = 0;
-      if (level2MonsterActive) {
-        level2MonsterActive = false;
-        scene.remove(level2Monster);
-      }
+      dangerOverlay.style.opacity = '0';
     } else {
       idleTimer += dt;
-      if (idleTimer > 6.0 && !level2MonsterActive) {
-        // Спавним монстра перед лицом игрока / сзади и пугаем
-        level2MonsterActive = true;
-        const spawnDir = new THREE.Vector3(0, 0, -3).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+      // Начинаем пугать красным экраном за 2 секунды до атаки
+      if (idleTimer > 4.0) {
+        dangerOverlay.style.opacity = Math.min(1, (idleTimer - 4.0) / 2.0).toFixed(2);
+      }
+
+      if (idleTimer > 6.0 && !level2MonsterFlying) {
+        level2MonsterFlying = true;
+        
+        // Спавним монстра вдалеке прямо по курсу взгляда игрока
+        const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
         level2Monster = new THREE.Sprite(monsterMat);
-        level2Monster.scale.set(4, 4, 1);
-        level2Monster.position.copy(camera.position).add(spawnDir);
-        level2Monster.position.y = camera.position.y;
+        level2Monster.scale.set(6, 6, 1);
+        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 12);
         scene.add(level2Monster);
+
+        // Настраиваем текст скримера под бездействие
+        document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
+        document.getElementById('jumpscare-desc').innerText = "Сущность нашла тебя в зелёном поле...";
+        
         triggerJumpscare();
         return;
       }
@@ -796,6 +817,8 @@ function updatePlayer(dt) {
     }
 
     if (dist < 1.3) {
+      document.getElementById('jumpscare-title').innerText = "ВАС ПОЙМАЛИ";
+      document.getElementById('jumpscare-desc').innerText = "Сущность настигла вас в коридорах...";
       triggerJumpscare();
     }
 
@@ -826,6 +849,8 @@ document.getElementById('continue-btn').addEventListener('click', () => {
 function loadLevel2() {
   currentLevel = 2;
   clouds = [];
+  idleTimer = 0;
+  level2MonsterFlying = false;
 
   while(scene.children.length > 0){ 
     scene.remove(scene.children[0]); 
@@ -913,7 +938,7 @@ function loadLevel2() {
     clouds.push(cloudGroup);
   }
 
-  // Красивый портал
+  // Портал
   portalPos.set(40, getLevel2Height(40, 40) + 2.0, 40);
   const portalGroup = new THREE.Group();
   portalGroup.position.copy(portalPos);
@@ -934,7 +959,7 @@ function loadLevel2() {
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Найди фиолетово-неоновый портал на холмах! Не стой на месте долго.";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Найди фиолетово-неоновый портал! Не стой долго на одном месте.";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
