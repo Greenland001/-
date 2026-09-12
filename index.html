@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D — Level 0 (Full Map)</title>
+<title>Backrooms 3D — Level 0 & Level 2</title>
 
 <style>
 *{
@@ -334,7 +334,7 @@ html,body{
 
 <div id="win-screen">
   <h1>ВЫ ПЕРЕШЛИ НА УРОВЕНЬ 2!</h1>
-  <p>Зелёные холмы... Но вдали кто-то бродит. Не останавливайся!</p>
+  <p>Зелёные холмы... Но вдали ходят ОГРОМНЫЕ сущности!</p>
   <button id="continue-btn">ВЫЖИВАТЬ НА УРОВНЕ 2</button>
 </div>
 
@@ -349,7 +349,7 @@ html,body{
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Портал 'E' теперь совсем рядом! Иди прямо.</div>
+  <div id="hint" class="hint">Портал 'E' прямо перед тобой!</div>
   <div class="crosshair"></div>
   
   <div id="minimap-container">
@@ -592,8 +592,38 @@ function createGlowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-const textureLoader = new THREE.TextureLoader();
-const monsterTexture = textureLoader.load('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
+function loadTransparentTexture(url) {
+  const texture = new THREE.Texture();
+  const img = new Image();
+  img.crossOrigin = "Anonymous";
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const imgData = ctx.getImageData(0, 0, img.width, img.height);
+    const data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      if (r > 200 && g > 200 && b > 200) {
+        data[i+3] = 0;
+      } else if (r < 40 && g < 40 && b < 40) {
+        data[i+3] = 0;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    texture.image = canvas;
+    texture.needsUpdate = true;
+  };
+  img.src = url;
+  return texture;
+}
+
+const monsterLvl0Texture = loadTransparentTexture('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
+const monsterLvl2Texture = loadTransparentTexture('86bf03f68feea75ac0f75dd9cf0d46e3 (4).jpg');
 
 function createExitDoorTexture() {
   const canvas = document.createElement('canvas');
@@ -679,8 +709,10 @@ for (let y = 0; y < MH; y++) {
   }
 }
 
-const monsterMat = new THREE.SpriteMaterial({ map: monsterTexture, transparent: true });
-const monster = new THREE.Sprite(monsterMat);
+const monsterMatLvl0 = new THREE.SpriteMaterial({ map: monsterLvl0Texture, transparent: true });
+const monsterMatLvl2 = new THREE.SpriteMaterial({ map: monsterLvl2Texture, transparent: true });
+
+const monster = new THREE.Sprite(monsterMatLvl0);
 monster.scale.set(2.2, 2.2, 1);
 scene.add(monster);
 
@@ -888,12 +920,12 @@ function updatePlayer(dt) {
       if (idleTimer >= 6.0 && !level2MonsterFlying) {
         level2MonsterFlying = true;
         const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        level2Monster = new THREE.Sprite(monsterMat);
-        level2Monster.scale.set(12, 12, 1);
-        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 15);
+        level2Monster = new THREE.Sprite(monsterMatLvl2);
+        level2Monster.scale.set(40, 40, 1);
+        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 25);
         scene.add(level2Monster);
         document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
-        document.getElementById('jumpscare-desc').innerText = "Гигант поймал тебя в открытом поле...";
+        document.getElementById('jumpscare-desc').innerText = "Огромная сущность поймала тебя...";
         triggerJumpscare();
         return;
       }
@@ -964,9 +996,9 @@ function updatePlayer(dt) {
     giants.forEach(g => {
       g.position.x += g.userData.vx * dt;
       g.position.z += g.userData.vz * dt;
-      g.position.y = getLevel2Height(g.position.x, g.position.z) + 12;
-      if (Math.abs(g.position.x) > 300) g.userData.vx *= -1;
-      if (Math.abs(g.position.z) > 300) g.userData.vz *= -1;
+      g.position.y = getLevel2Height(g.position.x, g.position.z) + 35;
+      if (Math.abs(g.position.x) > 350) g.userData.vx *= -1;
+      if (Math.abs(g.position.z) > 350) g.userData.vz *= -1;
     });
   }
 
@@ -1051,21 +1083,11 @@ function loadLevel2() {
   }
 
   scene.background = new THREE.Color(0x5ca2ff);
-  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.003);
+  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.002);
 
   const sun = new THREE.DirectionalLight(0xfffaed, 1.5);
   sun.position.set(200, 300, 150);
   sun.castShadow = true;
-  sun.shadow.mapSize.width = 2048;
-  sun.shadow.mapSize.height = 2048;
-  sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 800;
-  const d = 200;
-  sun.shadow.camera.left = -d;
-  sun.shadow.camera.right = d;
-  sun.shadow.camera.top = d;
-  sun.shadow.camera.bottom = -d;
-  sun.shadow.bias = -0.0005;
   scene.add(sun);
   scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
 
@@ -1087,7 +1109,7 @@ function loadLevel2() {
   grassTex.repeat.set(80, 80);
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
-  const grassGeo = new THREE.PlaneGeometry(800, 800, 120, 120);
+  const grassGeo = new THREE.PlaneGeometry(1000, 1000, 150, 150);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
@@ -1116,27 +1138,26 @@ function loadLevel2() {
       );
       const s = 0.6 + Math.random() * 0.9;
       part.scale.set(s, s * 0.6, s);
-      part.castShadow = true;
       cloudGroup.add(part);
     }
     cloudGroup.position.set(
       (Math.random() - 0.5) * 600,
-      80 + Math.random() * 40,
+      100 + Math.random() * 40,
       (Math.random() - 0.5) * 600
     );
     scene.add(cloudGroup);
     clouds.push(cloudGroup);
   }
 
-  for(let i=0; i<5; i++) {
-    const giant = new THREE.Sprite(monsterMat);
-    giant.scale.set(25, 25, 1);
-    const gx = (Math.random() - 0.5) * 300;
-    const gz = (Math.random() - 0.5) * 300;
-    giant.position.set(gx, getLevel2Height(gx, gz) + 12, gz);
+  for(let i=0; i<6; i++) {
+    const giant = new THREE.Sprite(monsterMatLvl2);
+    giant.scale.set(75, 75, 1);
+    const gx = (Math.random() - 0.5) * 400;
+    const gz = (Math.random() - 0.5) * 400;
+    giant.position.set(gx, getLevel2Height(gx, gz) + 35, gz);
     giant.userData = {
-      vx: (Math.random() - 0.5) * 2.0,
-      vz: (Math.random() - 0.5) * 2.0
+      vx: (Math.random() - 0.5) * 2.5,
+      vz: (Math.random() - 0.5) * 2.5
     };
     scene.add(giant);
     giants.push(giant);
@@ -1144,7 +1165,7 @@ function loadLevel2() {
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Открытая местность. Не стой на месте!";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Гигантские сущности бродят повсюду!";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
 }
