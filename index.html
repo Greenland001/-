@@ -148,7 +148,7 @@ const map = [
   "#.....#..#...#..#.....#..#..#.....#........#..#..#",
   "#######..#...#..#######..#..#.....#######..#..#..#",
   "#........#...#...........#..#...........#..#.....#",
-  "#..#######...#############..##########..#..#####.#",
+  "#..#######..#############..##########..#..#####.#",
   "#..#........................#........#..#......#.#",
   "#..#..####################..#..####..#..#####..#.#",
   "#..#..#..................#..#..#..#..#......#..#.#",
@@ -180,27 +180,41 @@ const mmCtx = minimapCanvas.getContext('2d');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xd4c475);
-scene.fog = new THREE.FogExp2(0xd4c475, 0.015);
+scene.fog = new THREE.FogExp2(0xd4c475, 0.02);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-// Яркое освещение без слепых зон
-scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-const dirLight = new THREE.DirectionalLight(0xfffaed, 0.6);
-dirLight.position.set(50, 200, 50);
+// Настройка красивого освещения с тенями
+scene.add(new THREE.AmbientLight(0xfff6d1, 0.45));
+
+const dirLight = new THREE.DirectionalLight(0xfffaed, 0.9);
+dirLight.position.set(40, 80, 40);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 1024;
+dirLight.shadow.mapSize.height = 1024;
+dirLight.shadow.camera.near = 0.5;
+dirLight.shadow.camera.far = 250;
+const d = 45;
+dirLight.shadow.camera.left = -d;
+dirLight.shadow.camera.right = d;
+dirLight.shadow.camera.top = d;
+dirLight.shadow.camera.bottom = -d;
+dirLight.shadow.bias = -0.0005;
 scene.add(dirLight);
 
 function createWallTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#e8d785'; ctx.fillRect(0, 0, 256, 256);
-  ctx.fillStyle = 'rgba(100,90,50,0.12)';
-  for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
+  ctx.fillStyle = '#dfcf80'; ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = 'rgba(80,70,30,0.18)';
+  for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 3);
   return new THREE.CanvasTexture(canvas);
 }
 
@@ -208,7 +222,7 @@ function createCarpetTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#7a6e46'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = '#726742'; ctx.fillRect(0, 0, 128, 128);
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(MW * 2, MH * 2);
@@ -240,14 +254,15 @@ function createMonsterTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.8 });
-const floorMat = new THREE.MeshStandardMaterial({ map: createCarpetTexture(), roughness: 0.8 });
-const ceilingMat = new THREE.MeshStandardMaterial({ map: createCeilingTexture(), roughness: 0.8 });
+const wallMat = new THREE.MeshStandardMaterial({ map: createWallTexture(), roughness: 0.85 });
+const floorMat = new THREE.MeshStandardMaterial({ map: createCarpetTexture(), roughness: 0.9 });
+const ceilingMat = new THREE.MeshStandardMaterial({ map: createCeilingTexture(), roughness: 0.9 });
 
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
+floor.receiveShadow = true;
 scene.add(floor);
 
 const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
@@ -268,6 +283,8 @@ for (let y = 0; y < MH; y++) {
     if (map[y][x] === '#') {
       const wall = new THREE.Mesh(wallGeo, wallMat);
       wall.position.set(posX, 1.5, posZ);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
       scene.add(wall);
       walls.push(wall);
     } else if (map[y][x] === 'E') {
@@ -503,6 +520,7 @@ function loadLevelGreenField() {
 
   const sun = new THREE.DirectionalLight(0xfffaed, 0.85);
   sun.position.set(300, 400, 200);
+  sun.castShadow = true;
   scene.add(sun);
   scene.add(new THREE.AmbientLight(0xddeeff, 0.65));
 
@@ -526,6 +544,7 @@ function loadLevelGreenField() {
   floorGeo.computeVertexNormals();
 
   const grassFloor = new THREE.Mesh(floorGeo, floorMat);
+  grassFloor.receiveShadow = true;
   scene.add(grassFloor);
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
@@ -610,4 +629,3 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
-
