@@ -3,90 +3,411 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Backrooms 3D</title>
+<title>Backrooms 3D — Level 0 & Level 2</title>
 
 <style>
-*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body{ margin:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:sans-serif; touch-action:none; }
-#webgl-container{ width:100%; height:100%; display:block; }
-.hud{ position:fixed; inset:0; pointer-events:none; }
-
-.hint{
-  position:absolute; top:20px; left:50%; transform:translateX(-50%);
-  padding:12px 22px; border-radius:18px; background:rgba(28,26,17,.8);
-  color:#eee; font-size:16px; text-align:center; max-width:85%; z-index:10;
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
 }
 
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
+  font-family:Arial,sans-serif;
+  touch-action:none;
+}
+
+#webgl-container{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.hud{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+}
+
+.hint{
+  position:absolute;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:12px 22px;
+  border-radius:18px;
+  background:rgba(28,26,17,.72);
+  color:#eee;
+  font-size:16px;
+  backdrop-filter:blur(8px);
+  text-align:center;
+  max-width:85%;
+  transition:opacity .8s;
+}
+
+.hint.hide{ opacity:0; }
+
 .fs-btn{
-  pointer-events:auto; position:absolute; right:20px; top:20px;
-  width:50px; height:50px; border:2px solid rgba(255,255,255,0.3);
-  border-radius:12px; background:rgba(20,19,15,.75); color:white; font-size:24px;
-  display:flex; align-items:center; justify-content:center;
+  pointer-events:auto;
+  position:absolute;
+  right:20px;
+  top:20px;
+  width:55px;
+  height:55px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-radius:16px;
+  background:rgba(20,19,15,.75);
+  color:white;
+  font-size:26px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  box-shadow:0 4px 10px rgba(0,0,0,0.5);
+  backdrop-filter:blur(4px);
+}
+.fs-btn:active{
+  background:rgba(100,90,50,0.8);
+  transform:scale(0.92);
 }
 
 .jump-btn{
-  pointer-events:auto; position:absolute; right:30px; bottom:30px;
-  width:70px; height:70px; border:2px solid rgba(255,255,255,0.4);
-  border-radius:50%; background:rgba(20,19,15,.75); color:white; font-size:26px;
-  display:flex; align-items:center; justify-content:center;
+  pointer-events:auto;
+  position:absolute;
+  right:30px;
+  bottom:30px;
+  width:75px;
+  height:75px;
+  border:3px solid rgba(255,255,255,0.4);
+  border-radius:50%;
+  background:rgba(20,19,15,.75);
+  color:white;
+  font-size:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  box-shadow:0 4px 15px rgba(0,0,0,0.5);
+}
+.jump-btn:active{
+  background:rgba(100,90,50,0.8);
+  transform:scale(0.92);
+}
+
+.action-btn{
+  pointer-events:auto;
+  position:absolute;
+  width:62px;
+  height:62px;
+  border:3px solid rgba(255,255,255,0.4);
+  border-radius:50%;
+  background:rgba(20,19,15,.75);
+  color:white;
+  font-size:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  box-shadow:0 4px 12px rgba(0,0,0,0.5);
+}
+.action-btn:active, .action-btn.pressed{
+  background:rgba(100,90,50,0.85);
+  transform:scale(0.92);
+}
+#run-btn{ right:105px; bottom:38px; }
+#rest-btn{ right:170px; bottom:120px; }
+#torch-btn{
+  right:20px;
+  top:85px;
+  width:55px;
+  height:55px;
+  border-radius:16px;
+}
+#torch-btn.torch-on{
+  background:rgba(255,230,140,0.35);
+  border-color:#ffe68c;
+  box-shadow:0 0 15px rgba(255,220,120,0.6);
+}
+
+#status-panel{
+  position:absolute;
+  top:150px;
+  right:20px;
+  width:150px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  pointer-events:none;
+}
+.bar-wrap{
+  width:100%;
+  height:14px;
+  border-radius:7px;
+  background:rgba(0,0,0,0.5);
+  border:1px solid rgba(255,255,255,0.25);
+  overflow:hidden;
+  position:relative;
+}
+.bar-fill{
+  height:100%;
+  width:100%;
+  transition:width 0.15s linear, background 0.3s;
+}
+#stamina-fill{ background:#6cd66c; }
+#torch-fill{ background:#ffe68c; }
+.bar-label{
+  font-size:11px;
+  color:#ddd;
+  text-shadow:0 1px 2px black;
+  margin-bottom:2px;
+}
+#inventory-panel{
+  position:absolute;
+  top:20px;
+  right:85px;
+  padding:8px 12px;
+  border-radius:14px;
+  background:rgba(20,19,15,.7);
+  color:#ffe68c;
+  font-size:15px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  pointer-events:none;
+  border:1px solid rgba(255,255,255,0.2);
+}
+
+#compass{
+  position:absolute;
+  bottom:120px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:8px 16px;
+  border-radius:14px;
+  background:rgba(20,19,15,.7);
+  color:#fff;
+  font-size:14px;
+  text-align:center;
+  pointer-events:none;
+  display:none;
 }
 
 .joy{
-  pointer-events:auto; position:absolute; left:30px; bottom:30px;
-  width:140px; height:140px; border-radius:50%; background:rgba(28,27,23,.6);
-  border:2px solid rgba(190,190,190,.5);
+  pointer-events:auto;
+  position:absolute;
+  left:30px;
+  bottom:30px;
+  width:150px;
+  height:150px;
+  border-radius:50%;
+  background:rgba(28,27,23,.62);
+  border:3px solid rgba(190,190,190,.55);
 }
 
 .knob{
-  position:absolute; left:50%; top:50%; width:60px; height:60px;
-  transform:translate(-50%,-50%); border-radius:50%; background:rgba(190,190,190,.9);
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:70px;
+  height:70px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:rgba(190,190,190,.9);
 }
 
 .crosshair{
-  position:absolute; top:50%; left:50%; width:10px; height:10px;
-  transform:translate(-50%,-50%); pointer-events:none;
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:10px;
+  height:10px;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
 }
-.crosshair::before, .crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,.6); }
+.crosshair::before, .crosshair::after{
+  content:'';
+  position:absolute;
+  background:rgba(255,255,255,.6);
+}
 .crosshair::before{ top:4px; left:0; width:10px; height:2px; }
 .crosshair::after{ top:0; left:4px; width:2px; height:10px; }
 
-#stamina-container {
-  position: absolute; bottom: 35px; left: 190px;
-  width: 140px; height: 12px; background: rgba(0,0,0,0.6);
-  border: 2px solid rgba(255,255,255,0.5); border-radius: 6px; overflow: hidden;
+#minimap-container{
+  pointer-events:auto;
+  cursor:pointer;
+  position:absolute;
+  top:20px;
+  left:20px;
+  width:110px;
+  height:110px;
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,0.5);
+  background:rgba(0,0,0,0.65);
+  overflow:hidden;
+  box-shadow:0 0 10px rgba(0,0,0,0.8);
+  backdrop-filter:blur(4px);
+  transition: transform 0.2s;
 }
-#stamina-bar { width: 100%; height: 100%; background: #00ffcc; }
-
-#battery-txt {
-  position: absolute; top: 20px; left: 20px;
-  color: #fff; font-size: 16px; text-shadow: 1px 1px 3px #000;
+#minimap-container:active {
+  transform: scale(0.95);
 }
-
-#inventory-screen {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-  display: none; flex-direction: column; align-items: center; justify-content: center;
-  z-index: 2000; pointer-events: auto;
-}
-.inv-grid {
-  display: grid; grid-template-columns: repeat(3, 85px); gap: 12px;
-  background: rgba(20,20,20,0.9); padding: 18px; border-radius: 12px; border: 2px solid #555;
-}
-.inv-slot {
-  width: 85px; height: 85px; background: #111; border: 2px solid #444;
-  border-radius: 8px; color: #fff; display: flex; align-items: center;
-  justify-content: center; font-size: 12px; text-align: center; cursor: pointer;
+#minimap-canvas{
+  width:100%;
+  height:100%;
 }
 
-#jumpscare-screen, #win-screen {
-  position:fixed; inset:0; display:none; flex-direction:column;
-  align-items:center; justify-content:center; z-index:1500; text-align:center; padding:20px;
+#fullmap-screen{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.88);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:1500;
+  color:#fff;
+  font-family:sans-serif;
+  backdrop-filter:blur(8px);
+  padding: 20px;
+  cursor: pointer;
 }
-#jumpscare-screen { background:black; color:red; font-family:monospace; }
-#win-screen { background:rgba(0,40,0,0.9); color:#75ff75; }
+.fullmap-card{
+  background:rgba(20,20,15,0.95);
+  border:2px solid rgba(255,255,255,0.2);
+  border-radius:16px;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  box-shadow:0 10px 30px rgba(0,0,0,0.8);
+  max-width: 95vw;
+  max-height: 95vh;
+}
+.fullmap-card h2{
+  margin:0 0 10px 0;
+  font-size:20px;
+  color:#f0e6c2;
+  letter-spacing: 1px;
+}
+.fullmap-card p{
+  margin:10px 0 0 0;
+  font-size:14px;
+  color:#aaa;
+}
+#fullmap-canvas{
+  width: 320px;
+  height: 250px;
+  background: #0d0c0a;
+  border: 2px solid #554a2b;
+  border-radius: 8px;
+}
 
-button {
-  pointer-events:auto; padding:12px 24px; font-size:16px;
-  background:#111; color:#fff; border:2px solid #888; border-radius:8px; cursor:pointer; margin-top:15px;
+#danger-overlay{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle, transparent 40%, rgba(255,0,0,0.4) 100%);
+  opacity:0;
+  transition:opacity 0.2s;
+}
+
+#rotate-screen{
+  position:fixed;
+  inset:0;
+  background:#0e0d0a;
+  color:#f0e6c2;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+  text-align:center;
+  padding:20px;
+}
+#rotate-screen .icon{
+  font-size:60px;
+  margin-bottom:15px;
+  animation:rotateAnim 2s infinite ease-in-out;
+}
+@keyframes rotateAnim {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+
+#jumpscare-screen{
+  position:fixed;
+  inset:0;
+  background:black;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  color:red;
+  font-family:monospace;
+  padding: 20px;
+  text-align: center;
+}
+#jumpscare-screen h1{
+  font-size:42px;
+  margin-bottom:10px;
+  text-shadow:0 0 10px red;
+}
+#jumpscare-screen p{
+  font-size:20px;
+  color:#ff8888;
+  margin-bottom:25px;
+}
+#restart-btn{
+  pointer-events:auto;
+  padding:12px 28px;
+  font-size:20px;
+  background:#111;
+  color:#fff;
+  border:2px solid red;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+#win-screen{
+  position:fixed;
+  inset:0;
+  background:rgba(0,40,0,0.85);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  color:#75ff75;
+  font-family:sans-serif;
+  text-align:center;
+  padding:20px;
+  backdrop-filter:blur(6px);
+}
+#win-screen h1{
+  font-size:36px;
+  margin-bottom:10px;
+  text-shadow:0 0 10px #00ff00;
+}
+#win-screen p{
+  font-size:20px;
+  color:#e0ffe0;
+  margin-bottom:25px;
+}
+#continue-btn{
+  pointer-events:auto;
+  padding:14px 32px;
+  font-size:20px;
+  background:#1b4d1b;
+  color:#fff;
+  border:2px solid #55ff55;
+  border-radius:12px;
+  cursor:pointer;
+  box-shadow:0 0 15px rgba(0,255,0,0.4);
 }
 </style>
 
@@ -95,33 +416,65 @@ button {
 
 <body>
 
+<div id="danger-overlay"></div>
+
+<div id="rotate-screen">
+  <div class="icon">🔄</div>
+  <h2>Поверните устройство</h2>
+  <p>Для удобной игры переверните телефон горизонтально</p>
+</div>
+
 <div id="jumpscare-screen">
-  <h1>ВАС ПОЙМАЛИ</h1>
-  <button onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
+  <h1 id="jumpscare-title">ВАС ПОЙМАЛИ</h1>
+  <p id="jumpscare-desc">Вы стали добычей сущности...</p>
+  <button id="restart-btn">ПОПРОБОВАТЬ СНОВА</button>
 </div>
 
 <div id="win-screen">
-  <h1 id="win-title">УРОВЕНЬ ПРОЙДЕН!</h1>
+  <h1 id="win-title">ВЫ ПЕРЕШЛИ НА УРОВЕНЬ 2!</h1>
+  <p id="win-desc">Зелёные холмы... Но вдали ходят ОГРОМНЫЕ сущности!</p>
   <button id="continue-btn">ПРОДОЛЖИТЬ</button>
 </div>
 
-<div id="inventory-screen">
-  <h2 style="color:#fff; margin-bottom:15px;">ИНВЕНТАРЬ (Нажми I для закрытия)</h2>
-  <div class="inv-grid" id="inv-grid"></div>
+<div id="fullmap-screen">
+  <div class="fullmap-card">
+    <h2 id="fullmap-title">КАРТА УРОВНЯ 0</h2>
+    <canvas id="fullmap-canvas" width="400" height="300"></canvas>
+    <p>Нажми в любое место, чтобы закрыть</p>
+  </div>
 </div>
 
 <div id="webgl-container"></div>
 
 <div class="hud">
-  <div id="hint" class="hint">Уровень 1: Найдите выход из лабиринта!</div>
+  <div id="hint" class="hint">Портал 'E' где-то в лабиринте!</div>
   <div class="crosshair"></div>
-  <div id="battery-txt">Фонарик: --</div>
 
-  <div id="stamina-container"><div id="stamina-bar"></div></div>
+  <div id="minimap-container">
+    <canvas id="minimap-canvas" width="110" height="110"></canvas>
+  </div>
 
   <button id="fs" class="fs-btn">⛶</button>
+  <button id="torch-btn" class="action-btn">🔦</button>
+  <div id="run-btn" class="action-btn">🏃</div>
+  <div id="rest-btn" class="action-btn">💤</div>
   <div id="jump" class="jump-btn">⬆</div>
   <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
+
+  <div id="inventory-panel">🔋<span id="battery-count">0</span></div>
+
+  <div id="status-panel">
+    <div>
+      <div class="bar-label">Выносливость</div>
+      <div class="bar-wrap"><div id="stamina-fill" class="bar-fill"></div></div>
+    </div>
+    <div>
+      <div class="bar-label">Заряд фонарика</div>
+      <div class="bar-wrap"><div id="torch-fill" class="bar-fill"></div></div>
+    </div>
+  </div>
+
+  <div id="compass"></div>
 </div>
 
 <script>
@@ -129,7 +482,7 @@ button {
 
 const map = [
   "##################################################",
-  "#..E...................#.........................#",
+  "#......................#.........................#",
   "#..##################..#..#####################..#",
   "#..#................#..#..#...................#..#",
   "#..#..############..#..#..#..###############..#..#",
@@ -164,7 +517,7 @@ const map = [
   "#######..##############..#..##########..#######..#",
   "#........#...............#..#........#...........#",
   "#..#######..##############..#..####..##########..#",
-  "#................................................#",
+  "#........................E.......................#",
   "##################################################"
 ];
 
@@ -172,341 +525,1378 @@ const MW = map[0].length;
 const MH = map.length;
 const CELL_SIZE = 3;
 
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function playFootstepSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.08);
+  } catch(e) {}
+}
+
+function playJumpSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+function playJumpscareSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.8);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.8);
+  } catch(e) {}
+}
+
+function playPickupSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+function playClickSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  } catch(e) {}
+}
+
 const container = document.getElementById('webgl-container');
+const dangerOverlay = document.getElementById('danger-overlay');
+const minimapCanvas = document.getElementById('minimap-canvas');
+const mmCtx = minimapCanvas.getContext('2d');
+
+const fullmapScreen = document.getElementById('fullmap-screen');
+const fullmapCanvas = document.getElementById('fullmap-canvas');
+const fmCtx = fullmapCanvas.getContext('2d');
+let isFullMapOpen = false;
+
+document.getElementById('minimap-container').addEventListener('click', (e) => {
+  e.stopPropagation();
+  isFullMapOpen = !isFullMapOpen;
+  if (isFullMapOpen) {
+    document.getElementById('fullmap-title').innerText = currentLevel === 2 ? 'КАРТА УРОВНЯ 2' : 'КАРТА УРОВНЯ 0';
+    fullmapScreen.style.display = 'flex';
+    drawFullMap();
+  } else {
+    fullmapScreen.style.display = 'none';
+  }
+});
+
+fullmapScreen.addEventListener('click', () => {
+  isFullMapOpen = false;
+  fullmapScreen.style.display = 'none';
+});
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x11110e);
 scene.fog = new THREE.FogExp2(0x11110e, 0.035);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = true;
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+const ambientLight = new THREE.AmbientLight(0x999988, 1.0);
 scene.add(ambientLight);
 
-const flashlight = new THREE.SpotLight(0xffffff, 0, 30, Math.PI / 4, 0.5);
-camera.add(flashlight);
-flashlight.position.set(0, 0, 0);
-flashlight.target.position.set(0, 0, -1);
-camera.add(flashlight.target);
-scene.add(camera);
+function createWallTexture(hasGraffiti) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#c5b565';
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = 'rgba(80,70,30,0.12)';
+  for(let i=0; i<256; i+=16) ctx.fillRect(0, i, 256, 2);
+  for(let i=0; i<400; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+    ctx.fillRect(Math.random()*256, Math.random()*256, 3, 3);
+  }
 
-// Текстуры и объекты уровня 1
-function createWallTexture() {
+  if (hasGraffiti) {
+    ctx.save();
+    ctx.strokeStyle = '#8b0000';
+    ctx.fillStyle = '#8b0000';
+    ctx.lineWidth = 6;
+    ctx.font = 'bold 36px monospace';
+    ctx.beginPath();
+    ctx.moveTo(100, 100); ctx.lineTo(156, 156);
+    ctx.moveTo(156, 100); ctx.lineTo(100, 156);
+    ctx.stroke();
+    ctx.fillText("EXIT ->", 70, 200);
+    ctx.restore();
+  }
+
+  let gradTop = ctx.createLinearGradient(0, 0, 0, 30);
+  gradTop.addColorStop(0, 'rgba(0,0,0,0.35)');
+  gradTop.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradTop; ctx.fillRect(0, 0, 256, 30);
+  let gradBot = ctx.createLinearGradient(0, 226, 0, 256);
+  gradBot.addColorStop(0, 'rgba(0,0,0,0)');
+  gradBot.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = gradBot; ctx.fillRect(0, 226, 256, 30);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+function createCarpetTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#c5b565'; ctx.fillRect(0, 0, 128, 128);
-  ctx.fillStyle = 'rgba(80,70,30,0.15)';
-  for(let i=0; i<128; i+=16) ctx.fillRect(0, i, 128, 2);
+  ctx.fillStyle = '#635936'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = 'rgba(30,25,10,0.2)';
+  for(let i=0; i<300; i++) ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(MW * 2, MH * 2);
+  return texture;
+}
+
+function createCeilingTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#8f886b'; ctx.fillRect(0, 0, 128, 128);
+  ctx.strokeStyle = '#57523c'; ctx.lineWidth = 5;
+  ctx.strokeRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(MW, MH);
+  return texture;
+}
+
+function createGlowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255, 255, 210, 0.6)');
+  grad.addColorStop(0.4, 'rgba(255, 240, 160, 0.2)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 128, 128);
   return new THREE.CanvasTexture(canvas);
 }
 
-const wallMat = new THREE.MeshLambertMaterial({ map: createWallTexture() });
-const levelGroup = new THREE.Group();
-scene.add(levelGroup);
+function loadTransparentTexture(url) {
+  const texture = new THREE.Texture();
+  const img = new Image();
+  img.crossOrigin = "Anonymous";
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const imgData = ctx.getImageData(0, 0, img.width, img.height);
+    const data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      if (r > 200 && g > 200 && b > 200) {
+        data[i+3] = 0;
+      } else if (r < 40 && g < 40 && b < 40) {
+        data[i+3] = 0;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    texture.image = canvas;
+    texture.needsUpdate = true;
+  };
+  img.src = url;
+  return texture;
+}
+
+const monsterLvl0Texture = loadTransparentTexture('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
+const monsterLvl2Texture = loadTransparentTexture('86bf03f68feea75ac0f75dd9cf0d46e3 (4).jpg');
+
+function createExitDoorTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#00ffcc'; ctx.fillRect(0,0,128,256);
+  ctx.fillStyle = '#004433'; ctx.fillRect(10,10,108,236);
+  ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 20px Arial';
+  ctx.textAlign = 'center'; ctx.fillText('ВЫХОД', 64, 128);
+  return new THREE.CanvasTexture(canvas);
+}
+
+const standardWallMat = new THREE.MeshLambertMaterial({ map: createWallTexture(false) });
+const guideWallMat = new THREE.MeshLambertMaterial({ map: createWallTexture(true) });
+
+const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
+const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
 
 const floorGeo = new THREE.PlaneGeometry(MW * CELL_SIZE, MH * CELL_SIZE);
-const floorMat = new THREE.MeshLambertMaterial({ color: 0x554422 });
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
-levelGroup.add(floor);
+scene.add(floor);
+
+const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
+ceiling.rotation.x = Math.PI / 2;
+ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
+scene.add(ceiling);
 
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
+const lampGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
+const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+const glowMat = new THREE.MeshBasicMaterial({
+  map: createGlowTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+});
+const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
+
 const walls = [];
 let exitPos = new THREE.Vector3();
+
+const guideCoords = [
+  {x: 3, y: 1},
+  {x: 5, y: 1},
+  {x: 7, y: 3}
+];
 
 for (let y = 0; y < MH; y++) {
   for (let x = 0; x < MW; x++) {
     const posX = x * CELL_SIZE + CELL_SIZE/2;
     const posZ = y * CELL_SIZE + CELL_SIZE/2;
+
     if (map[y][x] === '#') {
-      const wall = new THREE.Mesh(wallGeo, wallMat);
+      const isGuide = guideCoords.some(c => c.x === x && c.y === y);
+      const chosenMat = isGuide ? guideWallMat : standardWallMat;
+
+      const wall = new THREE.Mesh(wallGeo, chosenMat);
       wall.position.set(posX, 1.5, posZ);
-      levelGroup.add(wall);
+      scene.add(wall);
       walls.push(wall);
     } else if (map[y][x] === 'E') {
       exitPos.set(posX, 1.5, posZ);
+      const exitMat = new THREE.MeshBasicMaterial({ map: createExitDoorTexture() });
+      const exitMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), exitMat);
+      exitMesh.position.set(posX, 1.5, posZ);
+      scene.add(exitMesh);
+
+      const exitLight = new THREE.PointLight(0x00ffcc, 2, 8);
+      exitLight.position.set(posX, 2.5, posZ);
+      scene.add(exitLight);
+    } else {
+      if ((x + y) % 4 === 0) {
+        const lamp = new THREE.Mesh(lampGeo, lampMat);
+        lamp.position.set(posX, 2.97, posZ);
+        scene.add(lamp);
+
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.rotation.x = Math.PI / 2;
+        glow.position.set(posX, 2.94, posZ);
+        scene.add(glow);
+      }
     }
   }
 }
 
-// Игровые переменные
-let currentLevel = 1;
-let isGameOver = false;
-let stamina = 100;
-let runTimer = 0;
+const monsterMatLvl0 = new THREE.SpriteMaterial({ map: monsterLvl0Texture, transparent: true });
+const monsterMatLvl2 = new THREE.SpriteMaterial({ map: monsterLvl2Texture, transparent: true });
 
-const inventory = [];
-let hasFlashlight = false;
-let flashlightBattery = 0;
-let isInvOpen = false;
+const monster = new THREE.Sprite(monsterMatLvl0);
+monster.scale.set(2.2, 2.2, 1);
+scene.add(monster);
 
-const items = [];
-function spawnItem(type, pos, name) {
-  const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-  const mat = new THREE.MeshBasicMaterial({ color: type === 'flashlight' ? 0xffff00 : 0x0000ff });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.copy(pos);
-  mesh.userData = { type, name };
-  scene.add(mesh);
-  items.push(mesh);
+function respawnMonster() {
+  monster.position.set(15 * CELL_SIZE + CELL_SIZE/2, 1.2, 15 * CELL_SIZE + CELL_SIZE/2);
 }
-
-// Предметы на Уровне 1
-spawnItem('flashlight', new THREE.Vector3(6, 0.5, 6), 'Фонарик');
-spawnItem('battery', new THREE.Vector3(12, 0.5, 6), 'Батарейка (+30%)');
+respawnMonster();
 
 camera.position.set(1.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
 
-// Инвентарь
-window.addEventListener('keydown', e => {
-  if (e.code === 'KeyI') toggleInventory();
-  if (e.code === 'KeyE') interactItem();
-  if (e.code === 'ShiftLeft') isShift = true;
-  keys[e.code] = true;
-});
-window.addEventListener('keyup', e => {
-  if (e.code === 'ShiftLeft') isShift = false;
-  keys[e.code] = false;
-});
-
-const keys = {};
-let isShift = false;
-
-function toggleInventory() {
-  isInvOpen = !isInvOpen;
-  document.getElementById('inventory-screen').style.display = isInvOpen ? 'flex' : 'none';
-  if (isInvOpen) renderInventory();
-}
-
-function renderInventory() {
-  const grid = document.getElementById('inv-grid');
-  grid.innerHTML = '';
-  for (let i = 0; i < 6; i++) {
-    const slot = document.createElement('div');
-    slot.className = 'inv-slot';
-    if (inventory[i]) {
-      slot.innerText = inventory[i].name;
-      slot.onclick = () => useItem(i);
-    } else {
-      slot.innerText = '[Пусто]';
+function spawnLevel0Batteries(count) {
+  const openCells = [];
+  for (let y = 0; y < MH; y++) {
+    for (let x = 0; x < MW; x++) {
+      if (map[y][x] === '.' && !(x <= 3 && y <= 3)) openCells.push({x, y});
     }
-    grid.appendChild(slot);
+  }
+  for (let i = 0; i < count && openCells.length > 0; i++) {
+    const idx = Math.floor(Math.random() * openCells.length);
+    const cell = openCells.splice(idx, 1)[0];
+    spawnBattery(cell.x * CELL_SIZE + CELL_SIZE/2, 1.1, cell.y * CELL_SIZE + CELL_SIZE/2);
   }
 }
 
-function useItem(idx) {
-  const item = inventory[idx];
-  if (item.type === 'battery' && hasFlashlight) {
-    flashlightBattery = Math.min(100, flashlightBattery + 30);
-    inventory.splice(idx, 1);
-    renderInventory();
-  }
-}
+function findPathBFS(startGrid, targetGrid) {
+  const queue = [[startGrid]];
+  const visited = new Set();
+  visited.add(`${startGrid.x},${startGrid.y}`);
+  const dirs = [{x:0, y:-1}, {x:0, y:1}, {x:-1, y:0}, {x:1, y:0}];
 
-function interactItem() {
-  items.forEach((mesh, idx) => {
-    if (mesh.position.distanceTo(camera.position) < 2.5) {
-      if (mesh.userData.type === 'flashlight') {
-        hasFlashlight = true;
-        flashlightBattery = 100;
-      } else {
-        if (inventory.length < 6) inventory.push(mesh.userData);
+  while (queue.length > 0) {
+    const path = queue.shift();
+    const curr = path[path.length - 1];
+
+    if (curr.x === targetGrid.x && curr.y === targetGrid.y) return path;
+
+    for (let d of dirs) {
+      const nx = curr.x + d.x;
+      const ny = curr.y + d.y;
+      if (nx >= 0 && nx < MW && ny >= 0 && ny < MH && map[ny][nx] !== '#') {
+        const key = `${nx},${ny}`;
+        if (!visited.has(key)) {
+          visited.add(key);
+          queue.push([...path, {x: nx, y: ny}]);
+        }
       }
-      scene.remove(mesh);
-      items.splice(idx, 1);
     }
-  });
+  }
+  return null;
 }
 
-// Управление игроком
 let moveX = 0, moveY = 0;
 let yaw = 0, pitch = 0;
+let playerY = 1.5;
+let velocityY = 0;
+const gravity = -18;
+const jumpForce = 6.5;
+let isGrounded = true;
+let isGameOver = false;
+let currentLevel = 0;
 
-function checkWallCollision(pos) {
-  if (currentLevel !== 1) return false;
-  for (let wall of walls) {
-    const box = new THREE.Box3().setFromObject(wall);
-    if (box.containsPoint(pos)) return true;
-  }
-  return false;
-}
+let pathTimer = 0;
+let currentMonsterPath = [];
+let footstepTimer = 0;
 
-function updatePlayer(dt) {
-  if (isGameOver || isInvOpen) return;
+let clouds = [];
+let giants = [];
+let idleTimer = 0;
+let level2Monster = null;
+let level2MonsterFlying = false;
 
-  // Бег
-  let speed = 4.5 * dt;
-  const isMoving = moveX !== 0 || moveY !== 0 || keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-  if (isShift && stamina > 0 && isMoving) {
-    speed *= 1.7;
-    stamina = Math.max(0, stamina - 30 * dt);
-  } else {
-    stamina = Math.min(100, stamina + 20 * dt);
-  }
-  document.getElementById('stamina-bar').style.width = stamina + '%';
+// ---- Inventory / Flashlight / Stamina ----
+let staminaMax = 100;
+let stamina = 100;
+const staminaDrainRate = 3.2;   // per second while sprinting
+const staminaRegenRate = 9;     // per second normal regen
+const restRegenRate = 22;       // per second while resting
+let isSprinting = false;
+let isResting = false;
+const sprintMultiplier = 1.85;
 
-  // Фонарик
-  if (hasFlashlight && flashlightBattery > 0) {
-    flashlightBattery -= 0.5 * dt;
-    flashlight.intensity = 2;
-    document.getElementById('battery-txt').innerText = `Фонарик: ${Math.ceil(flashlightBattery)}%`;
-  } else {
-    flashlight.intensity = 0;
-    document.getElementById('battery-txt').innerText = hasFlashlight ? 'Фонарик: Разряжен' : 'Фонарик: --';
-  }
+let flashlightOn = false;
+let flashlightCharge = 100;
+const flashlightMax = 100;
+const flashlightDrainRate = 4.2; // per second while on
+let batteriesCollected = 0;
 
-  // Движение
-  let kx = 0, ky = 0;
-  if (keys['KeyW']) ky -= 1;
-  if (keys['KeyS']) ky += 1;
-  if (keys['KeyA']) kx -= 1;
-  if (keys['KeyD']) kx += 1;
+let currentBatteries = []; // battery meshes on the current level
 
-  const inputX = moveX || kx;
-  const inputY = moveY || ky;
-
-  const dir = new THREE.Vector3();
-  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-  const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-
-  dir.addScaledVector(forward, -inputY);
-  dir.addScaledVector(side, inputX);
-
-  if (dir.length() > 0) {
-    dir.normalize();
-    if (currentLevel === 2) {
-      runTimer += dt;
-      if (runTimer >= 20) {
-        runTimer = 0;
-        loadLevel3();
-      }
-    }
-  } else {
-    if (currentLevel === 2) runTimer = 0;
-  }
-
-  const nextPos = camera.position.clone().addScaledVector(dir, speed);
-  if (!checkWallCollision(nextPos)) {
-    camera.position.x = nextPos.x;
-    camera.position.z = nextPos.z;
-  }
-
-  camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
-
-  // Проверка переходов
-  if (currentLevel === 1 && camera.position.distanceTo(exitPos) < 1.5) {
-    triggerWin();
-  } else if (currentLevel === 3 && specialHouse && camera.position.distanceTo(specialHouse.position) < 4.0) {
-    loadLevel4();
-  }
-}
-
-function triggerWin() {
-  isGameOver = true;
-  document.getElementById('win-screen').style.display = 'flex';
-  document.getElementById('continue-btn').onclick = () => {
-    document.getElementById('win-screen').style.display = 'none';
-    isGameOver = false;
-    loadLevel2();
-  };
-}
-
-// ПЕРЕХОДЫ МЕЖДУ УРОВНЯМИ
-function loadLevel2() {
-  currentLevel = 2;
-  scene.remove(levelGroup); // Убираем лабиринт 1 уровня
-  
-  scene.background = new THREE.Color(0x60a0ff);
-  scene.fog = new THREE.FogExp2(0x60a0ff, 0.005);
-
-  const planeGeo = new THREE.PlaneGeometry(1000, 1000);
-  const planeMat = new THREE.MeshLambertMaterial({ color: 0x33aa33 });
-  const plane = new THREE.Mesh(planeGeo, planeMat);
-  plane.rotation.x = -Math.PI / 2;
-  scene.add(plane);
-
-  spawnItem('map', new THREE.Vector3(0, 0.5, -5), 'Карта');
-  spawnItem('battery', new THREE.Vector3(10, 0.5, 10), 'Батарейка (+30%)');
-
-  camera.position.set(0, 1.5, 0);
-  document.getElementById('hint').innerText = "Идите 20 секунд без остановки, чтобы сбежать!";
-}
+let level2RunTimer = 0;
+const LEVEL2_RUN_TARGET = 20;
 
 let specialHouse = null;
-function loadLevel3() {
-  currentLevel = 3;
-  scene.background = new THREE.Color(0x111115);
-  scene.fog = new THREE.FogExp2(0x111115, 0.015);
+let houseChunks = new Map();
+let poolChunks = new Map();
 
-  const houseGeo = new THREE.BoxGeometry(8, 6, 8);
-  const houseMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+function createBatteryTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(0,0,64,64);
+  ctx.fillStyle = '#ffd94a'; ctx.fillRect(6,6,52,40);
+  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(20,0,24,8);
+  ctx.fillStyle = '#333'; ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('+', 32, 32);
+  return new THREE.CanvasTexture(canvas);
+}
+const batteryTexture = createBatteryTexture();
+const batteryMat = new THREE.SpriteMaterial({ map: batteryTexture });
 
-  for (let x = -150; x <= 150; x += 25) {
-    for (let z = -150; z <= 150; z += 25) {
-      if (Math.abs(x) < 15 && Math.abs(z) < 15) continue;
-      const house = new THREE.Mesh(houseGeo, houseMat);
-      house.position.set(x, 3, z);
-      scene.add(house);
+function spawnBattery(x, y, z) {
+  const b = new THREE.Sprite(batteryMat);
+  b.scale.set(0.55, 0.55, 1);
+  b.position.set(x, y, z);
+  const glow = new THREE.PointLight(0xffe68c, 0.6, 3);
+  glow.position.set(0, 0, 0);
+  b.add(glow);
+  scene.add(b);
+  currentBatteries.push(b);
+  return b;
+}
+
+function clearBatteries() {
+  currentBatteries.forEach(b => scene.remove(b));
+  currentBatteries = [];
+}
+
+function updateBatteryPickups(dt) {
+  for (let i = currentBatteries.length - 1; i >= 0; i--) {
+    const b = currentBatteries[i];
+    b.position.y += Math.sin(performance.now() * 0.003 + i) * 0.002;
+    if (camera.position.distanceTo(b.position) < 1.1) {
+      flashlightCharge = Math.min(flashlightMax, flashlightCharge + 35);
+      batteriesCollected++;
+      document.getElementById('battery-count').innerText = batteriesCollected;
+      playPickupSound();
+      scene.remove(b);
+      currentBatteries.splice(i, 1);
+    }
+  }
+}
+
+// Flashlight: spotlight attached to the camera
+const flashlight = new THREE.SpotLight(0xfff2cc, 0, 22, Math.PI/6.2, 0.4, 1.2);
+flashlight.position.set(0, 0, 0);
+const flashlightTarget = new THREE.Object3D();
+camera.add(flashlightTarget);
+flashlightTarget.position.set(0, 0, -1);
+flashlight.target = flashlightTarget;
+camera.add(flashlight);
+scene.add(camera);
+
+function updateFlashlight(dt) {
+  if (flashlightOn && flashlightCharge > 0) {
+    flashlightCharge = Math.max(0, flashlightCharge - flashlightDrainRate * dt);
+    flashlight.intensity = 1.6 * (0.3 + 0.7 * (flashlightCharge / flashlightMax));
+    if (flashlightCharge <= 0) {
+      flashlightOn = false;
+      document.getElementById('torch-btn').classList.remove('torch-on');
+    }
+  } else {
+    flashlight.intensity = 0;
+  }
+  const fillEl = document.getElementById('torch-fill');
+  fillEl.style.width = flashlightCharge + '%';
+  fillEl.style.background = flashlightCharge < 25 ? '#ff6b4a' : '#ffe68c';
+}
+
+function updateStamina(dt, wantsSprint, wantsRest) {
+  isResting = wantsRest && !wantsSprint;
+  isSprinting = wantsSprint && !isResting && stamina > 0.5 && (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05);
+
+  if (isResting) {
+    stamina = Math.min(staminaMax, stamina + restRegenRate * dt);
+  } else if (isSprinting) {
+    stamina = Math.max(0, stamina - staminaDrainRate * dt);
+    if (stamina <= 0) isSprinting = false;
+  } else {
+    stamina = Math.min(staminaMax, stamina + staminaRegenRate * dt);
+  }
+
+  const fillEl = document.getElementById('stamina-fill');
+  fillEl.style.width = stamina + '%';
+  fillEl.style.background = stamina < 25 ? '#ff6b4a' : '#6cd66c';
+}
+
+spawnLevel0Batteries(10);
+
+// ---- Level 3: infinite houses, find the odd one out ----
+const HOUSE_CHUNK = 40;
+const HOUSE_RENDER_DIST = 3; // chunks in each direction
+const SPECIAL_HOUSE_CHUNK = { cx: 3, cz: 2 };
+
+function hash2(x, z) {
+  let h = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
+  return h - Math.floor(h);
+}
+
+function createHouseTexture(seed, isSpecial) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const wallColor = isSpecial ? '#7a2b2b' : (`hsl(${(seed*40)%40 + 30}, 25%, ${40 + seed*10}%)`);
+  ctx.fillStyle = wallColor;
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = isSpecial ? '#ffdd55' : '#3a2f22';
+  ctx.fillRect(50, 70, 28, 58);
+  ctx.fillStyle = isSpecial ? '#ffefaa' : '#cbd8e0';
+  ctx.fillRect(14, 24, 26, 26);
+  ctx.fillRect(88, 24, 26, 26);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function makeHouse(cx, cz, isSpecial) {
+  const group = new THREE.Group();
+  const seed = hash2(cx, cz);
+  const wallMat = new THREE.MeshLambertMaterial({ map: createHouseTexture(seed, isSpecial) });
+  const roofColor = isSpecial ? 0xff3333 : 0x5a4630;
+
+  const bodyGeo = new THREE.BoxGeometry(8, 6, 8);
+  const body = new THREE.Mesh(bodyGeo, wallMat);
+  body.position.y = 3;
+  group.add(body);
+
+  const roofGeo = new THREE.ConeGeometry(6.5, 3.5, 4);
+  const roofMat = new THREE.MeshLambertMaterial({ color: roofColor });
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.rotation.y = Math.PI / 4;
+  roof.position.y = 7.7;
+  group.add(roof);
+
+  if (isSpecial) {
+    const glow = new THREE.PointLight(0xff5555, 2.2, 20);
+    glow.position.set(0, 4, 0);
+    group.add(glow);
+  }
+
+  const wx = cx * HOUSE_CHUNK + HOUSE_CHUNK/2;
+  const wz = cz * HOUSE_CHUNK + HOUSE_CHUNK/2;
+  group.position.set(wx, 0, wz);
+  return group;
+}
+
+function updateHouseChunks() {
+  const pcx = Math.round(camera.position.x / HOUSE_CHUNK);
+  const pcz = Math.round(camera.position.z / HOUSE_CHUNK);
+
+  const needed = new Set();
+  for (let dx = -HOUSE_RENDER_DIST; dx <= HOUSE_RENDER_DIST; dx++) {
+    for (let dz = -HOUSE_RENDER_DIST; dz <= HOUSE_RENDER_DIST; dz++) {
+      const cx = pcx + dx, cz = pcz + dz;
+      const key = `${cx},${cz}`;
+      needed.add(key);
+      if (!houseChunks.has(key)) {
+        const isSpecial = (cx === SPECIAL_HOUSE_CHUNK.cx && cz === SPECIAL_HOUSE_CHUNK.cz);
+        const house = makeHouse(cx, cz, isSpecial);
+        scene.add(house);
+        houseChunks.set(key, house);
+        if (isSpecial) specialHouse = house;
+      }
     }
   }
 
-  // Особый дом с красной дверью
-  const specialMat = new THREE.MeshLambertMaterial({ color: 0x8b0000 });
-  specialHouse = new THREE.Mesh(houseGeo, specialMat);
-  specialHouse.position.set(40, 3, 40);
-  scene.add(specialHouse);
+  for (const [key, house] of houseChunks) {
+    if (!needed.has(key)) {
+      scene.remove(house);
+      houseChunks.delete(key);
+      if (house === specialHouse) {
+        // keep specialHouse reference alive even if unloaded far away,
+        // it will be recreated & reassigned when player returns nearby
+      }
+    }
+  }
 
-  camera.position.set(0, 1.5, 0);
-  document.getElementById('hint').innerText = "Найдите отличающийся дом с дверью!";
+  // Make sure specialHouse ref stays valid (re-find if it got unloaded)
+  if (specialHouse && !scene.children.includes(specialHouse)) {
+    const key = `${SPECIAL_HOUSE_CHUNK.cx},${SPECIAL_HOUSE_CHUNK.cz}`;
+    specialHouse = houseChunks.get(key) || null;
+  }
+}
+
+function loadLevel3() {
+  currentLevel = 3;
+  clearBatteries();
+  houseChunks = new Map();
+  specialHouse = null;
+  document.getElementById('minimap-container').style.display = 'none';
+
+  while(scene.children.length > 0){
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0x2b2a22);
+  scene.fog = new THREE.FogExp2(0x2b2a22, 0.012);
+
+  scene.add(new THREE.AmbientLight(0x998866, 0.8));
+  const moon = new THREE.DirectionalLight(0xccccee, 0.5);
+  moon.position.set(100, 150, 80);
+  scene.add(moon);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#3a3626'; ctx.fillRect(0,0,128,128);
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  for(let i=0;i<200;i++) ctx.fillRect(Math.random()*128, Math.random()*128, 3, 3);
+  const groundTex = new THREE.CanvasTexture(canvas);
+  groundTex.wrapS = THREE.RepeatWrapping; groundTex.wrapT = THREE.RepeatWrapping;
+  groundTex.repeat.set(400, 400);
+  const groundMat = new THREE.MeshLambertMaterial({ map: groundTex });
+  const groundGeo = new THREE.PlaneGeometry(20000, 20000);
+  groundGeo.rotateX(-Math.PI/2);
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  scene.add(ground);
+
+  playerY = 1.5;
+  camera.position.set(0, 1.5, 10);
+  yaw = Math.PI;
+
+  for (let i = 0; i < 6; i++) {
+    const bx = (Math.random() - 0.5) * 140;
+    const bz = (Math.random() - 0.5) * 140;
+    spawnBattery(bx, 1.1, bz);
+  }
+
+  updateHouseChunks();
+
+  document.getElementById('hint').innerText = "🏠 Одинаковые дома... кроме ОДНОГО. Найди его и войди.";
+  document.getElementById('hint').classList.remove('hide');
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
+}
+
+// ---- Level 4: infinite pool ----
+const POOL_CHUNK = 30;
+const POOL_RENDER_DIST = 3;
+
+function makePillar(cx, cz) {
+  const geo = new THREE.BoxGeometry(1.4, 8, 1.4);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xdfe9ea, roughness: 0.3, metalness: 0.1 });
+  const pillar = new THREE.Mesh(geo, mat);
+  const wx = cx * POOL_CHUNK + POOL_CHUNK/2;
+  const wz = cz * POOL_CHUNK + POOL_CHUNK/2;
+  pillar.position.set(wx, 4, wz);
+  return pillar;
+}
+
+function updatePoolChunks() {
+  const pcx = Math.round(camera.position.x / POOL_CHUNK);
+  const pcz = Math.round(camera.position.z / POOL_CHUNK);
+
+  const needed = new Set();
+  for (let dx = -POOL_RENDER_DIST; dx <= POOL_RENDER_DIST; dx++) {
+    for (let dz = -POOL_RENDER_DIST; dz <= POOL_RENDER_DIST; dz++) {
+      const cx = pcx + dx, cz = pcz + dz;
+      if ((cx + cz) % 3 !== 0) continue; // sparse placement
+      const key = `${cx},${cz}`;
+      needed.add(key);
+      if (!poolChunks.has(key)) {
+        const pillar = makePillar(cx, cz);
+        scene.add(pillar);
+        poolChunks.set(key, pillar);
+      }
+    }
+  }
+  for (const [key, pillar] of poolChunks) {
+    if (!needed.has(key)) {
+      scene.remove(pillar);
+      poolChunks.delete(key);
+    }
+  }
 }
 
 function loadLevel4() {
   currentLevel = 4;
-  scene.background = new THREE.Color(0x44ccff);
-  scene.fog = new THREE.FogExp2(0x44ccff, 0.008);
+  clearBatteries();
+  poolChunks = new Map();
+  document.getElementById('minimap-container').style.display = 'none';
+  document.getElementById('compass').style.display = 'none';
 
-  const poolGeo = new THREE.PlaneGeometry(500, 500);
-  const poolMat = new THREE.MeshStandardMaterial({ color: 0x0088aa, roughness: 0.1 });
-  const poolFloor = new THREE.Mesh(poolGeo, poolMat);
-  poolFloor.rotation.x = -Math.PI / 2;
+  while(scene.children.length > 0){
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0xbfe6ea);
+  scene.fog = new THREE.FogExp2(0xcdeef0, 0.018);
+
+  scene.add(new THREE.AmbientLight(0xdff5f7, 1.1));
+  const skyLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  skyLight.position.set(50, 100, 50);
+  scene.add(skyLight);
+
+  const tileCanvas = document.createElement('canvas');
+  tileCanvas.width = 128; tileCanvas.height = 128;
+  const tctx = tileCanvas.getContext('2d');
+  tctx.fillStyle = '#bfe0e3'; tctx.fillRect(0,0,128,128);
+  tctx.strokeStyle = '#8fb9bc'; tctx.lineWidth = 4;
+  tctx.strokeRect(2,2,124,124);
+  const tileTex = new THREE.CanvasTexture(tileCanvas);
+  tileTex.wrapS = THREE.RepeatWrapping; tileTex.wrapT = THREE.RepeatWrapping;
+  tileTex.repeat.set(600, 600);
+
+  const floorMatPool = new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.5 });
+  const floorGeoPool = new THREE.PlaneGeometry(20000, 20000);
+  floorGeoPool.rotateX(-Math.PI/2);
+  const poolFloor = new THREE.Mesh(floorGeoPool, floorMatPool);
+  poolFloor.position.y = -2.4;
   scene.add(poolFloor);
 
-  const colGeo = new THREE.CylinderGeometry(1.2, 1.2, 15);
-  const colMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-  for (let x = -150; x <= 150; x += 20) {
-    for (let z = -150; z <= 150; z += 20) {
-      const col = new THREE.Mesh(colGeo, colMat);
-      col.position.set(x, 7.5, z);
-      scene.add(col);
+  const waterMat = new THREE.MeshPhysicalMaterial({
+    color: 0x3fa9c9, transparent: true, opacity: 0.55, roughness: 0.1, metalness: 0.1
+  });
+  const waterGeo = new THREE.PlaneGeometry(20000, 20000);
+  waterGeo.rotateX(-Math.PI/2);
+  const water = new THREE.Mesh(waterGeo, waterMat);
+  water.position.y = 0.1;
+  scene.add(water);
+
+  playerY = 1.5;
+  camera.position.set(0, 1.5, 0);
+
+  for (let i = 0; i < 6; i++) {
+    const bx = (Math.random() - 0.5) * 120;
+    const bz = (Math.random() - 0.5) * 120;
+    spawnBattery(bx, 0.6, bz);
+  }
+
+  updatePoolChunks();
+
+  document.getElementById('hint').innerText = "💧 УРОВЕНЬ 4: Бескрайний бассейн. Здесь только тишина...";
+  document.getElementById('hint').classList.remove('hide');
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
+}
+
+function checkObjectCollision(pos, radius = 0.4) {
+  if (currentLevel !== 0) return false;
+  for (let wall of walls) {
+    const box = new THREE.Box3().setFromObject(wall);
+    const objBox = new THREE.Box3(
+      new THREE.Vector3(pos.x - radius, 0, pos.z - radius),
+      new THREE.Vector3(pos.x + radius, 3, pos.z + radius)
+    );
+    if (box.intersectsBox(objBox)) return true;
+  }
+  return false;
+}
+
+function updateMinimap() {
+  const mmContainer = document.getElementById('minimap-container');
+  if (currentLevel === 3 || currentLevel === 4) {
+    mmContainer.style.display = 'none';
+    return;
+  }
+  mmContainer.style.display = 'block';
+
+  mmCtx.clearRect(0, 0, 110, 110);
+  const px = camera.position.x;
+  const pz = camera.position.z;
+
+  mmCtx.save();
+  mmCtx.translate(55, 55);
+
+  if (currentLevel === 0) {
+    const viewRadius = 18;
+    const scale = 110 / (viewRadius * 2);
+
+    mmCtx.fillStyle = '#887744';
+    for (let y = 0; y < MH; y++) {
+      for (let x = 0; x < MW; x++) {
+        if (map[y][x] === '#') {
+          const wx = x * CELL_SIZE + CELL_SIZE/2 - px;
+          const wz = y * CELL_SIZE + CELL_SIZE/2 - pz;
+          if (Math.abs(wx) < viewRadius && Math.abs(wz) < viewRadius) {
+            mmCtx.fillRect(
+              wx * scale - (CELL_SIZE*scale)/2,
+              wz * scale - (CELL_SIZE*scale)/2,
+              CELL_SIZE * scale,
+              CELL_SIZE * scale
+            );
+          }
+        }
+      }
+    }
+
+    const dx = exitPos.x - px;
+    const dz = exitPos.z - pz;
+    if (Math.abs(dx) < viewRadius && Math.abs(dz) < viewRadius) {
+      mmCtx.fillStyle = '#00ffcc';
+      mmCtx.beginPath();
+      mmCtx.arc(dx * scale, dz * scale, 4, 0, Math.PI * 2);
+      mmCtx.fill();
+    }
+
+    const mx = monster.position.x - px;
+    const mz = monster.position.z - pz;
+    if (Math.abs(mx) < viewRadius && Math.abs(mz) < viewRadius) {
+      mmCtx.fillStyle = '#ff0000';
+      mmCtx.beginPath();
+      mmCtx.arc(mx * scale, mz * scale, 4, 0, Math.PI * 2);
+      mmCtx.fill();
+    }
+  } else if (currentLevel === 2) {
+    const viewRadius = 90;
+    const scale = 110 / (viewRadius * 2);
+
+    giants.forEach(g => {
+      const gx = g.position.x - px;
+      const gz = g.position.z - pz;
+      if (Math.abs(gx) < viewRadius && Math.abs(gz) < viewRadius) {
+        mmCtx.fillStyle = '#ff2222';
+        mmCtx.beginPath();
+        mmCtx.arc(gx * scale, gz * scale, 5, 0, Math.PI * 2);
+        mmCtx.fill();
+      }
+    });
+    if (level2Monster) {
+      const mx = level2Monster.position.x - px;
+      const mz = level2Monster.position.z - pz;
+      mmCtx.fillStyle = '#ff0000';
+      mmCtx.beginPath();
+      mmCtx.arc(mx * scale, mz * scale, 6, 0, Math.PI * 2);
+      mmCtx.fill();
     }
   }
 
-  camera.position.set(0, 1.8, 0);
-  document.getElementById('hint').innerText = "УРОВЕНЬ 4: Бесконечный бассейн";
+  mmCtx.fillStyle = '#00ff00';
+  mmCtx.beginPath();
+  mmCtx.arc(0, 0, 4, 0, Math.PI * 2);
+  mmCtx.fill();
+
+  mmCtx.strokeStyle = '#00ff00';
+  mmCtx.lineWidth = 2;
+  mmCtx.beginPath();
+  mmCtx.moveTo(0, 0);
+  mmCtx.lineTo(-Math.sin(yaw) * 10, -Math.cos(yaw) * 10);
+  mmCtx.stroke();
+
+  mmCtx.restore();
+
+  if (isFullMapOpen) {
+    drawFullMap();
+  }
 }
 
-// Тач-управление
+function drawFullMap() {
+  const w = fullmapCanvas.width;
+  const h = fullmapCanvas.height;
+  fmCtx.clearRect(0, 0, w, h);
+
+  if (currentLevel === 0) {
+    const cellW = w / MW;
+    const cellH = h / MH;
+
+    fmCtx.fillStyle = '#655530';
+    for (let y = 0; y < MH; y++) {
+      for (let x = 0; x < MW; x++) {
+        if (map[y][x] === '#') {
+          fmCtx.fillRect(x * cellW, y * cellH, cellW + 0.5, cellH + 0.5);
+        }
+      }
+    }
+
+    const ex = exitPos.x / (MW * CELL_SIZE) * w;
+    const ez = exitPos.z / (MH * CELL_SIZE) * h;
+    fmCtx.fillStyle = '#00ffcc';
+    fmCtx.beginPath();
+    fmCtx.arc(ex, ez, 5, 0, Math.PI * 2);
+    fmCtx.fill();
+
+    const mx = monster.position.x / (MW * CELL_SIZE) * w;
+    const mz = monster.position.z / (MH * CELL_SIZE) * h;
+    fmCtx.fillStyle = '#ff0000';
+    fmCtx.beginPath();
+    fmCtx.arc(mx, mz, 5, 0, Math.PI * 2);
+    fmCtx.fill();
+
+    const px = camera.position.x / (MW * CELL_SIZE) * w;
+    const pz = camera.position.z / (MH * CELL_SIZE) * h;
+    fmCtx.fillStyle = '#00ff00';
+    fmCtx.beginPath();
+    fmCtx.arc(px, pz, 6, 0, Math.PI * 2);
+    fmCtx.fill();
+  } else if (currentLevel === 2) {
+    const range = 420; // world units shown edge-to-edge
+    const toX = wx => (wx + range) / (range * 2) * w;
+    const toZ = wz => (wz + range) / (range * 2) * h;
+
+    fmCtx.strokeStyle = '#446688';
+    fmCtx.lineWidth = 2;
+    fmCtx.strokeRect(toX(-400), toZ(-400), toX(400)-toX(-400), toZ(400)-toZ(-400));
+
+    giants.forEach(g => {
+      fmCtx.fillStyle = '#ff2222';
+      fmCtx.beginPath();
+      fmCtx.arc(toX(g.position.x), toZ(g.position.z), 5, 0, Math.PI * 2);
+      fmCtx.fill();
+    });
+
+    if (level2Monster) {
+      fmCtx.fillStyle = '#ff0000';
+      fmCtx.beginPath();
+      fmCtx.arc(toX(level2Monster.position.x), toZ(level2Monster.position.z), 6, 0, Math.PI * 2);
+      fmCtx.fill();
+    }
+
+    fmCtx.fillStyle = '#00ff00';
+    fmCtx.beginPath();
+    fmCtx.arc(toX(camera.position.x), toZ(camera.position.z), 6, 0, Math.PI * 2);
+    fmCtx.fill();
+  }
+}
+
+function getLevel2Height(x, z) {
+  let h = Math.sin(x * 0.03) * Math.cos(z * 0.03) * 4.0;
+  h += Math.sin(x * 0.08 + 1.5) * Math.sin(z * 0.08) * 1.5;
+  h += Math.cos(x * 0.015) * Math.cos(z * 0.015) * 6.0;
+  return h;
+}
+
+function updatePlayer(dt) {
+  updateFlashlight(dt);
+
+  if (isGameOver) {
+    if (level2MonsterFlying && level2Monster) {
+      level2Monster.position.lerp(camera.position, dt * 6.0);
+    }
+    return;
+  }
+
+  updateStamina(dt, sprintHeld, restHeld);
+  updateBatteryPickups(dt);
+
+  if (currentLevel === 2) {
+    const isMoving = Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05;
+
+    if (isMoving || !isGrounded) {
+      idleTimer = 0;
+      dangerOverlay.style.opacity = '0';
+    } else {
+      idleTimer += dt;
+      if (idleTimer > 3.5) {
+        dangerOverlay.style.opacity = Math.min(1, (idleTimer - 3.5) / 2.5).toFixed(2);
+      }
+      if (idleTimer >= 6.0 && !level2MonsterFlying) {
+        level2MonsterFlying = true;
+        const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+        level2Monster = new THREE.Sprite(monsterMatLvl2);
+        level2Monster.scale.set(40, 40, 1);
+        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 25);
+        scene.add(level2Monster);
+        document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
+        document.getElementById('jumpscare-desc').innerText = "Огромная сущность поймала тебя...";
+        triggerJumpscare();
+        return;
+      }
+    }
+
+    if (isSprinting && isMoving && isGrounded) {
+      level2RunTimer += dt;
+      document.getElementById('hint').classList.remove('hide');
+      const remaining = Math.max(0, LEVEL2_RUN_TARGET - level2RunTimer).toFixed(1);
+      document.getElementById('hint').innerText = `🏃 Беги не останавливаясь! Осталось: ${remaining} сек`;
+      if (level2RunTimer >= LEVEL2_RUN_TARGET) {
+        showTransition(
+          "ВЫ ПРОБИЛИСЬ СКВОЗЬ ПРОСТРАНСТВО!",
+          "Бесконечный бег вырвал вас в новую реальность — ряды одинаковых домов...",
+          "ИДТИ ДАЛЬШЕ",
+          () => { loadLevel3(); }
+        );
+        return;
+      }
+    } else {
+      level2RunTimer = 0;
+    }
+  }
+
+  velocityY += gravity * dt;
+  playerY += velocityY * dt;
+
+  if (currentLevel === 2) {
+    const terrainHeight = getLevel2Height(camera.position.x, camera.position.z) + 1.8;
+    if (playerY <= terrainHeight) {
+      playerY = terrainHeight;
+      velocityY = 0;
+      isGrounded = true;
+    } else {
+      isGrounded = false;
+    }
+  } else {
+    if (playerY <= 1.5) {
+      playerY = 1.5;
+      velocityY = 0;
+      isGrounded = true;
+    } else {
+      isGrounded = false;
+    }
+  }
+
+  if (playerY > 15.0) { playerY = 15.0; velocityY = 0; }
+
+  camera.position.y = playerY;
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = yaw;
+  camera.rotation.x = pitch;
+
+  const baseSpeed = isResting ? 0 : (isSprinting ? 4.5 * sprintMultiplier : 4.5);
+  const speed = baseSpeed * dt;
+  const dir = new THREE.Vector3();
+  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+  const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+  if (!isResting) {
+    dir.addScaledVector(forward, -moveY);
+    dir.addScaledVector(side, moveX);
+  }
+
+  if (dir.length() > 0) {
+    dir.normalize();
+    if (isGrounded) {
+      footstepTimer += dt;
+      if (footstepTimer > 0.4) {
+        footstepTimer = 0;
+        playFootstepSound();
+      }
+    }
+  }
+
+  const nextPosX = camera.position.clone().addScaledVector(new THREE.Vector3(dir.x, 0, 0), speed);
+  if (!checkObjectCollision(nextPosX, 0.4)) camera.position.x = nextPosX.x;
+
+  const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
+  if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
+
+  updateMinimap();
+
+  if (currentLevel === 2) {
+    clouds.forEach(cloud => {
+      cloud.position.x += dt * 1.5;
+      if (cloud.position.x > 400) cloud.position.x = -400;
+    });
+    giants.forEach(g => {
+      g.position.x += g.userData.vx * dt;
+      g.position.z += g.userData.vz * dt;
+      g.position.y = getLevel2Height(g.position.x, g.position.z) + 35;
+      if (Math.abs(g.position.x) > 350) g.userData.vx *= -1;
+      if (Math.abs(g.position.z) > 350) g.userData.vz *= -1;
+    });
+  }
+
+  if (currentLevel === 3) {
+    updateHouseChunks();
+    if (specialHouse) {
+      const d = camera.position.distanceTo(specialHouse.position);
+      const compass = document.getElementById('compass');
+      compass.style.display = 'block';
+      compass.innerText = d < 60 ? '🏠 Странный дом уже близко...' : '🏠 Ищи дом, который отличается от других';
+      if (d < 2.2) {
+        showTransition(
+          "ВЫ ВОШЛИ В СТРАННЫЙ ДОМ",
+          "Пол исчезает под ногами, и вас засасывает вниз... в бескрайний бассейн.",
+          "ПОГРУЗИТЬСЯ",
+          () => { loadLevel4(); }
+        );
+      }
+    }
+  }
+
+  if (currentLevel === 4) {
+    updatePoolChunks();
+  }
+
+  if (currentLevel === 0) {
+    const mPos = monster.position;
+    const pPos = camera.position;
+    const dist = mPos.distanceTo(pPos);
+
+    if (dist < 15) {
+      dangerOverlay.style.opacity = (1 - dist / 15).toFixed(2);
+    } else {
+      dangerOverlay.style.opacity = '0';
+    }
+
+    pathTimer += dt;
+    if (pathTimer > 0.4) {
+      pathTimer = 0;
+      const mGrid = { x: Math.floor(mPos.x / CELL_SIZE), y: Math.floor(mPos.z / CELL_SIZE) };
+      const pGrid = { x: Math.floor(pPos.x / CELL_SIZE), y: Math.floor(pPos.z / CELL_SIZE) };
+      const path = findPathBFS(mGrid, pGrid);
+      if (path && path.length > 1) currentMonsterPath = path;
+    }
+
+    const monsterSpeed = 3.2 * dt;
+    if (currentMonsterPath.length > 1) {
+      const nextCell = currentMonsterPath[1];
+      const targetPos = new THREE.Vector3(
+        nextCell.x * CELL_SIZE + CELL_SIZE/2, 1.2, nextCell.y * CELL_SIZE + CELL_SIZE/2
+      );
+      const mDir = new THREE.Vector3().subVectors(targetPos, mPos);
+      if (mDir.length() < 0.2) {
+        currentMonsterPath.shift();
+      } else {
+        mDir.normalize();
+        mPos.addScaledVector(mDir, monsterSpeed);
+      }
+    } else {
+      const directDir = new THREE.Vector3().subVectors(pPos, mPos).normalize();
+      mPos.addScaledVector(directDir, monsterSpeed);
+    }
+
+    if (dist < 1.3) {
+      document.getElementById('jumpscare-title').innerText = "ВАС ПОЙМАЛИ";
+      document.getElementById('jumpscare-desc').innerText = "Сущность настигла вас в коридорах...";
+      triggerJumpscare();
+    }
+
+    if (camera.position.distanceTo(exitPos) < 1.2) {
+      triggerWin();
+    }
+  }
+}
+
+function triggerJumpscare() {
+  isGameOver = true;
+  dangerOverlay.style.opacity = '0';
+  playJumpscareSound();
+  document.getElementById('jumpscare-screen').style.display = 'flex';
+}
+
+function showTransition(title, desc, btnText, callback) {
+  isGameOver = true;
+  dangerOverlay.style.opacity = '0';
+  document.getElementById('win-title').innerText = title;
+  document.getElementById('win-desc').innerText = desc;
+
+  const oldBtn = document.getElementById('continue-btn');
+  const newBtn = oldBtn.cloneNode(true);
+  newBtn.innerText = btnText;
+  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+  newBtn.addEventListener('click', () => {
+    document.getElementById('win-screen').style.display = 'none';
+    isGameOver = false;
+    callback();
+  });
+
+  document.getElementById('win-screen').style.display = 'flex';
+}
+
+function triggerWin() {
+  showTransition(
+    "ВЫ НАШЛИ ВЫХОД!",
+    "Портал утаскивает вас на Уровень 2. Зелёные холмы... но вдали бродят ОГРОМНЫЕ сущности!",
+    "ВЫЖИВАТЬ НА УРОВНЕ 2",
+    () => { loadLevel2(); }
+  );
+}
+
+function loadLevel2() {
+  currentLevel = 2;
+  clouds = [];
+  giants = [];
+  idleTimer = 0;
+  level2MonsterFlying = false;
+  level2Monster = null;
+  level2RunTimer = 0;
+  clearBatteries();
+  document.getElementById('compass').style.display = 'none';
+
+  while(scene.children.length > 0){
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0x5ca2ff);
+  scene.fog = new THREE.FogExp2(0xa0c8ff, 0.002);
+
+  const sun = new THREE.DirectionalLight(0xfffaed, 1.5);
+  sun.position.set(200, 300, 150);
+  sun.castShadow = true;
+  scene.add(sun);
+  scene.add(new THREE.AmbientLight(0x88bbee, 0.9));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#428a2a'; ctx.fillRect(0, 0, 512, 512);
+  for(let i=0; i<8000; i++) {
+    const rx = Math.random() * 512;
+    const ry = Math.random() * 512;
+    const col = Math.random();
+    if(col < 0.3) ctx.fillStyle = '#2d6318';
+    else if(col < 0.7) ctx.fillStyle = '#55a834';
+    else ctx.fillStyle = '#65c23d';
+    ctx.fillRect(rx, ry, 2, 10 + Math.random() * 10);
+  }
+  const grassTex = new THREE.CanvasTexture(canvas);
+  grassTex.wrapS = THREE.RepeatWrapping; grassTex.wrapT = THREE.RepeatWrapping;
+  grassTex.repeat.set(80, 80);
+
+  const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
+  const grassGeo = new THREE.PlaneGeometry(1000, 1000, 150, 150);
+  grassGeo.rotateX(-Math.PI / 2);
+  const pos = grassGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const vx = pos.getX(i);
+    const vz = pos.getZ(i);
+    pos.setY(i, getLevel2Height(vx, vz));
+  }
+  grassGeo.computeVertexNormals();
+
+  const grassFloor = new THREE.Mesh(grassGeo, grassMat);
+  grassFloor.receiveShadow = true;
+  scene.add(grassFloor);
+
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+  const cloudBlockGeo = new THREE.BoxGeometry(10, 6, 10);
+
+  for(let i=0; i<30; i++) {
+    const cloudGroup = new THREE.Group();
+    const partsCount = 6 + Math.floor(Math.random() * 6);
+    for(let p=0; p<partsCount; p++) {
+      const part = new THREE.Mesh(cloudBlockGeo, cloudMat);
+      part.position.set(
+        (Math.random() - 0.5) * 35,
+        (Math.random() - 0.5) * 4,
+        (Math.random() - 0.5) * 25
+      );
+      const s = 0.6 + Math.random() * 0.9;
+      part.scale.set(s, s * 0.6, s);
+      cloudGroup.add(part);
+    }
+    cloudGroup.position.set(
+      (Math.random() - 0.5) * 600,
+      100 + Math.random() * 40,
+      (Math.random() - 0.5) * 600
+    );
+    scene.add(cloudGroup);
+    clouds.push(cloudGroup);
+  }
+
+  for(let i=0; i<6; i++) {
+    const giant = new THREE.Sprite(monsterMatLvl2);
+    giant.scale.set(75, 75, 1);
+    const gx = (Math.random() - 0.5) * 400;
+    const gz = (Math.random() - 0.5) * 400;
+    giant.position.set(gx, getLevel2Height(gx, gz) + 35, gz);
+    giant.userData = {
+      vx: (Math.random() - 0.5) * 2.5,
+      vz: (Math.random() - 0.5) * 2.5
+    };
+    scene.add(giant);
+    giants.push(giant);
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const bx = (Math.random() - 0.5) * 300;
+    const bz = (Math.random() - 0.5) * 300;
+    spawnBattery(bx, getLevel2Height(bx, bz) + 1.2, bz);
+  }
+
+  camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
+
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Держи 🏃 и беги без остановки 20 сек, чтобы прорваться дальше!";
+  document.getElementById('hint').classList.remove('hide');
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
+}
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  location.reload();
+});
+
 const joy = document.getElementById('joy');
 const knob = document.getElementById('knob');
-let joyId = null, joyRect = null, lookId = null, lastTouchX = 0, lastTouchY = 0;
+const jumpBtn = document.getElementById('jump');
+const fsBtn = document.getElementById('fs');
 
-document.getElementById('fs').addEventListener('click', () => {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-  else document.exitFullscreen();
+let joyId = null, joyRect = null;
+let lookId = null, lastTouchX = 0, lastTouchY = 0;
+
+fsBtn.addEventListener('click', () => {
+  initAudio();
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen().catch(()=>{});
+  }
+});
+
+jumpBtn.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  initAudio();
+  if (isGrounded && !isGameOver) {
+    velocityY = jumpForce;
+    isGrounded = false;
+    playJumpSound();
+  }
+});
+
+let sprintHeld = false, restHeld = false;
+const runBtn = document.getElementById('run-btn');
+const restBtn = document.getElementById('rest-btn');
+const torchBtn = document.getElementById('torch-btn');
+
+runBtn.addEventListener('pointerdown', e => { e.stopPropagation(); initAudio(); sprintHeld = true; runBtn.classList.add('pressed'); });
+runBtn.addEventListener('pointerup', e => { e.stopPropagation(); sprintHeld = false; runBtn.classList.remove('pressed'); });
+runBtn.addEventListener('pointercancel', e => { sprintHeld = false; runBtn.classList.remove('pressed'); });
+runBtn.addEventListener('pointerleave', e => { sprintHeld = false; runBtn.classList.remove('pressed'); });
+
+restBtn.addEventListener('pointerdown', e => { e.stopPropagation(); initAudio(); restHeld = true; restBtn.classList.add('pressed'); });
+restBtn.addEventListener('pointerup', e => { e.stopPropagation(); restHeld = false; restBtn.classList.remove('pressed'); });
+restBtn.addEventListener('pointercancel', e => { restHeld = false; restBtn.classList.remove('pressed'); });
+restBtn.addEventListener('pointerleave', e => { restHeld = false; restBtn.classList.remove('pressed'); });
+
+torchBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  initAudio();
+  playClickSound();
+  if (!flashlightOn && flashlightCharge <= 0) return;
+  flashlightOn = !flashlightOn;
+  torchBtn.classList.toggle('torch-on', flashlightOn);
 });
 
 joy.addEventListener('pointerdown', e => {
-  joyId = e.pointerId; joy.setPointerCapture(joyId);
-  joyRect = joy.getBoundingClientRect(); updateJoy(e);
+  initAudio();
+  joyId = e.pointerId;
+  joy.setPointerCapture(joyId);
+  joyRect = joy.getBoundingClientRect();
+  updateJoy(e);
 });
-joy.addEventListener('pointermove', e => { if (e.pointerId === joyId) updateJoy(e); });
+
+joy.addEventListener('pointermove', e => {
+  if (e.pointerId === joyId) updateJoy(e);
+});
+
 function updateJoy(e) {
   let dx = e.clientX - (joyRect.left + joyRect.width/2);
   let dy = e.clientY - (joyRect.top + joyRect.height/2);
@@ -514,32 +1904,74 @@ function updateJoy(e) {
   const len = Math.hypot(dx, dy);
   if (len > max) { dx = (dx/len)*max; dy = (dy/len)*max; }
   knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  moveX = dx / max; moveY = dy / max;
+  moveX = dx / max;
+  moveY = dy / max;
 }
-joy.addEventListener('pointerup', () => { joyId = null; moveX = 0; moveY = 0; knob.style.transform = 'translate(-50%, -50%)'; });
+
+function resetJoy() {
+  joyId = null; moveX = 0; moveY = 0;
+  knob.style.transform = 'translate(-50%, -50%)';
+}
+joy.addEventListener('pointerup', resetJoy);
+joy.addEventListener('pointercancel', resetJoy);
 
 window.addEventListener('pointerdown', e => {
-  if (e.target.closest('#joy') || e.target.closest('#jump') || e.target.closest('#fs')) return;
-  if (e.clientX > window.innerWidth * 0.3) { lookId = e.pointerId; lastTouchX = e.clientX; lastTouchY = e.clientY; }
+  initAudio();
+  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn || e.target === minimapCanvas || e.target.closest('#minimap-container')) return;
+  if (e.clientX > window.innerWidth * 0.3) {
+    lookId = e.pointerId;
+    lastTouchX = e.clientX;
+    lastTouchY = e.clientY;
+  }
 });
 
 window.addEventListener('pointermove', e => {
   if (e.pointerId === lookId) {
-    yaw -= (e.clientX - lastTouchX) * 0.004;
-    pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch - (e.clientY - lastTouchY) * 0.004));
-    lastTouchX = e.clientX; lastTouchY = e.clientY;
+    const dx = e.clientX - lastTouchX;
+    const dy = e.clientY - lastTouchY;
+    lastTouchX = e.clientX;
+    lastTouchY = e.clientY;
+
+    yaw -= dx * 0.004;
+    pitch -= dy * 0.004;
+    pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
   }
 });
+
 window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
 
+function checkOrientation() {
+  const rotateScreen = document.getElementById('rotate-screen');
+  if (window.innerHeight > window.innerWidth) {
+    rotateScreen.style.display = 'flex';
+  } else {
+    rotateScreen.style.display = 'none';
+  }
+}
+
+window.addEventListener('resize', () => {
+  checkOrientation();
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+checkOrientation();
+
 let lastTime = performance.now();
+
 function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
+
   updatePlayer(dt);
   renderer.render(scene, camera);
+
   requestAnimationFrame(animate);
 }
+
+setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
+
 requestAnimationFrame(animate);
 </script>
 </body>
