@@ -314,25 +314,6 @@ html,body{
   transition:opacity 0.2s;
 }
 
-#teleport-overlay{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  z-index:2000;
-  background:radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(150,220,255,0.85) 35%, rgba(10,10,20,0.98) 100%);
-  opacity:0;
-  filter:blur(0px);
-}
-#teleport-overlay.active{
-  animation: teleportPulse 0.9s ease-in-out forwards;
-}
-@keyframes teleportPulse {
-  0%   { opacity:0; filter:blur(0px); }
-  15%  { opacity:1; filter:blur(2px); }
-  55%  { opacity:1; filter:blur(6px); }
-  100% { opacity:0; filter:blur(0px); }
-}
-
 #rotate-screen{
   position:fixed;
   inset:0;
@@ -435,7 +416,6 @@ html,body{
 <body>
 
 <div id="danger-overlay"></div>
-<div id="teleport-overlay"></div>
 
 <div id="rotate-screen">
   <div class="icon">🔄</div>
@@ -669,75 +649,109 @@ function startAmbience(level) {
   const now = audioCtx.currentTime;
 
   if (level === 'level0') {
-    // Fluorescent-light hum: two slightly detuned low tones beating against
-    // each other, plus a faint buzzy overtone.
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'sine'; osc1.frequency.value = 54;
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = 'sine'; osc2.frequency.value = 57;
-    const buzz = audioCtx.createOscillator();
-    buzz.type = 'square'; buzz.frequency.value = 118;
-    const buzzGain = audioCtx.createGain();
-    buzzGain.gain.value = 0.04;
-    buzz.connect(buzzGain).connect(ambienceGain);
-    osc1.connect(ambienceGain);
-    osc2.connect(ambienceGain);
-    osc1.start(); osc2.start(); buzz.start();
-    ambienceNodes.push(osc1, osc2, buzz, buzzGain);
-    ambienceGain.gain.linearRampToValueAtTime(0.09, now + 2.5);
+    // Darkness ambience: a deep sub-bass drone (like being somewhere vast and
+    // empty), a faint continuous high hiss (like distant radio static), and
+    // occasional crackles of "interference" - unsettling, mysterious, alone.
+    const subDrone = audioCtx.createOscillator();
+    subDrone.type = 'sine'; subDrone.frequency.value = 33;
+    const subGain = audioCtx.createGain();
+    subGain.gain.value = 0.55;
+    subDrone.connect(subGain).connect(ambienceGain);
+    subDrone.start();
+
+    const subDrone2 = audioCtx.createOscillator();
+    subDrone2.type = 'sine'; subDrone2.frequency.value = 34.3; // slow beating against subDrone
+    const subGain2 = audioCtx.createGain();
+    subGain2.gain.value = 0.4;
+    subDrone2.connect(subGain2).connect(ambienceGain);
+    subDrone2.start();
+
+    const hiss = audioCtx.createBufferSource();
+    hiss.buffer = createNoiseBuffer();
+    hiss.loop = true;
+    const hissFilter = audioCtx.createBiquadFilter();
+    hissFilter.type = 'highpass';
+    hissFilter.frequency.value = 3200;
+    const hissGain = audioCtx.createGain();
+    hissGain.gain.value = 0.03;
+    hiss.connect(hissFilter).connect(hissGain).connect(ambienceGain);
+    hiss.start();
+
+    ambienceNodes.push(subDrone, subGain, subDrone2, subGain2, hiss, hissFilter, hissGain);
+    ambienceGain.gain.linearRampToValueAtTime(0.12, now + 2.5);
+
+    const scheduleStatic = () => {
+      if ((currentAmbienceLevel !== 'level0') || !audioCtx) return;
+      try {
+        const n = audioCtx.createBufferSource();
+        n.buffer = createNoiseBuffer();
+        const nf = audioCtx.createBiquadFilter();
+        nf.type = 'bandpass';
+        nf.frequency.value = 1600 + Math.random() * 2600;
+        nf.Q.value = 2.2;
+        const ng = audioCtx.createGain();
+        ng.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        ng.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.03);
+        ng.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2 + Math.random() * 0.25);
+        n.connect(nf).connect(ng).connect(audioCtx.destination);
+        n.start(); n.stop(audioCtx.currentTime + 0.55);
+      } catch(e) {}
+      ambienceCreakTimer = setTimeout(scheduleStatic, 3500 + Math.random() * 6500);
+    };
+    ambienceCreakTimer = setTimeout(scheduleStatic, 2500 + Math.random() * 3000);
 
   } else if (level === 'level2') {
-    // Open-air wind: filtered looping noise with a slow, gentle volume swell.
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = createNoiseBuffer();
-    noise.loop = true;
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 500;
-    filter.Q.value = 0.6;
-    const windLFOGain = audioCtx.createGain();
-    windLFOGain.gain.value = 0.11;
-    const lfo = audioCtx.createOscillator();
-    lfo.type = 'sine'; lfo.frequency.value = 0.08;
-    const lfoDepth = audioCtx.createGain();
-    lfoDepth.gain.value = 0.05;
-    lfo.connect(lfoDepth).connect(windLFOGain.gain);
-    noise.connect(filter).connect(windLFOGain).connect(ambienceGain);
-    noise.start(); lfo.start();
-    ambienceNodes.push(noise, filter, windLFOGain, lfo, lfoDepth);
-    ambienceGain.gain.linearRampToValueAtTime(0.16, now + 2.5);
+    // Nature / freedom: a soft breezy pad plus randomly chirping birds -
+    // open air, sunshine, nothing chasing you.
+    const pad1 = audioCtx.createOscillator();
+    pad1.type = 'sine'; pad1.frequency.value = 220;
+    const pad2 = audioCtx.createOscillator();
+    pad2.type = 'sine'; pad2.frequency.value = 330;
+    const padGain = audioCtx.createGain();
+    padGain.gain.value = 0.05;
+    pad1.connect(padGain); pad2.connect(padGain);
+    padGain.connect(ambienceGain);
+    pad1.start(); pad2.start();
 
-  } else if (level === 'level3') {
-    // Uneasy, dissonant low drone with occasional distant creaks.
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'sawtooth'; osc1.frequency.value = 42;
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = 'sine'; osc2.frequency.value = 63;
-    const lowpass = audioCtx.createBiquadFilter();
-    lowpass.type = 'lowpass'; lowpass.frequency.value = 220;
-    osc1.connect(lowpass); osc2.connect(lowpass);
-    lowpass.connect(ambienceGain);
-    osc1.start(); osc2.start();
-    ambienceNodes.push(osc1, osc2, lowpass);
-    ambienceGain.gain.linearRampToValueAtTime(0.08, now + 2.5);
+    const breeze = audioCtx.createBufferSource();
+    breeze.buffer = createNoiseBuffer();
+    breeze.loop = true;
+    const breezeFilter = audioCtx.createBiquadFilter();
+    breezeFilter.type = 'bandpass';
+    breezeFilter.frequency.value = 700;
+    breezeFilter.Q.value = 0.5;
+    const breezeGain = audioCtx.createGain();
+    breezeGain.gain.value = 0.06;
+    breeze.connect(breezeFilter).connect(breezeGain).connect(ambienceGain);
+    breeze.start();
 
-    const scheduleCreak = () => {
-      if (currentAmbienceLevel !== 'level3' || !audioCtx) return;
+    ambienceNodes.push(pad1, pad2, padGain, breeze, breezeFilter, breezeGain);
+    ambienceGain.gain.linearRampToValueAtTime(0.14, now + 2);
+
+    const scheduleBird = () => {
+      if (currentAmbienceLevel !== 'level2' || !audioCtx) return;
       try {
-        const c = audioCtx.createOscillator();
-        const cg = audioCtx.createGain();
-        c.type = 'triangle';
-        c.frequency.setValueAtTime(90 + Math.random()*40, audioCtx.currentTime);
-        c.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 1.1);
-        cg.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-        cg.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.15);
-        cg.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 1.1);
-        c.connect(cg).connect(audioCtx.destination);
-        c.start(); c.stop(audioCtx.currentTime + 1.2);
+        const chirps = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < chirps; i++) {
+          const delay = i * 0.12;
+          const b = audioCtx.createOscillator();
+          const bg = audioCtx.createGain();
+          b.type = 'sine';
+          const baseFreq = 2200 + Math.random() * 1800;
+          b.frequency.setValueAtTime(baseFreq, audioCtx.currentTime + delay);
+          b.frequency.linearRampToValueAtTime(baseFreq * (1.3 + Math.random()*0.4), audioCtx.currentTime + delay + 0.06);
+          b.frequency.linearRampToValueAtTime(baseFreq * 0.8, audioCtx.currentTime + delay + 0.13);
+          bg.gain.setValueAtTime(0.0001, audioCtx.currentTime + delay);
+          bg.gain.linearRampToValueAtTime(0.09, audioCtx.currentTime + delay + 0.02);
+          bg.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + delay + 0.15);
+          b.connect(bg).connect(audioCtx.destination);
+          b.start(audioCtx.currentTime + delay);
+          b.stop(audioCtx.currentTime + delay + 0.16);
+        }
       } catch(e) {}
-      ambienceCreakTimer = setTimeout(scheduleCreak, 5000 + Math.random()*9000);
+      ambienceCreakTimer = setTimeout(scheduleBird, 900 + Math.random() * 2200);
     };
-    ambienceCreakTimer = setTimeout(scheduleCreak, 4000 + Math.random()*4000);
+    ambienceCreakTimer = setTimeout(scheduleBird, 600 + Math.random() * 1200);
 
   } else if (level === 'level4') {
     // Muffled underwater ambience: heavily low-passed noise with a slow
@@ -911,19 +925,34 @@ function playPickupSound() {
   } catch(e) {}
 }
 
-function playClickSound() {
+function playFlashlightClickSound() {
   if (!audioCtx) return;
   try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.05);
+    // Sharp mechanical "clack" - a short filtered noise transient
+    const clack = audioCtx.createBufferSource();
+    clack.buffer = createNoiseBuffer();
+    const clackFilter = audioCtx.createBiquadFilter();
+    clackFilter.type = 'bandpass';
+    clackFilter.frequency.value = 2200;
+    clackFilter.Q.value = 3;
+    const clackGain = audioCtx.createGain();
+    clackGain.gain.setValueAtTime(0.28, audioCtx.currentTime);
+    clackGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.03);
+    clack.connect(clackFilter).connect(clackGain).connect(audioCtx.destination);
+    clack.start();
+    clack.stop(audioCtx.currentTime + 0.035);
+
+    // A tiny spring "tick" right after, like the switch settling into place
+    const tick = audioCtx.createOscillator();
+    const tickGain = audioCtx.createGain();
+    tick.type = 'square';
+    tick.frequency.setValueAtTime(900, audioCtx.currentTime + 0.025);
+    tickGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    tickGain.gain.setValueAtTime(0.06, audioCtx.currentTime + 0.025);
+    tickGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    tick.connect(tickGain).connect(audioCtx.destination);
+    tick.start(audioCtx.currentTime + 0.025);
+    tick.stop(audioCtx.currentTime + 0.055);
   } catch(e) {}
 }
 
@@ -967,7 +996,6 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 const ambientLight = new THREE.AmbientLight(0x999988, 0.16);
-scene.add(ambientLight);
 
 function createWallTexture(hasGraffiti) {
   const canvas = document.createElement('canvas');
@@ -1104,13 +1132,11 @@ const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.set((MW * CELL_SIZE)/2, 0, (MH * CELL_SIZE)/2);
 floor.receiveShadow = true;
-scene.add(floor);
 
 const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
 ceiling.rotation.x = Math.PI / 2;
 ceiling.position.set((MW * CELL_SIZE)/2, 3, (MH * CELL_SIZE)/2);
 ceiling.receiveShadow = true;
-scene.add(ceiling);
 
 const wallGeo = new THREE.BoxGeometry(CELL_SIZE, 3, CELL_SIZE);
 const lampGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
@@ -1121,62 +1147,108 @@ const glowMat = new THREE.MeshBasicMaterial({
 });
 const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
 
-const walls = [];
+let walls = [];
 let exitPos = new THREE.Vector3();
-
-for (let y = 0; y < MH; y++) {
-  for (let x = 0; x < MW; x++) {
-    const posX = x * CELL_SIZE + CELL_SIZE/2;
-    const posZ = y * CELL_SIZE + CELL_SIZE/2;
-
-    if (map[y][x] === '#') {
-      const isGuide = guideCoords.some(c => c.x === x && c.y === y);
-      const chosenMat = isGuide ? guideWallMat : standardWallMat;
-
-      const wall = new THREE.Mesh(wallGeo, chosenMat);
-      wall.position.set(posX, 1.5, posZ);
-      wall.castShadow = true;
-      wall.receiveShadow = true;
-      scene.add(wall);
-      walls.push(wall);
-    } else if (map[y][x] === 'E') {
-      exitPos.set(posX, 1.5, posZ);
-      const exitMat = new THREE.MeshBasicMaterial({ map: createExitDoorTexture() });
-      const exitMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), exitMat);
-      exitMesh.position.set(posX, 1.5, posZ);
-      scene.add(exitMesh);
-
-      const exitLight = new THREE.PointLight(0x00ffcc, 2, 8);
-      exitLight.position.set(posX, 2.5, posZ);
-      scene.add(exitLight);
-    } else {
-      if ((x + y) % 4 === 0) {
-        const lamp = new THREE.Mesh(lampGeo, lampMat);
-        lamp.position.set(posX, 2.97, posZ);
-        scene.add(lamp);
-
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.rotation.x = Math.PI / 2;
-        glow.position.set(posX, 2.94, posZ);
-        scene.add(glow);
-      }
-    }
-  }
-}
 
 const monsterMatLvl0 = new THREE.SpriteMaterial({ map: monsterLvl0Texture, transparent: true });
 const monsterMatLvl2 = new THREE.SpriteMaterial({ map: monsterLvl2Texture, transparent: true });
 
 const monster = new THREE.Sprite(monsterMatLvl0);
 monster.scale.set(2.2, 2.2, 1);
-scene.add(monster);
 
 function respawnMonster() {
   monster.position.set(monsterSpawnCell.x * CELL_SIZE + CELL_SIZE/2, 1.2, monsterSpawnCell.y * CELL_SIZE + CELL_SIZE/2);
 }
-respawnMonster();
 
-camera.position.set(1.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
+// Builds (or rebuilds, e.g. after dying elsewhere) the level 0 maze scene.
+// The maze layout itself (map/exitPos/monsterSpawnCell) was already generated
+// once above and stays the same for the whole session - this just re-creates
+// the visual objects, since they get fully discarded whenever another level
+// clears the scene.
+function loadLevel0() {
+  currentLevel = 0;
+  flashlightFlicker = 1;
+  startAmbience('level0');
+  clearBatteries();
+  clouds = [];
+  level2MoveTimer = 0;
+  houseChunks = new Map();
+  poolChunks = new Map();
+  specialHouse = null;
+  runMonsters = [];
+
+  while (scene.children.length > 0) {
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0x11110e);
+  scene.fog = new THREE.FogExp2(0x11110e, 0.035);
+  scene.add(ambientLight);
+  scene.add(floor);
+  scene.add(ceiling);
+
+  walls = [];
+  for (let y = 0; y < MH; y++) {
+    for (let x = 0; x < MW; x++) {
+      const posX = x * CELL_SIZE + CELL_SIZE/2;
+      const posZ = y * CELL_SIZE + CELL_SIZE/2;
+
+      if (map[y][x] === '#') {
+        const isGuide = guideCoords.some(c => c.x === x && c.y === y);
+        const chosenMat = isGuide ? guideWallMat : standardWallMat;
+
+        const wall = new THREE.Mesh(wallGeo, chosenMat);
+        wall.position.set(posX, 1.5, posZ);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        scene.add(wall);
+        walls.push(wall);
+      } else if (map[y][x] === 'E') {
+        exitPos.set(posX, 1.5, posZ);
+        const exitMat = new THREE.MeshBasicMaterial({ map: createExitDoorTexture() });
+        const exitMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 3), exitMat);
+        exitMesh.position.set(posX, 1.5, posZ);
+        scene.add(exitMesh);
+
+        const exitLight = new THREE.PointLight(0x00ffcc, 2, 8);
+        exitLight.position.set(posX, 2.5, posZ);
+        scene.add(exitLight);
+      } else {
+        if ((x + y) % 4 === 0) {
+          const lamp = new THREE.Mesh(lampGeo, lampMat);
+          lamp.position.set(posX, 2.97, posZ);
+          scene.add(lamp);
+
+          const glow = new THREE.Mesh(glowGeo, glowMat);
+          glow.rotation.x = Math.PI / 2;
+          glow.position.set(posX, 2.94, posZ);
+          scene.add(glow);
+        }
+      }
+    }
+  }
+
+  scene.add(monster);
+  respawnMonster();
+
+  playerY = 1.5;
+  velocityY = 0;
+  isGrounded = true;
+  yaw = 0;
+  pitch = 0;
+  camera.position.set(1.5 * CELL_SIZE, 1.5, 1.5 * CELL_SIZE);
+
+  spawnLevel0Batteries(5);
+
+  document.getElementById('minimap-container').style.display = 'block';
+  document.getElementById('compass').style.display = 'none';
+  document.getElementById('hint').innerText = "Портал 'E' где-то в лабиринте!";
+  document.getElementById('hint').classList.remove('hide');
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
+
+  isGameOver = false;
+}
 
 function spawnLevel0Batteries(count) {
   const openCells = [];
@@ -1234,10 +1306,6 @@ let currentMonsterPath = [];
 let footstepTimer = 0;
 
 let clouds = [];
-let giants = [];
-let idleTimer = 0;
-let level2Monster = null;
-let level2MonsterFlying = false;
 
 // ---- Inventory / Flashlight / Stamina ----
 let staminaMax = 100;
@@ -1257,8 +1325,8 @@ let batteriesCollected = 0;
 
 let currentBatteries = []; // battery meshes on the current level
 
-let level2RunTimer = 0;
-const LEVEL2_RUN_TARGET = 20;
+let level2MoveTimer = 0;
+const LEVEL2_RUN_TARGET = 30;
 
 let specialHouse = null;
 let level3SearchStart = 0;
@@ -1354,7 +1422,7 @@ function updateStamina(dt, wantsSprint) {
   isSprinting = wantsSprint && stamina > 0.5 && (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05);
 
   if (isSprinting) {
-    const drainRate = (currentLevel === 2 || currentLevel === 5) ? staminaDrainRateLevel2 : staminaDrainRate;
+    const drainRate = (currentLevel === 2 || currentLevel === 3 || currentLevel === 5) ? staminaDrainRateLevel2 : staminaDrainRate;
     stamina = Math.max(0, stamina - drainRate * dt);
     if (stamina <= 0) isSprinting = false;
   } else {
@@ -1365,8 +1433,6 @@ function updateStamina(dt, wantsSprint) {
   fillEl.style.width = stamina + '%';
   fillEl.style.background = stamina < 25 ? '#ff6b4a' : '#6cd66c';
 }
-
-spawnLevel0Batteries(5);
 
 // ---- Level 3: an endless street of identical houses, find the odd one out ----
 const STREET_SPACING = 32;       // distance between houses along the street
@@ -1383,7 +1449,7 @@ function createHouseTexture(seed, isSpecial) {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  const wallColor = isSpecial ? '#7a2b2b' : (`hsl(${(seed*40)%40 + 24}, 20%, ${22 + seed*9}%)`);
+  const wallColor = isSpecial ? '#7a2b2b' : (`hsl(${(seed*40)%40 + 24}, 32%, ${42 + seed*14}%)`);
   ctx.fillStyle = wallColor;
   ctx.fillRect(0, 0, 128, 128);
 
@@ -1408,7 +1474,7 @@ function createHouseTexture(seed, isSpecial) {
 function makeHouse(idx, side, isSpecial) {
   const group = new THREE.Group();
   const seed = hash2(idx, side);
-  const wallMat = new THREE.MeshLambertMaterial({ map: createHouseTexture(seed, isSpecial) });
+  const wallMat = new THREE.MeshLambertMaterial({ map: createHouseTexture(seed, isSpecial), transparent: false });
 
   const roofPalette = [0x5a4630, 0x4a3d2c, 0x664a34, 0x3d3220];
   const roofColor = isSpecial ? 0xff3333 : roofPalette[Math.floor(seed * roofPalette.length)];
@@ -1461,6 +1527,18 @@ function makeStreetlampVisual(z) {
   return group;
 }
 
+const FENCE_DISTANCE = STREET_HALF_WIDTH + 14; // how far behind the houses the boundary wall sits
+const fenceMat = new THREE.MeshLambertMaterial({ color: 0x2e2a38 });
+const fenceGeo = new THREE.BoxGeometry(1.2, 5, STREET_SPACING + 1);
+
+function makeFenceSegment(idx, side) {
+  const fence = new THREE.Mesh(fenceGeo, fenceMat);
+  fence.position.set(side * FENCE_DISTANCE, 2.5, idx * STREET_SPACING);
+  fence.castShadow = true;
+  fence.receiveShadow = true;
+  return fence;
+}
+
 function updateHouseChunks() {
   const pIdx = Math.round(camera.position.z / STREET_SPACING);
 
@@ -1476,6 +1554,15 @@ function updateHouseChunks() {
         scene.add(house);
         houseChunks.set(key, house);
         if (isSpecial) specialHouse = house;
+      }
+
+      // A boundary wall behind each house, so the world doesn't feel empty
+      const fenceKey = `fence-${idx},${side}`;
+      needed.add(fenceKey);
+      if (!houseChunks.has(fenceKey)) {
+        const fence = makeFenceSegment(idx, side);
+        scene.add(fence);
+        houseChunks.set(fenceKey, fence);
       }
     }
     // A streetlamp down the centerline every couple of houses
@@ -1505,17 +1592,18 @@ function updateHouseChunks() {
 function loadLevel3() {
   flashlightFlicker = 1;
   currentLevel = 3;
-  startAmbience('level3');
+  startAmbience('level0');
   clearBatteries();
   houseChunks = new Map();
   specialHouse = null;
   level3SearchStart = performance.now();
   document.getElementById('minimap-container').style.display = 'none';
 
-  // Special house shows up somewhere new each time - close enough to find,
-  // in either direction down the street, on either side.
+  // Special house shows up somewhere new each time - as far as possible while
+  // still reachable within the 30s search window before being swept to the
+  // Run level (sprint speed ~8.3 u/s, stamina now lasts the whole search).
   const dir = Math.random() < 0.5 ? -1 : 1;
-  const idx = dir * (2 + Math.floor(Math.random() * 4)); // 2..5 houses away
+  const idx = dir * (3 + Math.floor(Math.random() * 5)); // 3..7 houses away (96-224 units)
   const side = Math.random() < 0.5 ? -1 : 1;
   specialHouseSpec = { idx, side };
 
@@ -1524,10 +1612,10 @@ function loadLevel3() {
   }
   scene.add(camera);
 
-  scene.background = new THREE.Color(0x171522);
-  scene.fog = new THREE.FogExp2(0x171522, 0.014);
+  scene.background = new THREE.Color(0x221f30);
+  scene.fog = new THREE.FogExp2(0x221f30, 0.011);
 
-  scene.add(new THREE.AmbientLight(0x8888aa, 0.75));
+  scene.add(new THREE.AmbientLight(0x9999bb, 1.1));
   const moon = new THREE.DirectionalLight(0xccccee, 0.55);
   moon.position.set(100, 150, 80);
   moon.castShadow = true;
@@ -1814,7 +1902,7 @@ function checkObjectCollision(pos, radius = 0.4) {
 
 function updateMinimap() {
   const mmContainer = document.getElementById('minimap-container');
-  if (currentLevel === 3 || currentLevel === 4) {
+  if (currentLevel === 2 || currentLevel === 3 || currentLevel === 4 || currentLevel === 5) {
     mmContainer.style.display = 'none';
     return;
   }
@@ -1857,28 +1945,6 @@ function updateMinimap() {
       mmCtx.fillStyle = '#ff0000';
       mmCtx.beginPath();
       mmCtx.arc(mx * scale, mz * scale, 4, 0, Math.PI * 2);
-      mmCtx.fill();
-    }
-  } else if (currentLevel === 2) {
-    const viewRadius = 90;
-    const scale = 110 / (viewRadius * 2);
-
-    giants.forEach(g => {
-      const gx = g.position.x - px;
-      const gz = g.position.z - pz;
-      if (Math.abs(gx) < viewRadius && Math.abs(gz) < viewRadius) {
-        mmCtx.fillStyle = '#ff2222';
-        mmCtx.beginPath();
-        mmCtx.arc(gx * scale, gz * scale, 5, 0, Math.PI * 2);
-        mmCtx.fill();
-      }
-    });
-    if (level2Monster) {
-      const mx = level2Monster.position.x - px;
-      const mz = level2Monster.position.z - pz;
-      mmCtx.fillStyle = '#ff0000';
-      mmCtx.beginPath();
-      mmCtx.arc(mx * scale, mz * scale, 6, 0, Math.PI * 2);
       mmCtx.fill();
     }
   }
@@ -1935,33 +2001,6 @@ function drawFullMap() {
     fmCtx.beginPath();
     fmCtx.arc(px, pz, 6, 0, Math.PI * 2);
     fmCtx.fill();
-  } else if (currentLevel === 2) {
-    const range = 420; // world units shown edge-to-edge
-    const toX = wx => (wx + range) / (range * 2) * w;
-    const toZ = wz => (wz + range) / (range * 2) * h;
-
-    fmCtx.strokeStyle = '#446688';
-    fmCtx.lineWidth = 2;
-    fmCtx.strokeRect(toX(-400), toZ(-400), toX(400)-toX(-400), toZ(400)-toZ(-400));
-
-    giants.forEach(g => {
-      fmCtx.fillStyle = '#ff2222';
-      fmCtx.beginPath();
-      fmCtx.arc(toX(g.position.x), toZ(g.position.z), 5, 0, Math.PI * 2);
-      fmCtx.fill();
-    });
-
-    if (level2Monster) {
-      fmCtx.fillStyle = '#ff0000';
-      fmCtx.beginPath();
-      fmCtx.arc(toX(level2Monster.position.x), toZ(level2Monster.position.z), 6, 0, Math.PI * 2);
-      fmCtx.fill();
-    }
-
-    fmCtx.fillStyle = '#00ff00';
-    fmCtx.beginPath();
-    fmCtx.arc(toX(camera.position.x), toZ(camera.position.z), 6, 0, Math.PI * 2);
-    fmCtx.fill();
   }
 }
 
@@ -1976,56 +2015,37 @@ function updatePlayer(dt) {
   updateFlashlight(dt);
 
   if (isGameOver) {
-    if (level2MonsterFlying && level2Monster) {
-      level2Monster.position.lerp(camera.position, dt * 6.0);
-    }
     return;
   }
 
   updateStamina(dt, sprintHeld);
   updateBatteryPickups(dt);
 
+  let level2SpeedBoost = 1;
   if (currentLevel === 2) {
     const isMoving = Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05;
 
-    if (isMoving || !isGrounded) {
-      idleTimer = 0;
-      dangerOverlay.style.opacity = '0';
+    if (isMoving && isGrounded) {
+      level2MoveTimer = Math.min(LEVEL2_RUN_TARGET, level2MoveTimer + dt);
     } else {
-      idleTimer += dt;
-      if (idleTimer > 3.5) {
-        dangerOverlay.style.opacity = Math.min(1, (idleTimer - 3.5) / 2.5).toFixed(2);
-      }
-      if (idleTimer >= 6.0 && !level2MonsterFlying) {
-        level2MonsterFlying = true;
-        const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        level2Monster = new THREE.Sprite(monsterMatLvl2);
-        level2Monster.scale.set(40, 40, 1);
-        level2Monster.position.copy(camera.position).addScaledVector(forwardDir, 25);
-        scene.add(level2Monster);
-        document.getElementById('jumpscare-title').innerText = "НЕ СТОЙ ДОЛГО НА ОДНОМ МЕСТЕ!";
-        document.getElementById('jumpscare-desc').innerText = "Огромная сущность поймала тебя...";
-        triggerJumpscare();
-        return;
-      }
+      level2MoveTimer = 0;
     }
 
-    if (isSprinting && isMoving && isGrounded) {
-      level2RunTimer += dt;
-      document.getElementById('hint').classList.remove('hide');
-      const remaining = Math.max(0, LEVEL2_RUN_TARGET - level2RunTimer).toFixed(1);
-      document.getElementById('hint').innerText = `🏃 Беги не останавливаясь! Осталось: ${remaining} сек`;
-      if (level2RunTimer >= LEVEL2_RUN_TARGET) {
-        showTransition(
-          "ВЫ ПРОБИЛИСЬ СКВОЗЬ ПРОСТРАНСТВО!",
-          "Бесконечный бег вырвал вас в новую реальность — ряды одинаковых домов...",
-          2600,
-          () => { loadLevel3(); }
-        );
-        return;
-      }
-    } else {
-      level2RunTimer = 0;
+    level2SpeedBoost = 1 + (level2MoveTimer / LEVEL2_RUN_TARGET) * 3; // up to 4x by the 30th second
+    const remaining = Math.max(0, LEVEL2_RUN_TARGET - level2MoveTimer).toFixed(1);
+    document.getElementById('hint').classList.remove('hide');
+    document.getElementById('hint').innerText = level2MoveTimer > 0.2
+      ? `🏃 Скорость x${level2SpeedBoost.toFixed(1)} | Ещё ${remaining} сек`
+      : "🟩 Просто иди вперёд и не останавливайся...";
+
+    if (level2MoveTimer >= LEVEL2_RUN_TARGET) {
+      showTransition(
+        "ВЫ ПРОБИЛИСЬ СКВОЗЬ ПРОСТРАНСТВО!",
+        "Головокружительная скорость вырвала вас в новую реальность — ряды одинаковых домов...",
+        2600,
+        () => { loadLevel3(); }
+      );
+      return;
     }
   }
 
@@ -2033,7 +2053,7 @@ function updatePlayer(dt) {
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  const baseSpeed = isSprinting ? 4.5 * sprintMultiplier : 4.5;
+  const baseSpeed = (isSprinting ? 4.5 * sprintMultiplier : 4.5) * level2SpeedBoost;
   const speed = baseSpeed * dt;
   const dir = new THREE.Vector3();
   const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
@@ -2108,13 +2128,6 @@ function updatePlayer(dt) {
     clouds.forEach(cloud => {
       cloud.position.x += dt * 1.5;
       if (cloud.position.x > 400) cloud.position.x = -400;
-    });
-    giants.forEach(g => {
-      g.position.x += g.userData.vx * dt;
-      g.position.z += g.userData.vz * dt;
-      g.position.y = getLevel2Height(g.position.x, g.position.z) + 60;
-      if (Math.abs(g.position.x) > 350) g.userData.vx *= -1;
-      if (Math.abs(g.position.z) > 350) g.userData.vz *= -1;
     });
   }
 
@@ -2253,39 +2266,6 @@ function triggerJumpscare() {
   document.getElementById('jumpscare-screen').style.display = 'flex';
 }
 
-function playTeleportSound() {
-  if (!audioCtx) return;
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.5);
-    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.9);
-    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.15);
-    gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.9);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.9);
-  } catch(e) {}
-}
-
-function playTeleportEffect(callback) {
-  const overlay = document.getElementById('teleport-overlay');
-  playTeleportSound();
-  overlay.classList.remove('active');
-  void overlay.offsetWidth; // restart animation
-  overlay.classList.add('active');
-  setTimeout(() => {
-    callback();
-  }, 450);
-  setTimeout(() => {
-    overlay.classList.remove('active');
-  }, 900);
-}
-
 function showTransition(title, desc, delayMs, callback) {
   isGameOver = true;
   dangerOverlay.style.opacity = '0';
@@ -2296,7 +2276,7 @@ function showTransition(title, desc, delayMs, callback) {
   setTimeout(() => {
     document.getElementById('win-screen').style.display = 'none';
     isGameOver = false;
-    playTeleportEffect(callback);
+    callback();
   }, delayMs || 2600);
 }
 
@@ -2314,11 +2294,7 @@ function loadLevel2() {
   currentLevel = 2;
   startAmbience('level2');
   clouds = [];
-  giants = [];
-  idleTimer = 0;
-  level2MonsterFlying = false;
-  level2Monster = null;
-  level2RunTimer = 0;
+  level2MoveTimer = 0;
   clearBatteries();
   document.getElementById('compass').style.display = 'none';
 
@@ -2405,20 +2381,6 @@ function loadLevel2() {
     clouds.push(cloudGroup);
   }
 
-  for(let i=0; i<3; i++) {
-    const giant = new THREE.Sprite(monsterMatLvl2);
-    giant.scale.set(130, 130, 1);
-    const gx = (Math.random() - 0.5) * 400;
-    const gz = (Math.random() - 0.5) * 400;
-    giant.position.set(gx, getLevel2Height(gx, gz) + 60, gz);
-    giant.userData = {
-      vx: (Math.random() - 0.5) * 2.5,
-      vz: (Math.random() - 0.5) * 2.5
-    };
-    scene.add(giant);
-    giants.push(giant);
-  }
-
   for (let i = 0; i < 4; i++) {
     const bx = (Math.random() - 0.5) * 300;
     const bz = (Math.random() - 0.5) * 300;
@@ -2426,14 +2388,16 @@ function loadLevel2() {
   }
 
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
+  level2MoveTimer = 0;
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Держи 🏃 и беги без остановки 20 сек, чтобы прорваться дальше!";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Просто иди вперёд — с каждой секундой будешь бежать всё быстрее!";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
 
 document.getElementById('restart-btn').addEventListener('click', () => {
-  location.reload();
+  document.getElementById('jumpscare-screen').style.display = 'none';
+  loadLevel0();
 });
 
 const joy = document.getElementById('joy');
@@ -2475,7 +2439,7 @@ runBtn.addEventListener('pointerleave', e => { sprintHeld = false; runBtn.classL
 torchBtn.addEventListener('click', e => {
   e.stopPropagation();
   initAudio();
-  playClickSound();
+  playFlashlightClickSound();
   if (!flashlightOn && flashlightCharge <= 0) return;
   flashlightOn = !flashlightOn;
   torchBtn.classList.toggle('torch-on', flashlightOn);
@@ -2568,6 +2532,7 @@ function animate(now) {
 
 setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
 
+loadLevel0();
 requestAnimationFrame(animate);
 </script>
 </body>
