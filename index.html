@@ -416,16 +416,16 @@ html,body{
   color:#e0ffe0;
   margin-bottom:25px;
 }
-#continue-btn{
-  pointer-events:auto;
-  padding:14px 32px;
-  font-size:20px;
-  background:#1b4d1b;
-  color:#fff;
-  border:2px solid #55ff55;
-  border-radius:12px;
-  cursor:pointer;
-  box-shadow:0 0 15px rgba(0,255,0,0.4);
+#win-auto-note{
+  font-size:15px;
+  color:#9fdf9f;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  animation: autoNotePulse 1.4s ease-in-out infinite;
+}
+@keyframes autoNotePulse {
+  0%, 100% { opacity:0.4; }
+  50% { opacity:1; }
 }
 </style>
 
@@ -452,7 +452,7 @@ html,body{
 <div id="win-screen">
   <h1 id="win-title">ВЫ ПЕРЕШЛИ НА УРОВЕНЬ 2!</h1>
   <p id="win-desc">Зелёные холмы... Но вдали ходят ОГРОМНЫЕ сущности!</p>
-  <button id="continue-btn">ПРОДОЛЖИТЬ</button>
+  <div id="win-auto-note">переход...</div>
 </div>
 
 <div id="fullmap-screen">
@@ -498,50 +498,123 @@ html,body{
 <script>
 'use strict';
 
-const map = [
-  "##################################################",
-  "#..E...................#.........................#",
-  "#..##################..#..#####################..#",
-  "#..#................#..#..#...................#..#",
-  "#..#..############..#..#..#..###############..#..#",
-  "#..#..#..........#..#..#..#..#.............#..#..#",
-  "#..#..#..######..#..#.....#..#..#########..#..#..#",
-  "#..#..#..#....#..#..#######..#..#.......#..#..#..#",
-  "#.....#..#....#..#...........#..#.......#..#.....#",
-  "#####.#..######..#############..#########..#####.#",
-  "#.....#....................................#.....#",
-  "#..#################..###################..#####.#",
-  "#..#...............#..#.................#........#",
-  "#..#..###########..#..#..#############..#######..#",
-  "#..#..#.........#..#..#..#...........#........#..#",
-  "#..#..#..#####..#..#..#..#..#######..#######..#..#",
-  "#.....#..#...#..#.....#..#..#.....#........#..#..#",
-  "#######..#...#..#######..#..#.....#######..#..#..#",
-  "#........#...#...........#..#...........#..#.....#",
-  "#..#######...#############..##########..#..#####.#",
-  "#..#........................#........#..#......#.#",
-  "#..#..####################..#..####..#..#####..#.#",
-  "#..#..#..................#..#..#..#..#......#..#.#",
-  "#..#..#..##############..#..#..#..#..#####..#..#.#",
-  "#     #..#............#..#..#     #......#..#....#",
-  "########.#..########..#..#..###########..#..######",
-  "#........#..#......#..#..#...............#.......#",
-  "#..#######..#......#..#..################........#",
-  "#..#........#......#..#..........................#",
-  "#..#..#######..#####..##########################.#",
-  "#..#..#     #.........#....................#..#..#",
-  "#..#..#     ########..#..################..#..#..#",
-  "#     #...............#..#..............#.....#..#",
-  "#######..##############..#..##########..#######..#",
-  "#........#...............#..#........#...........#",
-  "#..#######..##############..#..####..##########..#",
-  "#................................................#",
-  "##################################################"
-];
+// ---- Level 0 maze: procedurally generated so every corner is guaranteed reachable ----
+function generateMaze(cw, ch) {
+  const width = 2 * cw + 1;
+  const height = 2 * ch + 1;
+  const grid = [];
+  for (let y = 0; y < height; y++) grid.push(new Array(width).fill('#'));
+
+  const cellX = cx => 2 * cx + 1;
+  const cellY = cy => 2 * cy + 1;
+
+  const visited = Array.from({ length: ch }, () => new Array(cw).fill(false));
+  const stack = [[0, 0]];
+  visited[0][0] = true;
+  grid[cellY(0)][cellX(0)] = '.';
+
+  const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
+  while (stack.length) {
+    const [ccx, ccy] = stack[stack.length - 1];
+    const options = dirs
+      .map(d => ({ dx: d[0], dy: d[1], nx: ccx + d[0], ny: ccy + d[1] }))
+      .filter(o => o.nx >= 0 && o.nx < cw && o.ny >= 0 && o.ny < ch && !visited[o.ny][o.nx]);
+    if (options.length === 0) { stack.pop(); continue; }
+    const pick = options[Math.floor(Math.random() * options.length)];
+    visited[pick.ny][pick.nx] = true;
+    grid[cellY(ccy) + pick.dy][cellX(ccx) + pick.dx] = '.';
+    grid[cellY(pick.ny)][cellX(pick.nx)] = '.';
+    stack.push([pick.nx, pick.ny]);
+  }
+
+  // A few extra openings so it isn't a pure single-path tree (adds loops,
+  // more forgiving to navigate) - connectivity is already guaranteed above.
+  const loopChance = 0.05;
+  for (let cy = 0; cy < ch; cy++) {
+    for (let cx = 0; cx < cw; cx++) {
+      if (cx < cw - 1 && Math.random() < loopChance) grid[cellY(cy)][cellX(cx) + 1] = '.';
+      if (cy < ch - 1 && Math.random() < loopChance) grid[cellY(cy) + 1][cellX(cx)] = '.';
+    }
+  }
+
+  return grid.map(row => row.join(''));
+}
+
+const MAZE_CW = 24, MAZE_CH = 18;
+const map = generateMaze(MAZE_CW, MAZE_CH);
 
 const MW = map[0].length;
 const MH = map.length;
 const CELL_SIZE = 3;
+
+// BFS distances from an open cell - used to place the exit at the farthest
+// reachable point (guaranteed reachable, since the maze above is one fully
+// connected structure) and to give the monster a sensible starting spot.
+function mazeBFS(startX, startY) {
+  const dist = new Map();
+  const key = (x, y) => x + ',' + y;
+  dist.set(key(startX, startY), 0);
+  const queue = [[startX, startY]];
+  let qi = 0;
+  while (qi < queue.length) {
+    const [cx, cy] = queue[qi++];
+    const d = dist.get(key(cx, cy));
+    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx >= 0 && nx < MW && ny >= 0 && ny < MH && map[ny][nx] !== '#' && !dist.has(key(nx, ny))) {
+        dist.set(key(nx, ny), d + 1);
+        queue.push([nx, ny]);
+      }
+    }
+  }
+  return dist;
+}
+
+const spawnDist = mazeBFS(1, 1);
+
+let exitCellX = 1, exitCellY = 1, exitMaxDist = -1;
+for (const [k, d] of spawnDist) {
+  if (d > exitMaxDist) {
+    const [xs, ys] = k.split(',').map(Number);
+    exitMaxDist = d; exitCellX = xs; exitCellY = ys;
+  }
+}
+{
+  const rowChars = map[exitCellY].split('');
+  rowChars[exitCellX] = 'E';
+  map[exitCellY] = rowChars.join('');
+}
+
+// Monster starts at a moderate distance from spawn (not right next to the
+// player, not sitting on the exit) so it's a real threat but not instant death.
+let monsterSpawnCell = { x: 1, y: 1 };
+{
+  const candidates = [];
+  for (const [k, d] of spawnDist) {
+    const [xs, ys] = k.split(',').map(Number);
+    if (xs === exitCellX && ys === exitCellY) continue;
+    candidates.push({ x: xs, y: ys, d });
+  }
+  candidates.sort((a, b) => a.d - b.d);
+  const targetIdx = Math.floor(candidates.length * 0.55);
+  monsterSpawnCell = candidates[Math.max(0, Math.min(candidates.length - 1, targetIdx))] || monsterSpawnCell;
+}
+
+// A few decorative graffiti-marked walls near the spawn area
+let guideCoords = [];
+{
+  const nearSpawn = [];
+  for (let y = 0; y < MH; y++) {
+    for (let x = 0; x < MW; x++) {
+      if (map[y][x] === '#' && Math.abs(x - 1) + Math.abs(y - 1) <= 7) nearSpawn.push({ x, y });
+    }
+  }
+  for (let i = 0; i < 3 && nearSpawn.length > 0; i++) {
+    const idx = Math.floor(Math.random() * nearSpawn.length);
+    guideCoords.push(nearSpawn.splice(idx, 1)[0]);
+  }
+}
 
 let audioCtx = null;
 let currentAmbienceLevel = null;
@@ -684,6 +757,35 @@ function startAmbience(level) {
     noise.start(); wobble.start();
     ambienceNodes.push(noise, filter, wobble, wobbleDepth);
     ambienceGain.gain.linearRampToValueAtTime(0.13, now + 2.5);
+
+  } else if (level === 'levelRun') {
+    // Urgent chase pulse: a driving low throb plus a fast rhythmic beat that
+    // gets the adrenaline going, matching the sprint-for-your-life mechanic.
+    const drone = audioCtx.createOscillator();
+    drone.type = 'sawtooth'; drone.frequency.value = 48;
+    const droneFilter = audioCtx.createBiquadFilter();
+    droneFilter.type = 'lowpass'; droneFilter.frequency.value = 260;
+    drone.connect(droneFilter).connect(ambienceGain);
+    drone.start();
+    ambienceNodes.push(drone, droneFilter);
+    ambienceGain.gain.linearRampToValueAtTime(0.1, now + 0.6);
+
+    const scheduleThrob = () => {
+      if (currentAmbienceLevel !== 'levelRun' || !audioCtx) return;
+      try {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(70, audioCtx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(32, audioCtx.currentTime + 0.16);
+        g.gain.setValueAtTime(0.22, audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + 0.22);
+      } catch(e) {}
+      ambienceCreakTimer = setTimeout(scheduleThrob, 420);
+    };
+    ambienceCreakTimer = setTimeout(scheduleThrob, 300);
   }
 }
 
@@ -864,7 +966,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0x999988, 0.95);
+const ambientLight = new THREE.AmbientLight(0x999988, 0.16);
 scene.add(ambientLight);
 
 function createWallTexture(hasGraffiti) {
@@ -1022,12 +1124,6 @@ const glowGeo = new THREE.PlaneGeometry(3.5, 3.5);
 const walls = [];
 let exitPos = new THREE.Vector3();
 
-const guideCoords = [
-  {x: 3, y: 1},
-  {x: 5, y: 1},
-  {x: 7, y: 3}
-];
-
 for (let y = 0; y < MH; y++) {
   for (let x = 0; x < MW; x++) {
     const posX = x * CELL_SIZE + CELL_SIZE/2;
@@ -1076,7 +1172,7 @@ monster.scale.set(2.2, 2.2, 1);
 scene.add(monster);
 
 function respawnMonster() {
-  monster.position.set(15 * CELL_SIZE + CELL_SIZE/2, 1.2, 15 * CELL_SIZE + CELL_SIZE/2);
+  monster.position.set(monsterSpawnCell.x * CELL_SIZE + CELL_SIZE/2, 1.2, monsterSpawnCell.y * CELL_SIZE + CELL_SIZE/2);
 }
 respawnMonster();
 
@@ -1153,6 +1249,7 @@ let isSprinting = false;
 const sprintMultiplier = 1.85;
 
 let flashlightOn = false;
+let flashlightFlicker = 1;
 let flashlightCharge = 100;
 const flashlightMax = 100;
 const flashlightDrainRate = 4.2; // per second while on
@@ -1164,11 +1261,19 @@ let level2RunTimer = 0;
 const LEVEL2_RUN_TARGET = 20;
 
 let specialHouse = null;
+let level3SearchStart = 0;
+const LEVEL3_SEARCH_LIMIT = 30; // seconds before being swept into the Run level
 let houseChunks = new Map();
 let poolChunks = new Map();
 let level2Sun = null;
 let level3Moon = null;
 let level4SkyLight = null;
+let runMonsters = [];
+let runStartTime = 0;
+let runGoalZ = 0;
+const RUN_DISTANCE = 130;
+const RUN_TIME_LIMIT = 24; // seconds
+const RUN_CHASE_SPEED = 6.2; // slower than sprint (~8.3), faster than walk (4.5)
 
 function createBatteryTexture() {
   const canvas = document.createElement('canvas');
@@ -1232,7 +1337,7 @@ scene.add(camera);
 function updateFlashlight(dt) {
   if (flashlightOn && flashlightCharge > 0) {
     flashlightCharge = Math.max(0, flashlightCharge - flashlightDrainRate * dt);
-    flashlight.intensity = 1.6 * (0.3 + 0.7 * (flashlightCharge / flashlightMax));
+    flashlight.intensity = 1.6 * (0.3 + 0.7 * (flashlightCharge / flashlightMax)) * flashlightFlicker;
     if (flashlightCharge <= 0) {
       flashlightOn = false;
       document.getElementById('torch-btn').classList.remove('torch-on');
@@ -1249,7 +1354,7 @@ function updateStamina(dt, wantsSprint) {
   isSprinting = wantsSprint && stamina > 0.5 && (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05);
 
   if (isSprinting) {
-    const drainRate = currentLevel === 2 ? staminaDrainRateLevel2 : staminaDrainRate;
+    const drainRate = (currentLevel === 2 || currentLevel === 5) ? staminaDrainRateLevel2 : staminaDrainRate;
     stamina = Math.max(0, stamina - drainRate * dt);
     if (stamina <= 0) isSprinting = false;
   } else {
@@ -1398,11 +1503,13 @@ function updateHouseChunks() {
 }
 
 function loadLevel3() {
+  flashlightFlicker = 1;
   currentLevel = 3;
   startAmbience('level3');
   clearBatteries();
   houseChunks = new Map();
   specialHouse = null;
+  level3SearchStart = performance.now();
   document.getElementById('minimap-container').style.display = 'none';
 
   // Special house shows up somewhere new each time - close enough to find,
@@ -1549,6 +1656,7 @@ function updatePoolChunks() {
 }
 
 function loadLevel4() {
+  flashlightFlicker = 1;
   currentLevel = 4;
   startAmbience('level4');
   clearBatteries();
@@ -1624,6 +1732,73 @@ function loadLevel4() {
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
 
+// ---- "Беги" (Run) level: a straight sprint away from chasing monsters ----
+function loadLevelRun() {
+  flashlightFlicker = 1;
+  currentLevel = 5;
+  startAmbience('levelRun');
+  clearBatteries();
+  runMonsters = [];
+  document.getElementById('minimap-container').style.display = 'none';
+  document.getElementById('compass').style.display = 'none';
+
+  while (scene.children.length > 0) {
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0x1a0e0e);
+  scene.fog = new THREE.FogExp2(0x1a0e0e, 0.028);
+
+  scene.add(new THREE.AmbientLight(0x664444, 0.5));
+  const redLight = new THREE.PointLight(0xff5533, 1.2, 40);
+  redLight.position.set(0, 8, 0);
+  camera.add(redLight);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#2a1414'; ctx.fillRect(0,0,128,128);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  for (let i=0;i<250;i++) ctx.fillRect(Math.random()*128, Math.random()*128, 3, 3);
+  const groundTex = new THREE.CanvasTexture(canvas);
+  groundTex.wrapS = THREE.RepeatWrapping; groundTex.wrapT = THREE.RepeatWrapping;
+  groundTex.repeat.set(6, 200);
+  const groundMat = new THREE.MeshLambertMaterial({ map: groundTex });
+  const groundGeo = new THREE.PlaneGeometry(20, 4000);
+  groundGeo.rotateX(-Math.PI/2);
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.position.z = 1500;
+  scene.add(ground);
+
+  // Goal gate glowing far ahead
+  runGoalZ = RUN_DISTANCE;
+  const gateMat = new THREE.MeshBasicMaterial({ color: 0x66ffcc, side: THREE.DoubleSide });
+  const gate = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), gateMat);
+  gate.position.set(0, 2.5, runGoalZ + 1);
+  scene.add(gate);
+  const gateLight = new THREE.PointLight(0x66ffcc, 3, 20);
+  gateLight.position.set(0, 3, runGoalZ);
+  scene.add(gateLight);
+
+  // Chasing monsters, spawned behind the player
+  for (let i = 0; i < 4; i++) {
+    const m = new THREE.Sprite(monsterMatLvl0);
+    m.scale.set(2.6, 2.6, 1);
+    m.position.set((Math.random() - 0.5) * 6, 1.2, -6 - Math.random() * 10);
+    scene.add(m);
+    runMonsters.push(m);
+  }
+
+  playerY = 1.5;
+  camera.position.set(0, 1.5, 0);
+  yaw = Math.PI;
+  runStartTime = performance.now();
+
+  document.getElementById('hint').innerText = "🏃 БЕГИ! Не останавливайся!";
+  document.getElementById('hint').classList.remove('hide');
+}
+
 function checkObjectCollision(pos, radius = 0.4) {
   if (currentLevel !== 0) return false;
   for (let wall of walls) {
@@ -1674,14 +1849,7 @@ function updateMinimap() {
       }
     }
 
-    const dx = exitPos.x - px;
-    const dz = exitPos.z - pz;
-    if (Math.abs(dx) < viewRadius && Math.abs(dz) < viewRadius) {
-      mmCtx.fillStyle = '#00ffcc';
-      mmCtx.beginPath();
-      mmCtx.arc(dx * scale, dz * scale, 4, 0, Math.PI * 2);
-      mmCtx.fill();
-    }
+    // Exit portal is intentionally NOT shown on the map - find it yourself!
 
     const mx = monster.position.x - px;
     const mz = monster.position.z - pz;
@@ -1752,12 +1920,7 @@ function drawFullMap() {
       }
     }
 
-    const ex = exitPos.x / (MW * CELL_SIZE) * w;
-    const ez = exitPos.z / (MH * CELL_SIZE) * h;
-    fmCtx.fillStyle = '#00ffcc';
-    fmCtx.beginPath();
-    fmCtx.arc(ex, ez, 5, 0, Math.PI * 2);
-    fmCtx.fill();
+    // Exit portal is intentionally NOT shown on the map - find it yourself!
 
     const mx = monster.position.x / (MW * CELL_SIZE) * w;
     const mz = monster.position.z / (MH * CELL_SIZE) * h;
@@ -1856,7 +2019,7 @@ function updatePlayer(dt) {
         showTransition(
           "ВЫ ПРОБИЛИСЬ СКВОЗЬ ПРОСТРАНСТВО!",
           "Бесконечный бег вырвал вас в новую реальность — ряды одинаковых домов...",
-          "ИДТИ ДАЛЬШЕ",
+          2600,
           () => { loadLevel3(); }
         );
         return;
@@ -1970,10 +2133,22 @@ function updatePlayer(dt) {
         showTransition(
           "ВЫ ВОШЛИ В СТРАННЫЙ ДОМ",
           "Пол исчезает под ногами, и вас засасывает вниз... в бескрайний бассейн.",
-          "ПОГРУЗИТЬСЯ",
+          2600,
           () => { loadLevel4(); }
         );
+        return;
       }
+    }
+
+    const searchElapsed = (performance.now() - level3SearchStart) / 1000;
+    if (searchElapsed >= LEVEL3_SEARCH_LIMIT) {
+      showTransition(
+        "ДОМА НАЧИНАЮТ МЕНЯТЬСЯ МЕСТАМИ...",
+        "Вы задержались слишком долго. Пространство рушится — теперь просто БЕГИ.",
+        2200,
+        () => { loadLevelRun(); }
+      );
+      return;
     }
   }
 
@@ -1983,6 +2158,35 @@ function updatePlayer(dt) {
       level4SkyLight.target.position.set(camera.position.x, camera.position.y, camera.position.z);
     }
     updatePoolChunks();
+  }
+
+  if (currentLevel === 5) {
+    const elapsed = (performance.now() - runStartTime) / 1000;
+    const remaining = Math.max(0, RUN_TIME_LIMIT - elapsed);
+    const distLeft = Math.max(0, runGoalZ - camera.position.z);
+    document.getElementById('hint').classList.remove('hide');
+    document.getElementById('hint').innerText = `🏃 БЕГИ! ${distLeft.toFixed(0)} м | ${remaining.toFixed(1)} сек`;
+
+    runMonsters.forEach(m => {
+      m.position.z += RUN_CHASE_SPEED * dt;
+    });
+
+    const caught = runMonsters.some(m => m.position.distanceTo(camera.position) < 1.6);
+
+    if (camera.position.z >= runGoalZ) {
+      showTransition(
+        "УСПЕЛ!",
+        "Дверь захлопывается за вашей спиной... впереди только вода.",
+        2200,
+        () => { loadLevel4(); }
+      );
+      return;
+    } else if (caught || remaining <= 0) {
+      document.getElementById('jumpscare-title').innerText = caught ? "ТЕБЯ НАСТИГЛИ" : "ВРЕМЯ ВЫШЛО";
+      document.getElementById('jumpscare-desc').innerText = "Нужно было бежать, не останавливаясь...";
+      triggerJumpscare();
+      return;
+    }
   }
 
   if (currentLevel === 0) {
@@ -1996,6 +2200,12 @@ function updatePlayer(dt) {
       dangerOverlay.style.opacity = '0';
     }
     updateHeartbeat(dist, dt);
+
+    if (flashlightOn && dist < 7 && Math.random() < 0.12) {
+      flashlightFlicker = 0.1 + Math.random() * 0.35;
+    } else {
+      flashlightFlicker = 1;
+    }
 
     pathTimer += dt;
     if (pathTimer > 0.4) {
@@ -2076,35 +2286,31 @@ function playTeleportEffect(callback) {
   }, 900);
 }
 
-function showTransition(title, desc, btnText, callback) {
+function showTransition(title, desc, delayMs, callback) {
   isGameOver = true;
   dangerOverlay.style.opacity = '0';
   document.getElementById('win-title').innerText = title;
   document.getElementById('win-desc').innerText = desc;
+  document.getElementById('win-screen').style.display = 'flex';
 
-  const oldBtn = document.getElementById('continue-btn');
-  const newBtn = oldBtn.cloneNode(true);
-  newBtn.innerText = btnText;
-  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-  newBtn.addEventListener('click', () => {
+  setTimeout(() => {
     document.getElementById('win-screen').style.display = 'none';
     isGameOver = false;
     playTeleportEffect(callback);
-  });
-
-  document.getElementById('win-screen').style.display = 'flex';
+  }, delayMs || 2600);
 }
 
 function triggerWin() {
   showTransition(
     "ВЫ НАШЛИ ВЫХОД!",
     "Портал утаскивает вас на Уровень 2. Зелёные холмы... но вдали бродят ОГРОМНЫЕ сущности!",
-    "ВЫЖИВАТЬ НА УРОВНЕ 2",
+    2600,
     () => { loadLevel2(); }
   );
 }
 
 function loadLevel2() {
+  flashlightFlicker = 1;
   currentLevel = 2;
   startAmbience('level2');
   clouds = [];
