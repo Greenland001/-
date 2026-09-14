@@ -314,6 +314,41 @@ html,body{
   transition:opacity 0.2s;
 }
 
+#glitch-overlay{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:1800;
+  opacity:0;
+  mix-blend-mode:screen;
+}
+#glitch-overlay.active{
+  animation: glitchFlash 0.22s steps(2, end);
+}
+@keyframes glitchFlash {
+  0%   { opacity:0; transform:translate(0,0); background:transparent; }
+  20%  { opacity:0.85; transform:translate(-6px,2px); background:linear-gradient(90deg, rgba(255,0,80,0.25), transparent 40%, rgba(0,255,255,0.2) 70%); }
+  40%  { opacity:0.7; transform:translate(5px,-3px); background:linear-gradient(90deg, rgba(0,255,255,0.2), transparent 50%, rgba(255,0,80,0.25) 80%); }
+  60%  { opacity:0.8; transform:translate(-3px,1px); background:linear-gradient(90deg, rgba(255,0,80,0.2), transparent 30%, rgba(0,255,255,0.25) 60%); }
+  100% { opacity:0; transform:translate(0,0); background:transparent; }
+}
+
+#video-noise{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:1750;
+  opacity:0;
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 3px);
+}
+#video-noise.active{
+  animation: noiseFlash 0.35s linear;
+}
+@keyframes noiseFlash {
+  0%,100% { opacity:0; }
+  50% { opacity:0.5; }
+}
+
 #rotate-screen{
   position:fixed;
   inset:0;
@@ -416,6 +451,8 @@ html,body{
 <body>
 
 <div id="danger-overlay"></div>
+<div id="glitch-overlay"></div>
+<div id="video-noise"></div>
 
 <div id="rotate-screen">
   <div class="icon">🔄</div>
@@ -800,6 +837,38 @@ function startAmbience(level) {
       ambienceCreakTimer = setTimeout(scheduleThrob, 420);
     };
     ambienceCreakTimer = setTimeout(scheduleThrob, 300);
+
+  } else if (level === 'level6') {
+    // Total darkness: oppressive near-silence, a barely audible deep rumble,
+    // and rare distant growls - the void is listening.
+    const sub = audioCtx.createOscillator();
+    sub.type = 'sine'; sub.frequency.value = 24;
+    const subGain = audioCtx.createGain();
+    subGain.gain.value = 0.4;
+    sub.connect(subGain).connect(ambienceGain);
+    sub.start();
+    ambienceNodes.push(sub, subGain);
+    ambienceGain.gain.linearRampToValueAtTime(0.07, now + 3);
+
+    const scheduleGrowl = () => {
+      if (currentAmbienceLevel !== 'level6' || !audioCtx) return;
+      try {
+        const g = audioCtx.createOscillator();
+        const gg = audioCtx.createGain();
+        g.type = 'sawtooth';
+        g.frequency.setValueAtTime(55 + Math.random() * 20, audioCtx.currentTime);
+        g.frequency.linearRampToValueAtTime(20, audioCtx.currentTime + 1.4);
+        const gf = audioCtx.createBiquadFilter();
+        gf.type = 'lowpass'; gf.frequency.value = 300;
+        gg.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        gg.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.3);
+        gg.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 1.4);
+        g.connect(gf).connect(gg).connect(audioCtx.destination);
+        g.start(); g.stop(audioCtx.currentTime + 1.5);
+      } catch(e) {}
+      ambienceCreakTimer = setTimeout(scheduleGrowl, 6000 + Math.random() * 8000);
+    };
+    ambienceCreakTimer = setTimeout(scheduleGrowl, 4000 + Math.random() * 4000);
   }
 }
 
@@ -841,23 +910,80 @@ function updateHeartbeat(dist, dt) {
 function playFootstepSound(isRunning) {
   if (!audioCtx) return;
   try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    if (isRunning) {
-      osc.frequency.setValueAtTime(95, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.22, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    const dur = isRunning ? 0.1 : 0.08;
+    const vol = isRunning ? 0.22 : 0.13;
+
+    if (currentLevel === 2) {
+      // Grass rustle
+      const n = audioCtx.createBufferSource();
+      n.buffer = createNoiseBuffer();
+      const f = audioCtx.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = isRunning ? 1400 : 1000; f.Q.value = 1.2;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(vol * 0.8, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      n.connect(f).connect(g).connect(audioCtx.destination);
+      n.start(); n.stop(audioCtx.currentTime + dur + 0.02);
+
+    } else if (currentLevel === 3) {
+      // Hard pavement clack
+      const n = audioCtx.createBufferSource();
+      n.buffer = createNoiseBuffer();
+      const f = audioCtx.createBiquadFilter();
+      f.type = 'highpass'; f.frequency.value = 2500;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(vol * 0.9, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+      n.connect(f).connect(g).connect(audioCtx.destination);
+      n.start(); n.stop(audioCtx.currentTime + 0.06);
+
+      const osc = audioCtx.createOscillator();
+      const og = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.05);
+      og.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
+      og.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+      osc.connect(og).connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.06);
+
+    } else if (currentLevel === 4) {
+      // Water splash
+      const n = audioCtx.createBufferSource();
+      n.buffer = createNoiseBuffer();
+      const f = audioCtx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.setValueAtTime(3000, audioCtx.currentTime);
+      f.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(vol, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+      n.connect(f).connect(g).connect(audioCtx.destination);
+      n.start(); n.stop(audioCtx.currentTime + 0.2);
+
+    } else if (currentLevel === 5) {
+      // Urgent, gritty thump for the chase
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(isRunning ? 110 : 90, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + dur);
+      g.gain.setValueAtTime(vol, audioCtx.currentTime);
+      g.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(g).connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + dur + 0.02);
+
     } else {
-      osc.frequency.setValueAtTime(80, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.13, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+      // Level 0 (and default): muffled carpet thump
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(isRunning ? 95 : 80, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(isRunning ? 35 : 30, audioCtx.currentTime + dur);
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + dur);
       osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+      osc.start(); osc.stop(audioCtx.currentTime + dur);
     }
   } catch(e) {}
 }
@@ -1077,38 +1203,57 @@ function createGlowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-function loadTransparentTexture(url) {
-  const texture = new THREE.Texture();
-  const img = new Image();
-  img.crossOrigin = "Anonymous";
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    const imgData = ctx.getImageData(0, 0, img.width, img.height);
-    const data = imgData.data;
+function createMonsterTexture(eyeColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+  // Canvas starts fully transparent - only the figure itself gets drawn opaque.
 
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i+1], b = data[i+2];
-      if (r > 200 && g > 200 && b > 200) {
-        data[i+3] = 0;
-      } else if (r < 40 && g < 40 && b < 40) {
-        data[i+3] = 0;
-      }
-    }
+  ctx.fillStyle = '#0a0a0a';
+  // Head
+  ctx.beginPath();
+  ctx.ellipse(64, 32, 21, 25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Tall wispy tapering body
+  ctx.beginPath();
+  ctx.moveTo(42, 58);
+  ctx.quadraticCurveTo(30, 125, 18, 195);
+  ctx.lineTo(46, 178);
+  ctx.quadraticCurveTo(60, 140, 64, 100);
+  ctx.quadraticCurveTo(68, 140, 82, 178);
+  ctx.lineTo(110, 195);
+  ctx.quadraticCurveTo(98, 125, 86, 58);
+  ctx.closePath();
+  ctx.fill();
 
-    ctx.putImageData(imgData, 0, 0);
-    texture.image = canvas;
-    texture.needsUpdate = true;
-  };
-  img.src = url;
-  return texture;
+  // Rough, dithered edges so it doesn't look like a flat vector cutout
+  for (let i = 0; i < 260; i++) {
+    ctx.fillStyle = `rgba(0,0,0,${(0.1 + Math.random() * 0.35).toFixed(2)})`;
+    ctx.fillRect(14 + Math.random() * 100, 15 + Math.random() * 180, 2, 2);
+  }
+
+  // Glowing eyes
+  const grad = ctx.createRadialGradient(64, 30, 2, 64, 30, 30);
+  grad.addColorStop(0, eyeColor);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.ellipse(64, 30, 30, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = eyeColor;
+  ctx.beginPath();
+  ctx.ellipse(53, 28, 4, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(75, 28, 4, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  return new THREE.CanvasTexture(canvas);
 }
 
-const monsterLvl0Texture = loadTransparentTexture('6eea8a1fe1dd1c9dd8886572a71b1439 (12).jpg');
-const monsterLvl2Texture = loadTransparentTexture('86bf03f68feea75ac0f75dd9cf0d46e3 (4).jpg');
+const monsterLvl0Texture = createMonsterTexture('#ff3333');
+const monsterLvl2Texture = createMonsterTexture('#ffaa33');
 
 function createExitDoorTexture() {
   const canvas = document.createElement('canvas');
@@ -1176,6 +1321,9 @@ function loadLevel0() {
   poolChunks = new Map();
   specialHouse = null;
   runMonsters = [];
+  darkMonster = null;
+  poolHatch = null;
+  dangerVibrateTimer = 0;
 
   while (scene.children.length > 0) {
     scene.remove(scene.children[0]);
@@ -1318,6 +1466,7 @@ const sprintMultiplier = 1.85;
 
 let flashlightOn = false;
 let flashlightFlicker = 1;
+let dangerVibrateTimer = 0;
 let flashlightCharge = 100;
 const flashlightMax = 100;
 const flashlightDrainRate = 4.2; // per second while on
@@ -1336,6 +1485,8 @@ let poolChunks = new Map();
 let level2Sun = null;
 let level3Moon = null;
 let level4SkyLight = null;
+let poolHatch = null;
+const POOL_HATCH_DIST = 55;
 let runMonsters = [];
 let runStartTime = 0;
 let runGoalZ = 0;
@@ -1807,6 +1958,18 @@ function loadLevel4() {
   playerY = 1.5;
   camera.position.set(0, 1.5, 0);
 
+  const hatchAngle = Math.random() * Math.PI * 2;
+  const hatchX = Math.cos(hatchAngle) * POOL_HATCH_DIST;
+  const hatchZ = Math.sin(hatchAngle) * POOL_HATCH_DIST;
+  const hatchMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a });
+  poolHatch = new THREE.Mesh(new THREE.CircleGeometry(2.2, 24), hatchMat);
+  poolHatch.rotation.x = -Math.PI / 2;
+  poolHatch.position.set(hatchX, -2.3, hatchZ);
+  scene.add(poolHatch);
+  const hatchGlow = new THREE.PointLight(0x552266, 1.8, 18);
+  hatchGlow.position.set(hatchX, -1, hatchZ);
+  scene.add(hatchGlow);
+
   for (let i = 0; i < 3; i++) {
     const bx = (Math.random() - 0.5) * 120;
     const bz = (Math.random() - 0.5) * 120;
@@ -1815,7 +1978,7 @@ function loadLevel4() {
 
   updatePoolChunks();
 
-  document.getElementById('hint').innerText = "💧 УРОВЕНЬ 4: Бескрайний бассейн. Здесь только тишина...";
+  document.getElementById('hint').innerText = "💧 УРОВЕНЬ 4: Бескрайний бассейн. Где-то на дне — тёмное пятно...";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
 }
@@ -1887,6 +2050,69 @@ function loadLevelRun() {
   document.getElementById('hint').classList.remove('hide');
 }
 
+// ---- Level 6: Total Darkness - the flashlight is your only way to see,
+// but the thing hunting you is drawn toward the light. ----
+const LEVEL6_GOAL_DIST = 110;
+const LEVEL6_MONSTER_SPEED_DARK = 2.0;  // slow, safe-ish speed when your light is off
+const LEVEL6_MONSTER_SPEED_LIT = 5.6;   // fast and dangerous while the flashlight is on
+let darkMonster = null;
+let level6GoalZ = 0;
+
+function loadLevel6() {
+  flashlightFlicker = 1;
+  currentLevel = 6;
+  startAmbience('level6');
+  clearBatteries();
+  document.getElementById('minimap-container').style.display = 'none';
+  document.getElementById('compass').style.display = 'none';
+
+  while (scene.children.length > 0) {
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0x000000);
+  scene.fog = new THREE.FogExp2(0x000000, 0.05);
+
+  // Barely-there ambient - without the flashlight this is almost pure black
+  scene.add(new THREE.AmbientLight(0x222233, 0.05));
+
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x0a0a0d });
+  const groundGeo = new THREE.PlaneGeometry(4000, 4000);
+  groundGeo.rotateX(-Math.PI / 2);
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  level6GoalZ = LEVEL6_GOAL_DIST;
+  const gateMat = new THREE.MeshBasicMaterial({ color: 0x88ffee, side: THREE.DoubleSide });
+  const gate = new THREE.Mesh(new THREE.PlaneGeometry(5, 4.5), gateMat);
+  gate.position.set(0, 2.2, level6GoalZ);
+  scene.add(gate);
+  const gateLight = new THREE.PointLight(0x88ffee, 2.5, 16);
+  gateLight.position.set(0, 2.5, level6GoalZ - 1);
+  scene.add(gateLight);
+
+  darkMonster = new THREE.Sprite(monsterMatLvl0);
+  darkMonster.scale.set(2.6, 2.6, 1);
+  darkMonster.position.set((Math.random() - 0.5) * 20, 1.2, level6GoalZ * 0.5 + (Math.random() - 0.5) * 20);
+  scene.add(darkMonster);
+
+  for (let i = 0; i < 5; i++) {
+    const bx = (Math.random() - 0.5) * 30;
+    const bz = 10 + Math.random() * (LEVEL6_GOAL_DIST - 20);
+    spawnBattery(bx, 1.1, bz);
+  }
+
+  playerY = 1.5;
+  camera.position.set(0, 1.5, 0);
+  yaw = Math.PI;
+
+  document.getElementById('hint').innerText = "🔦 Свет тебя выдаёт. Используй фонарик короткими вспышками.";
+  document.getElementById('hint').classList.remove('hide');
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 7000);
+}
+
 function checkObjectCollision(pos, radius = 0.4) {
   if (currentLevel !== 0) return false;
   for (let wall of walls) {
@@ -1902,7 +2128,7 @@ function checkObjectCollision(pos, radius = 0.4) {
 
 function updateMinimap() {
   const mmContainer = document.getElementById('minimap-container');
-  if (currentLevel === 2 || currentLevel === 3 || currentLevel === 4 || currentLevel === 5) {
+  if (currentLevel === 2 || currentLevel === 3 || currentLevel === 4 || currentLevel === 5 || currentLevel === 6) {
     mmContainer.style.display = 'none';
     return;
   }
@@ -2013,6 +2239,7 @@ function getLevel2Height(x, z) {
 
 function updatePlayer(dt) {
   updateFlashlight(dt);
+  updateGlitches(dt);
 
   if (isGameOver) {
     return;
@@ -2171,6 +2398,19 @@ function updatePlayer(dt) {
       level4SkyLight.target.position.set(camera.position.x, camera.position.y, camera.position.z);
     }
     updatePoolChunks();
+
+    if (poolHatch) {
+      const hd = Math.hypot(camera.position.x - poolHatch.position.x, camera.position.z - poolHatch.position.z);
+      if (hd < 2.5) {
+        showTransition(
+          "ЧТО-ТО ПОД ВОДОЙ...",
+          "Дно уходит вниз. Вода пропадает — вокруг только непроглядная тьма.",
+          2400,
+          () => { loadLevel6(); }
+        );
+        return;
+      }
+    }
   }
 
   if (currentLevel === 5) {
@@ -2202,6 +2442,35 @@ function updatePlayer(dt) {
     }
   }
 
+  if (currentLevel === 6) {
+    if (darkMonster) {
+      const speed = flashlightOn ? LEVEL6_MONSTER_SPEED_LIT : LEVEL6_MONSTER_SPEED_DARK;
+      const dir = new THREE.Vector3().subVectors(camera.position, darkMonster.position);
+      dir.y = 0;
+      if (dir.length() > 0.1) {
+        dir.normalize();
+        darkMonster.position.addScaledVector(dir, speed * dt);
+      }
+      const dMonster = darkMonster.position.distanceTo(camera.position);
+      if (dMonster < 1.6) {
+        document.getElementById('jumpscare-title').innerText = "СВЕТ ЕГО ПРИВЁЛ";
+        document.getElementById('jumpscare-desc').innerText = "Тьма не любит, когда её тревожат...";
+        triggerJumpscare();
+        return;
+      }
+    }
+
+    if (camera.position.z >= level6GoalZ - 1.5) {
+      showTransition(
+        "ВЫХОД НАЙДЕН",
+        "Задворье отпускает вас... на этот раз. Но лабиринт уже ждёт следующего.",
+        3200,
+        () => { loadLevel0(); }
+      );
+      return;
+    }
+  }
+
   if (currentLevel === 0) {
     const mPos = monster.position;
     const pPos = camera.position;
@@ -2218,6 +2487,16 @@ function updatePlayer(dt) {
       flashlightFlicker = 0.1 + Math.random() * 0.35;
     } else {
       flashlightFlicker = 1;
+    }
+
+    if (dist < 5) {
+      dangerVibrateTimer -= dt;
+      if (dangerVibrateTimer <= 0) {
+        vibrate(35);
+        dangerVibrateTimer = 0.9 - (1 - dist / 5) * 0.5; // faster pulses the closer it gets
+      }
+    } else {
+      dangerVibrateTimer = 0;
     }
 
     pathTimer += dt;
@@ -2259,16 +2538,81 @@ function updatePlayer(dt) {
   }
 }
 
+function vibrate(pattern) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch(e) {}
+}
+
+let glitchTimer = 6;
+
+function triggerGlitch() {
+  const el = document.getElementById('glitch-overlay');
+  el.classList.remove('active');
+  void el.offsetWidth;
+  el.classList.add('active');
+}
+
+function triggerStaticNoise() {
+  const el = document.getElementById('video-noise');
+  el.classList.remove('active');
+  void el.offsetWidth;
+  el.classList.add('active');
+}
+
+function glitchRandomHouse() {
+  const houseKeys = [];
+  for (const key of houseChunks.keys()) {
+    if (key.indexOf(',') > 0 && key.indexOf('-') === -1) houseKeys.push(key);
+  }
+  if (houseKeys.length === 0) return;
+  const key = houseKeys[Math.floor(Math.random() * houseKeys.length)];
+  const house = houseChunks.get(key);
+  if (!house || house === specialHouse) return;
+  const body = house.children[0];
+  if (!body || !body.material) return;
+  const originalColor = body.material.color.getHex();
+  body.material.color.setHex(0xff2222);
+  setTimeout(() => { if (body.material) body.material.color.setHex(originalColor); }, 140);
+}
+
+function updateGlitches(dt) {
+  glitchTimer -= dt;
+  if (glitchTimer > 0) return;
+
+  if (currentLevel === 0) {
+    glitchTimer = 18 + Math.random() * 22;
+    triggerStaticNoise();
+  } else if (currentLevel === 3) {
+    glitchTimer = 9 + Math.random() * 12;
+    triggerGlitch();
+    glitchRandomHouse();
+  } else if (currentLevel === 4) {
+    glitchTimer = 14 + Math.random() * 18;
+    triggerStaticNoise();
+  } else if (currentLevel === 5) {
+    glitchTimer = 3.5 + Math.random() * 4;
+    triggerGlitch();
+  } else if (currentLevel === 6) {
+    glitchTimer = 6 + Math.random() * 8;
+    triggerGlitch();
+  } else {
+    glitchTimer = 25; // level2: calm, rare
+  }
+}
+
 function triggerJumpscare() {
   isGameOver = true;
   dangerOverlay.style.opacity = '0';
   playJumpscareSound();
+  vibrate([200, 80, 200]);
   document.getElementById('jumpscare-screen').style.display = 'flex';
 }
 
 function showTransition(title, desc, delayMs, callback) {
   isGameOver = true;
   dangerOverlay.style.opacity = '0';
+  vibrate(50);
   document.getElementById('win-title').innerText = title;
   document.getElementById('win-desc').innerText = desc;
   document.getElementById('win-screen').style.display = 'flex';
