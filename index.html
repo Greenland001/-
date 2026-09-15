@@ -1325,6 +1325,11 @@ function loadLevel0() {
   poolHatch = null;
   dangerVibrateTimer = 0;
   level0IdleTimer = 0;
+  isFlying = false;
+  jumpTapTimes = [];
+  islandsList = [];
+  hasLevel6Key = false;
+  level6Key = null;
 
   while (scene.children.length > 0) {
     scene.remove(scene.children[0]);
@@ -1472,6 +1477,7 @@ let level0IdleTimer = 0;
 let flashlightCharge = 100;
 const flashlightMax = 100;
 const flashlightDrainRate = 4.2; // per second while on
+const flashlightDrainRateLevel6 = flashlightMax / 150; // exactly 2.5 minutes on level 6
 let batteriesCollected = 0;
 
 let currentBatteries = []; // battery meshes on the current level
@@ -1556,7 +1562,8 @@ scene.add(camera);
 
 function updateFlashlight(dt) {
   if (flashlightOn && flashlightCharge > 0) {
-    flashlightCharge = Math.max(0, flashlightCharge - flashlightDrainRate * dt);
+    const drainRate = currentLevel === 6 ? flashlightDrainRateLevel6 : flashlightDrainRate;
+    flashlightCharge = Math.max(0, flashlightCharge - drainRate * dt);
     flashlight.intensity = 1.6 * (0.3 + 0.7 * (flashlightCharge / flashlightMax)) * flashlightFlicker;
     if (flashlightCharge <= 0) {
       flashlightOn = false;
@@ -1960,7 +1967,7 @@ function loadLevel4() {
   camera.position.set(0, 1.5, 0);
 
   const hatchAngle = Math.random() * Math.PI * 2;
-  const hatchDist = 30 + Math.random() * 15; // closer and more consistent than before
+  const hatchDist = 55 + Math.random() * 20; // a bit further out now
   const hatchX = Math.cos(hatchAngle) * hatchDist;
   const hatchZ = Math.sin(hatchAngle) * hatchDist;
   const hatchMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a });
@@ -2059,18 +2066,123 @@ function loadLevelRun() {
 }
 
 // ---- Level 6: Total Darkness - the flashlight is your only way to see,
-// but the thing hunting you is drawn toward the light. ----
-const LEVEL6_GOAL_DIST = 110;
+// but the thing hunting you is drawn toward the light. Find the key, then
+// the door far in the dark - visible by its own glow. ----
+const LEVEL6_DOOR_DIST = 160;
 const LEVEL6_MONSTER_SPEED_DARK = 2.0;  // slow, safe-ish speed when your light is off
 const LEVEL6_MONSTER_SPEED_LIT = 5.6;   // fast and dangerous while the flashlight is on
 let darkMonster = null;
-let level6GoalZ = 0;
+let level6DoorZ = 0;
+let level6Key = null;
+let hasLevel6Key = false;
+
+// ---- Level 7: Islands in the clouds - triple-tap jump to fly ----
+let islandsList = [];
+let isFlying = false;
+let jumpTapTimes = [];
+const FALL_RESPAWN_TRIGGER_Y = -40;
+const FALL_RESPAWN_FROM_Y = 220;
+
+function getIslandHeightAt(x, z) {
+  let best = null;
+  for (const isl of islandsList) {
+    const d = Math.hypot(x - isl.x, z - isl.z);
+    if (d < isl.radius) {
+      if (best === null || isl.y > best) best = isl.y;
+    }
+  }
+  return best;
+}
+
+function loadLevelIslands() {
+  flashlightFlicker = 1;
+  currentLevel = 7;
+  startAmbience('level2'); // reuse the airy nature ambience - open sky, freedom
+  clearBatteries();
+  isFlying = false;
+  jumpTapTimes = [];
+  document.getElementById('minimap-container').style.display = 'none';
+  document.getElementById('compass').style.display = 'none';
+
+  while (scene.children.length > 0) {
+    scene.remove(scene.children[0]);
+  }
+  scene.add(camera);
+
+  scene.background = new THREE.Color(0x9fd8f5);
+  scene.fog = new THREE.FogExp2(0xcfeeff, 0.0028);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const sun = new THREE.DirectionalLight(0xfff6df, 1.2);
+  sun.position.set(150, 300, 100);
+  scene.add(sun);
+
+  // Cloud floor far below - endless white sea of clouds
+  const cloudFloorMat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false });
+  const cloudFloorGeo = new THREE.PlaneGeometry(20000, 20000);
+  cloudFloorGeo.rotateX(-Math.PI / 2);
+  const cloudFloor = new THREE.Mesh(cloudFloorGeo, cloudFloorMat);
+  cloudFloor.position.y = -25;
+  scene.add(cloudFloor);
+
+  // Puffy cloud decorations drifting around
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const cloudBlockGeo = new THREE.BoxGeometry(8, 5, 8);
+  for (let i = 0; i < 25; i++) {
+    const group = new THREE.Group();
+    for (let p = 0; p < 6 + Math.floor(Math.random()*5); p++) {
+      const part = new THREE.Mesh(cloudBlockGeo, cloudMat);
+      part.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*3, (Math.random()-0.5)*16);
+      const s = 0.6 + Math.random()*0.8;
+      part.scale.set(s, s*0.6, s);
+      group.add(part);
+    }
+    group.position.set((Math.random()-0.5)*500, -10 + Math.random()*20, (Math.random()-0.5)*500);
+    scene.add(group);
+  }
+
+  // Generate islands - spawn island guaranteed at the origin
+  islandsList = [{ x: 0, y: 20, z: 0, radius: 18 }];
+  for (let i = 0; i < 11; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const dist = 40 + Math.random() * 160;
+    islandsList.push({
+      x: Math.cos(ang) * dist,
+      y: 15 + Math.random() * 55,
+      z: Math.sin(ang) * dist,
+      radius: 10 + Math.random() * 14
+    });
+  }
+
+  const islandTopMat = new THREE.MeshLambertMaterial({ color: 0x5a9c4a });
+  const islandSideMat = new THREE.MeshLambertMaterial({ color: 0x8a7256 });
+  islandsList.forEach(isl => {
+    const height = 6 + Math.random() * 4;
+    const geo = new THREE.CylinderGeometry(isl.radius, isl.radius * 0.7, height, 16);
+    const mats = [islandSideMat, islandTopMat, islandSideMat];
+    const mesh = new THREE.Mesh(geo, mats);
+    mesh.position.set(isl.x, isl.y - height / 2, isl.z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  });
+
+  playerY = islandsList[0].y + 1.8;
+  camera.position.set(0, playerY, 0);
+  velocityY = 0;
+  yaw = 0;
+
+  document.getElementById('hint').innerText = "☁️ Три быстрых нажатия на прыжок — и ты летишь.";
+  document.getElementById('hint').classList.remove('hide');
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 7000);
+}
 
 function loadLevel6() {
   flashlightFlicker = 1;
   currentLevel = 6;
   startAmbience('level6');
   clearBatteries();
+  hasLevel6Key = false;
   document.getElementById('minimap-container').style.display = 'none';
   document.getElementById('compass').style.display = 'none';
 
@@ -2080,7 +2192,7 @@ function loadLevel6() {
   scene.add(camera);
 
   scene.background = new THREE.Color(0x000000);
-  scene.fog = new THREE.FogExp2(0x000000, 0.05);
+  scene.fog = new THREE.FogExp2(0x000000, 0.035);
 
   // Barely-there ambient - without the flashlight this is almost pure black
   scene.add(new THREE.AmbientLight(0x222233, 0.05));
@@ -2092,31 +2204,40 @@ function loadLevel6() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  level6GoalZ = LEVEL6_GOAL_DIST;
-  const gateMat = new THREE.MeshBasicMaterial({ color: 0x88ffee, side: THREE.DoubleSide });
-  const gate = new THREE.Mesh(new THREE.PlaneGeometry(5, 4.5), gateMat);
-  gate.position.set(0, 2.2, level6GoalZ);
-  scene.add(gate);
-  const gateLight = new THREE.PointLight(0x88ffee, 2.5, 16);
-  gateLight.position.set(0, 2.5, level6GoalZ - 1);
-  scene.add(gateLight);
+  // The door - far away, but with a strong enough glow to be seen from a distance
+  level6DoorZ = LEVEL6_DOOR_DIST;
+  const doorMat = new THREE.MeshBasicMaterial({ color: 0x88ffee, side: THREE.DoubleSide });
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(5, 4.5), doorMat);
+  door.position.set(0, 2.2, level6DoorZ);
+  scene.add(door);
+  const doorLight = new THREE.PointLight(0x88ffee, 4, 45);
+  doorLight.position.set(0, 2.5, level6DoorZ - 1);
+  scene.add(doorLight);
+
+  // The key - closer, off to one side, only a dim glow so you have to search
+  const keyAngle = (Math.random() - 0.5) * 1.4;
+  const keyDist = 30 + Math.random() * 20;
+  const keyX = Math.sin(keyAngle) * keyDist;
+  const keyZ = Math.cos(keyAngle) * keyDist;
+  const keyMat = new THREE.SpriteMaterial({ map: batteryTexture, color: 0xffd94a });
+  level6Key = new THREE.Sprite(keyMat);
+  level6Key.scale.set(0.7, 0.7, 1);
+  level6Key.position.set(keyX, 1.1, keyZ);
+  scene.add(level6Key);
+  const keyLight = new THREE.PointLight(0xffcc55, 0.5, 4); // dim - only helps up close
+  keyLight.position.set(keyX, 1.3, keyZ);
+  scene.add(keyLight);
 
   darkMonster = new THREE.Sprite(monsterMatLvl0);
   darkMonster.scale.set(2.6, 2.6, 1);
-  darkMonster.position.set((Math.random() - 0.5) * 20, 1.2, level6GoalZ * 0.5 + (Math.random() - 0.5) * 20);
+  darkMonster.position.set((Math.random() - 0.5) * 20, 1.2, level6DoorZ * 0.5 + (Math.random() - 0.5) * 20);
   scene.add(darkMonster);
-
-  for (let i = 0; i < 5; i++) {
-    const bx = (Math.random() - 0.5) * 30;
-    const bz = 10 + Math.random() * (LEVEL6_GOAL_DIST - 20);
-    spawnBattery(bx, 1.1, bz);
-  }
 
   playerY = 1.5;
   camera.position.set(0, 1.5, 0);
   yaw = Math.PI;
 
-  document.getElementById('hint').innerText = "🔦 Свет тебя выдаёт. Используй фонарик короткими вспышками.";
+  document.getElementById('hint').innerText = "🔦 Свет тебя выдаёт. Найди ключ и дойди до двери вдалеке.";
   document.getElementById('hint').classList.remove('hide');
   setTimeout(() => document.getElementById('hint').classList.add('hide'), 7000);
 }
@@ -2136,7 +2257,7 @@ function checkObjectCollision(pos, radius = 0.4) {
 
 function updateMinimap() {
   const mmContainer = document.getElementById('minimap-container');
-  if (currentLevel === 2 || currentLevel === 3 || currentLevel === 4 || currentLevel === 5 || currentLevel === 6) {
+  if (currentLevel === 2 || currentLevel === 3 || currentLevel === 4 || currentLevel === 5 || currentLevel === 6 || currentLevel === 7) {
     mmContainer.style.display = 'none';
     return;
   }
@@ -2272,18 +2393,12 @@ function updatePlayer(dt) {
   if (currentLevel === 2) {
     const isMoving = Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05;
 
-    if (isMoving && isGrounded) {
+    if (isSprinting && isMoving && isGrounded) {
       level2MoveTimer = Math.min(LEVEL2_RUN_TARGET, level2MoveTimer + dt);
-    } else {
-      level2MoveTimer = 0;
     }
+    // Otherwise the timer just pauses - progress is never lost, only earned.
 
-    level2SpeedBoost = 1 + (level2MoveTimer / LEVEL2_RUN_TARGET) * 3; // up to 4x by the 30th second
-    const remaining = Math.max(0, LEVEL2_RUN_TARGET - level2MoveTimer).toFixed(1);
-    document.getElementById('hint').classList.remove('hide');
-    document.getElementById('hint').innerText = level2MoveTimer > 0.2
-      ? `🏃 Скорость x${level2SpeedBoost.toFixed(1)} | Ещё ${remaining} сек`
-      : "🟩 Просто иди вперёд и не останавливайся...";
+    level2SpeedBoost = 1 + (level2MoveTimer / LEVEL2_RUN_TARGET) * 3; // caps at 4x
 
     if (level2MoveTimer >= LEVEL2_RUN_TARGET) {
       showTransition(
@@ -2300,10 +2415,12 @@ function updatePlayer(dt) {
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  const baseSpeed = (isSprinting ? 4.5 * sprintMultiplier : 4.5) * level2SpeedBoost;
-  const speed = baseSpeed * dt;
+  const baseSpeed = isSprinting ? (4.5 * sprintMultiplier * level2SpeedBoost) : 4.5;
+  const speed = (currentLevel === 7 && isFlying ? baseSpeed * 1.6 : baseSpeed) * dt;
   const dir = new THREE.Vector3();
-  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+  const forward = (currentLevel === 7 && isFlying)
+    ? new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'))
+    : new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
   const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
 
   dir.addScaledVector(forward, -moveY);
@@ -2331,8 +2448,15 @@ function updatePlayer(dt) {
   const nextPosZ = camera.position.clone().addScaledVector(new THREE.Vector3(0, 0, dir.z), speed);
   if (!checkObjectCollision(nextPosZ, 0.4)) camera.position.z = nextPosZ.z;
 
-  velocityY += gravity * dt;
-  playerY += velocityY * dt;
+  if (currentLevel === 7 && isFlying) {
+    // Flying: gravity is off, altitude is steered by looking up/down while moving
+    playerY += dir.y * speed;
+    velocityY = 0;
+    isGrounded = false;
+  } else {
+    velocityY += gravity * dt;
+    playerY += velocityY * dt;
+  }
 
   if (currentLevel === 2) {
     const terrainHeight = getLevel2Height(camera.position.x, camera.position.z) + 1.8;
@@ -2351,6 +2475,25 @@ function updatePlayer(dt) {
     } else {
       isGrounded = false;
     }
+  } else if (currentLevel === 7) {
+    if (!isFlying) {
+      const islandTop = getIslandHeightAt(camera.position.x, camera.position.z);
+      if (islandTop !== null && playerY <= islandTop + 1.8) {
+        playerY = islandTop + 1.8;
+        velocityY = 0;
+        isGrounded = true;
+      } else {
+        isGrounded = false;
+      }
+
+      if (playerY < FALL_RESPAWN_TRIGGER_Y) {
+        // Fell off the islands - fall back down from the clouds instead of dying
+        playerY = FALL_RESPAWN_FROM_Y;
+        velocityY = 0;
+        camera.position.x = (Math.random() - 0.5) * 40;
+        camera.position.z = (Math.random() - 0.5) * 40;
+      }
+    }
   } else {
     if (playerY <= 1.5) {
       playerY = 1.5;
@@ -2361,7 +2504,7 @@ function updatePlayer(dt) {
     }
   }
 
-  if (playerY > 15.0) { playerY = 15.0; velocityY = 0; }
+  if (currentLevel !== 7 && playerY > 15.0) { playerY = 15.0; velocityY = 0; }
 
   camera.position.y = playerY;
 
@@ -2374,7 +2517,7 @@ function updatePlayer(dt) {
     }
     clouds.forEach(cloud => {
       cloud.position.x += dt * 1.5;
-      if (cloud.position.x > 400) cloud.position.x = -400;
+      if (cloud.position.x > 3000) cloud.position.x = -3000;
     });
   }
 
@@ -2485,14 +2628,30 @@ function updatePlayer(dt) {
       }
     }
 
-    if (camera.position.z >= level6GoalZ - 1.5) {
-      showTransition(
-        "ВЫХОД НАЙДЕН",
-        "Задворье отпускает вас... на этот раз. Но лабиринт уже ждёт следующего.",
-        3200,
-        () => { loadLevel0(); }
-      );
-      return;
+    if (level6Key && !hasLevel6Key && camera.position.distanceTo(level6Key.position) < 1.3) {
+      hasLevel6Key = true;
+      scene.remove(level6Key);
+      level6Key = null;
+      playPickupSound();
+      document.getElementById('hint').innerText = "🔑 Ключ у вас. Теперь дойдите до двери.";
+      document.getElementById('hint').classList.remove('hide');
+      setTimeout(() => document.getElementById('hint').classList.add('hide'), 4000);
+    }
+
+    if (camera.position.z >= level6DoorZ - 1.5) {
+      if (hasLevel6Key) {
+        showTransition(
+          "ДВЕРЬ ОТКРЫТА",
+          "За ней — облака и острова в бескрайнем небе...",
+          3000,
+          () => { loadLevelIslands(); }
+        );
+        return;
+      } else {
+        document.getElementById('hint').innerText = "🔒 Дверь заперта. Где-то в темноте есть ключ.";
+        document.getElementById('hint').classList.remove('hide');
+        setTimeout(() => document.getElementById('hint').classList.add('hide'), 2500);
+      }
     }
   }
 
@@ -2726,7 +2885,7 @@ function loadLevel2() {
   grassTex.repeat.set(80, 80);
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
-  const grassGeo = new THREE.PlaneGeometry(1000, 1000, 150, 150);
+  const grassGeo = new THREE.PlaneGeometry(6000, 6000, 150, 150);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
@@ -2758,9 +2917,9 @@ function loadLevel2() {
       cloudGroup.add(part);
     }
     cloudGroup.position.set(
-      (Math.random() - 0.5) * 600,
+      (Math.random() - 0.5) * 3000,
       100 + Math.random() * 40,
-      (Math.random() - 0.5) * 600
+      (Math.random() - 0.5) * 3000
     );
     scene.add(cloudGroup);
     clouds.push(cloudGroup);
@@ -2775,9 +2934,9 @@ function loadLevel2() {
   camera.position.set(0, getLevel2Height(0, 0) + 1.8, 0);
   level2MoveTimer = 0;
 
-  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2: Просто иди вперёд — с каждой секундой будешь бежать всё быстрее!";
+  document.getElementById('hint').innerText = "🟩 УРОВЕНЬ 2";
   document.getElementById('hint').classList.remove('hide');
-  setTimeout(() => document.getElementById('hint').classList.add('hide'), 6000);
+  setTimeout(() => document.getElementById('hint').classList.add('hide'), 3000);
 }
 
 document.getElementById('restart-btn').addEventListener('click', () => {
@@ -2809,6 +2968,20 @@ jumpBtn.addEventListener('pointerdown', (e) => {
     velocityY = jumpForce;
     isGrounded = false;
     playJumpSound();
+  }
+
+  if (currentLevel === 7 && !isGameOver) {
+    const now = performance.now();
+    jumpTapTimes.push(now);
+    jumpTapTimes = jumpTapTimes.filter(t => now - t < 700);
+    if (jumpTapTimes.length >= 3) {
+      jumpTapTimes = [];
+      isFlying = !isFlying;
+      vibrate(isFlying ? [40, 40, 40] : 60);
+      document.getElementById('hint').innerText = isFlying ? "☁️ Вы летите!" : "☁️ Полёт окончен";
+      document.getElementById('hint').classList.remove('hide');
+      setTimeout(() => document.getElementById('hint').classList.add('hide'), 2000);
+    }
   }
 });
 
@@ -2862,63 +3035,4 @@ joy.addEventListener('pointercancel', resetJoy);
 
 window.addEventListener('pointerdown', e => {
   initAudio();
-  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn || e.target === runBtn || e.target === torchBtn || e.target === minimapCanvas || e.target.closest('#minimap-container')) return;
-  if (e.clientX > window.innerWidth * 0.3) {
-    lookId = e.pointerId;
-    lastTouchX = e.clientX;
-    lastTouchY = e.clientY;
-  }
-});
-
-window.addEventListener('pointermove', e => {
-  if (e.pointerId === lookId) {
-    const dx = e.clientX - lastTouchX;
-    const dy = e.clientY - lastTouchY;
-    lastTouchX = e.clientX;
-    lastTouchY = e.clientY;
-
-    yaw -= dx * 0.004;
-    pitch -= dy * 0.004;
-    pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
-  }
-});
-
-window.addEventListener('pointerup', e => { if (e.pointerId === lookId) lookId = null; });
-
-function checkOrientation() {
-  const rotateScreen = document.getElementById('rotate-screen');
-  if (window.innerHeight > window.innerWidth) {
-    rotateScreen.style.display = 'flex';
-  } else {
-    rotateScreen.style.display = 'none';
-  }
-}
-
-window.addEventListener('resize', () => {
-  checkOrientation();
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-checkOrientation();
-
-let lastTime = performance.now();
-
-function animate(now) {
-  const dt = Math.min((now - lastTime) / 1000, 0.1);
-  lastTime = now;
-
-  updatePlayer(dt);
-  renderer.render(scene, camera);
-
-  requestAnimationFrame(animate);
-}
-
-setTimeout(() => document.getElementById('hint').classList.add('hide'), 5000);
-
-loadLevel0();
-requestAnimationFrame(animate);
-</script>
-</body>
-</html>
+  if (e.target === joy || joy.contains(e.target) || e.target === jumpBtn || e.target === fsBtn || e.target === runBtn || e.target === torchBtn || e.target === minimapCanvas || e.target.closest('#
