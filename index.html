@@ -1486,7 +1486,6 @@ let level2Sun = null;
 let level3Moon = null;
 let level4SkyLight = null;
 let poolHatch = null;
-const POOL_HATCH_DIST = 55;
 let runMonsters = [];
 let runStartTime = 0;
 let runGoalZ = 0;
@@ -1959,16 +1958,23 @@ function loadLevel4() {
   camera.position.set(0, 1.5, 0);
 
   const hatchAngle = Math.random() * Math.PI * 2;
-  const hatchX = Math.cos(hatchAngle) * POOL_HATCH_DIST;
-  const hatchZ = Math.sin(hatchAngle) * POOL_HATCH_DIST;
+  const hatchDist = 30 + Math.random() * 15; // closer and more consistent than before
+  const hatchX = Math.cos(hatchAngle) * hatchDist;
+  const hatchZ = Math.sin(hatchAngle) * hatchDist;
   const hatchMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a });
-  poolHatch = new THREE.Mesh(new THREE.CircleGeometry(2.2, 24), hatchMat);
+  poolHatch = new THREE.Mesh(new THREE.CircleGeometry(3.5, 24), hatchMat);
   poolHatch.rotation.x = -Math.PI / 2;
   poolHatch.position.set(hatchX, -2.3, hatchZ);
   scene.add(poolHatch);
-  const hatchGlow = new THREE.PointLight(0x552266, 1.8, 18);
-  hatchGlow.position.set(hatchX, -1, hatchZ);
+  const hatchGlow = new THREE.PointLight(0x9944cc, 3.5, 35);
+  hatchGlow.position.set(hatchX, 1, hatchZ);
   scene.add(hatchGlow);
+  const hatchBeam = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: createGlowTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: 0xaa66ff
+  }));
+  hatchBeam.scale.set(10, 10, 1);
+  hatchBeam.position.set(hatchX, 0.2, hatchZ);
+  scene.add(hatchBeam);
 
   for (let i = 0; i < 3; i++) {
     const bx = (Math.random() - 0.5) * 120;
@@ -2163,7 +2169,14 @@ function updateMinimap() {
       }
     }
 
-    // Exit portal is intentionally NOT shown on the map - find it yourself!
+    const dx = exitPos.x - px;
+    const dz = exitPos.z - pz;
+    if (Math.abs(dx) < viewRadius && Math.abs(dz) < viewRadius) {
+      mmCtx.fillStyle = '#00ffcc';
+      mmCtx.beginPath();
+      mmCtx.arc(dx * scale, dz * scale, 4, 0, Math.PI * 2);
+      mmCtx.fill();
+    }
 
     const mx = monster.position.x - px;
     const mz = monster.position.z - pz;
@@ -2212,7 +2225,12 @@ function drawFullMap() {
       }
     }
 
-    // Exit portal is intentionally NOT shown on the map - find it yourself!
+    const ex = exitPos.x / (MW * CELL_SIZE) * w;
+    const ez = exitPos.z / (MH * CELL_SIZE) * h;
+    fmCtx.fillStyle = '#00ffcc';
+    fmCtx.beginPath();
+    fmCtx.arc(ex, ez, 5, 0, Math.PI * 2);
+    fmCtx.fill();
 
     const mx = monster.position.x / (MW * CELL_SIZE) * w;
     const mz = monster.position.z / (MH * CELL_SIZE) * h;
@@ -2401,7 +2419,12 @@ function updatePlayer(dt) {
 
     if (poolHatch) {
       const hd = Math.hypot(camera.position.x - poolHatch.position.x, camera.position.z - poolHatch.position.z);
-      if (hd < 2.5) {
+      const compass = document.getElementById('compass');
+      compass.style.display = 'block';
+      if (hd < 15) compass.innerText = '🌀 Тёмное пятно совсем рядом...';
+      else if (hd < 35) compass.innerText = '🌀 Тёмное пятно где-то поблизости';
+      else compass.innerText = '🌀 Ищи тёмное пятно на дне бассейна';
+      if (hd < 4) {
         showTransition(
           "ЧТО-ТО ПОД ВОДОЙ...",
           "Дно уходит вниз. Вода пропадает — вокруг только непроглядная тьма.",
@@ -2881,3 +2904,4 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
+
