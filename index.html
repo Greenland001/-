@@ -1324,6 +1324,7 @@ function loadLevel0() {
   darkMonster = null;
   poolHatch = null;
   dangerVibrateTimer = 0;
+  level0IdleTimer = 0;
 
   while (scene.children.length > 0) {
     scene.remove(scene.children[0]);
@@ -1467,6 +1468,7 @@ const sprintMultiplier = 1.85;
 let flashlightOn = false;
 let flashlightFlicker = 1;
 let dangerVibrateTimer = 0;
+let level0IdleTimer = 0;
 let flashlightCharge = 100;
 const flashlightMax = 100;
 const flashlightDrainRate = 4.2; // per second while on
@@ -2499,6 +2501,22 @@ function updatePlayer(dt) {
     const pPos = camera.position;
     const dist = mPos.distanceTo(pPos);
 
+    const isStandingStill = Math.abs(moveX) < 0.05 && Math.abs(moveY) < 0.05 && isGrounded;
+    if (isStandingStill) {
+      level0IdleTimer += dt;
+      if (level0IdleTimer >= 15) {
+        showTransition(
+          "СКУЧНО СТОЯТЬ НА МЕСТЕ?",
+          "Пространство решает за вас — портал сам находит вас.",
+          2200,
+          () => { loadLevel2(); }
+        );
+        return;
+      }
+    } else {
+      level0IdleTimer = 0;
+    }
+
     if (dist < 15) {
       dangerOverlay.style.opacity = (1 - dist / 15).toFixed(2);
     } else {
@@ -2904,4 +2922,3 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
-
