@@ -2517,7 +2517,7 @@ function updatePlayer(dt) {
     }
     clouds.forEach(cloud => {
       cloud.position.x += dt * 1.5;
-      if (cloud.position.x > 3000) cloud.position.x = -3000;
+      if (cloud.position.x > 1200) cloud.position.x = -1200;
     });
   }
 
@@ -2885,7 +2885,7 @@ function loadLevel2() {
   grassTex.repeat.set(80, 80);
 
   const grassMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, metalness: 0.05 });
-  const grassGeo = new THREE.PlaneGeometry(6000, 6000, 150, 150);
+  const grassGeo = new THREE.PlaneGeometry(2400, 2400, 190, 190);
   grassGeo.rotateX(-Math.PI / 2);
   const pos = grassGeo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
@@ -2917,9 +2917,9 @@ function loadLevel2() {
       cloudGroup.add(part);
     }
     cloudGroup.position.set(
-      (Math.random() - 0.5) * 3000,
+      (Math.random() - 0.5) * 1200,
       100 + Math.random() * 40,
-      (Math.random() - 0.5) * 3000
+      (Math.random() - 0.5) * 1200
     );
     scene.add(cloudGroup);
     clouds.push(cloudGroup);
