@@ -18,11 +18,10 @@ linear-gradient(#2a6bd8,#9fd0f7 68%)}
 .ic span{display:block;font-size:22px;line-height:26px}
 .ic:active,.ic:focus-visible{background:rgba(49,106,197,.65);outline:1px dotted #fff}
 #kin{position:absolute;left:50%;top:40%;width:49px;height:105px;z-index:8;cursor:grab;touch-action:none}
-#kin>svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 100%;animation:sway 5s ease-in-out infinite}
-#kin.walk>svg{animation:step .45s linear infinite}
-#board{display:none}#kin.walk #board{display:block}
-@keyframes sway{50%{transform:rotate(2deg)}}
-@keyframes step{50%{transform:translateY(-3px) rotate(-4deg)}}
+#kin>svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 100%;animation:float 3.4s ease-in-out infinite}
+#kin.walk>svg{animation:fly .9s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-7px) rotate(1.5deg)}}
+@keyframes fly{50%{transform:translateY(-5px) rotate(-6deg)}}
 @media (prefers-reduced-motion:reduce){#kin>svg,#kin.walk>svg{animation:none}}
 #bub{display:none;position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(230px,44vw);background:#fff5cf;color:#111;border:2px solid #222;border-radius:10px;padding:6px 9px;font:italic 11px/1.35 "Courier New",monospace;text-align:left;transform-origin:50% 100%;pointer-events:none}
 #bub::after{content:'';position:absolute;left:50%;bottom:-11px;margin-left:-8px;border:8px solid transparent;border-top:10px solid #222;border-bottom:0}
@@ -66,15 +65,27 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
 #rot .ph{font-size:64px;animation:tw 2s ease-in-out infinite}
 @keyframes tw{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait){#rot{display:flex}}
+#egg{position:absolute;z-index:9;display:none;width:80px;height:100px;pointer-events:none}
+#egg.wob{animation:wob .45s ease-in-out infinite}
+@keyframes wob{25%{transform:rotate(-9deg)}75%{transform:rotate(9deg)}}
+#egg .top{transform-origin:40px 60px;transition:transform .8s,opacity .8s}
+#egg.open .top{transform:translate(-26px,-46px) rotate(-55deg);opacity:0}
+#egg.open .bot{opacity:0;transition:opacity 2s .8s}
+#belt{position:relative;height:44px;overflow:hidden;background:repeating-linear-gradient(90deg,#555 0 12px,#666 12px 24px);border:2px inset #999;flex:none}
+.part{position:absolute;top:6px;left:-90px;height:30px;padding:0 8px;border:2px outset #fff;color:#fff;font:bold 11px Tahoma;text-shadow:1px 1px 1px #000;animation:mv 9s linear forwards;cursor:pointer}
+@keyframes mv{from{left:-90px}to{left:100%}}
+.chip{display:inline-block;margin:1px 2px;padding:1px 5px;border:1px solid #999;background:#fff;font-size:11px}.chip.ok{background:#9be38b}
+#room{position:relative;flex:1;min-height:110px;background:repeating-linear-gradient(90deg,#c8965a 0 28px,#b8864a 28px 30px);border:2px inset #999}
+.it{position:absolute;font-size:24px;background:none;border:0;padding:0;cursor:pointer;line-height:1}
+.it.dirt{width:36px;height:22px;border-radius:50%;background:radial-gradient(#5a3b1c,#7a5a30 65%,transparent 70%)}
 </style>
 </head>
 <body>
 <div id="pc">
   <div id="icons">
-    <button class="ic" data-app="kin"><span>👾</span>Кинито</button>
     <button class="ic" data-app="net"><span>🌐</span>Сеть</button>
     <button class="ic" data-app="paint"><span>🎨</span>Paint</button>
-    <button class="ic" data-app="game" hidden><span>🐾</span>Друзья</button>
+    <button class="ic" data-app="game" hidden><span>🌍</span>Веб-Мир</button>
     <button class="ic" data-app="food"><span>🪱</span>Еда</button>
     <button class="ic" data-app="music"><span>🎵</span>Музыка</button>
     <button class="ic" data-app="trash"><span>🗑️</span>Корзина</button>
@@ -88,7 +99,9 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
   <div id="w-net" class="win big"><div class="tb"><span class="tt">Обозреватель</span><b class="x">×</b></div>
     <div class="body"><div class="btns" id="nav"></div><input id="addr" readonly aria-label="адрес"><div id="page"></div></div></div>
 
-  <div id="w-game" class="win big"><div class="tb"><span class="tt">Друзья Кинито</span><b class="x">×</b></div><div class="body" id="gbody"></div></div>
+  <div id="w-map" class="win big"><div class="tb"><span class="tt">Веб-Мир</span><b class="x">×</b></div><div class="body" style="padding:4px"><svg id="map" viewBox="0 0 400 240" style="width:100%;flex:1;min-height:0;touch-action:none;background:#f0d283"></svg></div></div>
+  <div id="w-build" class="win big"><div class="tb"><span class="tt">Дом Джейд</span><b class="x">×</b></div><div class="body"><div id="jmsg"></div><div id="goals"></div><div id="belt"></div></div></div>
+  <div id="w-clean" class="win big"><div class="tb"><span class="tt">Дом Сэма</span><b class="x">×</b></div><div class="body"><div id="smsg"></div><div class="btns" id="ctools"></div><div id="room"></div></div></div>
 
   <div id="w-food" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Еда для Кинито</span><b class="x">×</b></div>
     <div class="body"><div>Сытость:</div><div class="hb"><i id="hbar"></i></div><div class="btns" id="foods"></div></div></div>
@@ -96,6 +109,7 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
   <div id="w-music" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Музыкальная шкатулка</span><b class="x">×</b></div>
     <div class="body"><div>Тихая мелодия.</div><div class="btns"><button class="btn" id="mplay">▶ Играть</button></div></div></div>
 
+  <div id="egg"><svg viewBox="0 0 80 100" width="80" height="100"><g class="bot"><path d="M6 62L18 55L28 65L40 55L52 65L62 55L74 62Q78 95 40 98Q2 95 6 62Z" fill="#f3a6e8"/></g><g class="top"><path d="M6 62L18 55L28 65L40 55L52 65L62 55L74 62Q78 10 40 2Q2 10 6 62Z" fill="#f3a6e8"/><circle cx="26" cy="30" r="5" fill="#e77bd8"/><circle cx="52" cy="22" r="3.5" fill="#e77bd8"/><circle cx="56" cy="44" r="4" fill="#e77bd8"/><path id="crack" d="M40 4L34 20L44 32L36 48L42 60" stroke="#7a2a70" stroke-width="2" fill="none" style="display:none"/></g></svg></div>
   <div id="kin" aria-label="Кинито">
     <div id="bub"></div>
     <svg viewBox="0 0 200 430">
@@ -134,6 +148,7 @@ const later=(f,ms)=>setTimeout(f,ms);
 let S={name:'',age:'',answers:{},asked:[],drawn:[],hunger:70,game:0,last:Date.now()};
 try{const r=localStorage.getItem('kinito3');if(r)S={...S,...JSON.parse(r)}}catch(e){}
 const save=()=>{try{S.last=Date.now();localStorage.setItem('kinito3',JSON.stringify(S))}catch(e){}};
+const onb=()=>S.name&&S.age&&S.answers.color;
 const kin=$('#kin'),KW=49,KH=105;
 let cur=null,curWin=null,hideT,drag=false,act=null,wt,typT,dx=0,dy=0;
 
@@ -179,7 +194,7 @@ setInterval(()=>{if(act)return;['l1','l2'].forEach(id=>$('#'+id).setAttribute('h
 function say(t,after){
   clearTimeout(hideT);const b=$('#bub');b.textContent=t;b.style.display='block';
   b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
-  hideT=later(()=>{if(!cur&&!curWin)b.style.display='none'},Math.max(5000,t.length*90));
+  hideT=later(()=>{if(!cur)b.style.display='none'},Math.max(5000,t.length*90));
   if(after)later(after,Math.max(2400,t.length*70));
 }
 function sayAll(a,end){say(a[0],a.length>1?()=>sayAll(a.slice(1),end):end)}
@@ -187,6 +202,7 @@ function sayAll(a,end){say(a[0],a.length>1?()=>sayAll(a.slice(1),end):end)}
 /* ---------- окна ---------- */
 const winClose={};
 function openWin(id,title){
+  if(id!=='w-build')stopBelt();
   $$('.win').forEach(w=>w.style.display='none');
   $('#'+id).style.display='flex';curWin=id;
   const t=$('#tbtn');t.style.visibility='visible';t.textContent=title||$('#'+id+' .tt').textContent;
@@ -202,6 +218,7 @@ const SKIP=['Не хочешь отвечать? Ладно... Я подожду
 const DR=['Красиво... Я запомню это.','Это ты? Или это я?','Спасибо. Я буду смотреть на это, когда тебя нет.','Интересно. Очень интересно.','Я повешу это у себя в голове.','Хм. Я представлял это иначе.'];
 const QN={id:'name',t:'text',q:'Как тебя зовут?',b:'Чтобы что-то рассказать мне, просто введи это в поле и нажми ОК!',h:'Введи имя или то, как тебя называть, и нажми ОК.',set:a=>S.name=a,re:()=>'Приятно познакомиться. Я запомню.'};
 const QA={id:'age',t:'text',q:'Сколько тебе лет?',b:'Не стесняйся. Я никому не скажу.',h:'Введи возраст и нажми ОК.',set:a=>S.age=a,re:a=>a+'... хороший возраст. Мы подружимся.'};
+const QC={id:'color',t:'text',q:'Какой твой любимый цвет?',b:'Это важно. Я запомню.',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Хороший цвет. Он тебе пойдёт.'};
 const Q=[
  {id:'season',t:'pick',q:'Какое твоё любимое время года?',b:'Выбери картинку!',o:[{t:'Зима',i:'❄️⛄',c:'#cfe8ff'},{t:'Лето',i:'☀️🏖️',c:'#ffe97a'},{t:'Осень',i:'🍂🍁',c:'#f6b56b'}],re:a=>({'Зима':'Зима тихая. Мне нравится тишина.','Лето':'Лето яркое. Но летом ты приходишь реже.','Осень':'Осень... листья шуршат. Я слышу.'})[a]},
  {id:'animal',t:'pick',q:'Какое животное тебе нравится больше всех?',b:'Выбери картинку!',o:[{t:'Кот',i:'🐱',c:'#ffd9b0'},{t:'Собака',i:'🐶',c:'#e6d2b5'},{t:'Рыбка',i:'🐟',c:'#b9e3ff'}],re:a=>a==='Рыбка'?'Рыбки плавают, как и я. Почти.':'Хороший выбор. Я тоже кого-то себе выбрал.'},
@@ -209,7 +226,6 @@ const Q=[
  {id:'feel',t:'choice',q:'Как ты себя чувствуешь сегодня?',o:['Отлично','Нормально','Плохо'],re:a=>({'Отлично':'Как я рад! Оставайся таким.','Нормально':'Нормально — это тоже хорошо.','Плохо':'Мне жаль. Побудь со мной, станет лучше.'})[a]},
  {id:'fear',t:'text',q:'Чего ты боишься больше всего?',h:'Напиши свой страх и нажми ОК.',re:a=>'«'+a+'»... Я никому не скажу. Наверное.'},
  {id:'dream',t:'text',q:'О чём ты мечтаешь?',h:'Расскажи мне мечту и нажми ОК.',re:()=>'Хорошая мечта. Я помогу её не забыть.'},
- {id:'color',t:'text',q:'Какой твой любимый цвет?',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Мой розовый лучше, но ладно.'},
  {id:'pet',t:'text',q:'Как зовут твоего питомца?',h:'Если питомца нет, придумай имя.',re:a=>a+'? Красивое. Мне было бы приятно с ним познакомиться.'},
  {id:'hobby',t:'text',q:'Чем ты любишь заниматься?',h:'Напиши и нажми ОК.',re:()=>'Звучит интересно. Я тоже люблю смотреть, чем ты занят.'},
  {id:'angry',t:'text',q:'Что тебя злит сильнее всего?',h:'Напиши и нажми ОК.',re:a=>'«'+a+'»... Понимаю. Мне тоже это не нравится.'},
@@ -244,6 +260,7 @@ function callback(){
 function next(){
   if(!S.name)return ask(QN);
   if(!S.age)return ask(QA);
+  if(!S.answers.color)return ask(QC);
   let pool=Q.filter(q=>!S.asked.includes(q.id));
   if(!pool.length){S.asked=[];pool=Q.slice()}
   const q=rnd(pool),cb=callback();
@@ -254,7 +271,7 @@ function answer(q,a){
   cur=null;closeWin(true);
   S.answers[q.id]=a;if(!S.asked.includes(q.id))S.asked.push(q.id);
   if(q.set)q.set(a);save();
-  say(q.re(a),()=>{if(q===QN)later(next,500);else checkUnlock()});
+  say(q.re(a),()=>{if(q===QN||q===QA)later(next,500);else checkUnlock()});
 }
 function openAnswer(q){
   const b=$('#ansbody');b.innerHTML='';$('#atitle').textContent=q.q;
@@ -275,15 +292,15 @@ function openAnswer(q){
     q.o.forEach(o=>{const c=document.createElement('button');c.className='btn';c.textContent=o;c.onclick=()=>answer(q,o);d.appendChild(c)});
     b.appendChild(d);
   }
-  openWin('w-ans');later(()=>{perch('w-ans');const i=$('#ansbody input');if(i)i.focus()},40);
+  openWin('w-ans');later(()=>{const i=$('#ansbody input');if(i)i.focus()},40);
 }
 winClose['w-ans']=()=>{if(cur){cur=null;say(rnd(SKIP))}};
 
 /* ---------- игра с друзьями открывается после 3 ответов ---------- */
 function showGame(){$('[data-app=game]').hidden=false}
 function checkUnlock(){
-  if(!S.game&&S.asked.length>=3){S.game=1;save();showGame();
-    sayAll(['Кстати... у меня есть друзья.','Они потерялись. Поможешь им?','Иконка «Друзья» появилась на рабочем столе.'])}
+  if(!S.game&&S.asked.length>=5){S.game=1;save();showGame();
+    sayAll(['Кстати... у меня есть друзья: Сэм и Джейд.','Они живут в Веб-Мире. Заходи к ним в гости.','Иконка «Веб-Мир» появилась на рабочем столе.'])}
 }
 
 /* ---------- Paint ---------- */
@@ -296,7 +313,7 @@ const bc=document.createElement('button');bc.className='btn';bc.textContent='О�
 const bd=document.createElement('button');bd.className='btn';bd.textContent='Готово';$('#pal').appendChild(bd);
 function wipe(){cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);strokes=0}
 function openPaint(q){
-  pq=q;openWin('w-paint','Paint');corner();
+  pq=q;openWin('w-paint','Paint');setAct(rnd(['read','sleep']));
   $('#ptitle').textContent='Paint — '+(q?q.q:'Рисунок');
   cv=$('#cv');const p=cv.parentNode;cv.width=p.clientWidth;cv.height=p.clientHeight;
   cx=cv.getContext('2d');cx.lineCap='round';cx.lineJoin='round';wipe();
@@ -304,21 +321,21 @@ function openPaint(q){
   pT=later(()=>{if(curWin==='w-paint'){longSaid=true;say('Ох, не думал, что ты так долго рисуешь.')}},50000);
 }
 const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
-$('#cv').addEventListener('pointerdown',e=>{drawing=true;cv.setPointerCapture(e.pointerId);const[x,y]=pos(e);cx.strokeStyle=color;cx.lineWidth=size;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+.1,y+.1);cx.stroke();strokes++;typing()});
-$('#cv').addEventListener('pointermove',e=>{if(!drawing)return;const[x,y]=pos(e);cx.lineTo(x,y);cx.stroke();typing()});
+$('#cv').addEventListener('pointerdown',e=>{drawing=true;cv.setPointerCapture(e.pointerId);const[x,y]=pos(e);cx.strokeStyle=color;cx.lineWidth=size;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+.1,y+.1);cx.stroke();strokes++});
+$('#cv').addEventListener('pointermove',e=>{if(!drawing)return;const[x,y]=pos(e);cx.lineTo(x,y);cx.stroke()});
 ['pointerup','pointercancel'].forEach(t=>$('#cv').addEventListener(t,()=>drawing=false));
 bd.onclick=()=>{
-  const q=pq,secs=(Date.now()-pStart)/1000;clearTimeout(pT);closeWin(true);cur=null;pq=null;
+  const q=pq,secs=(Date.now()-pStart)/1000;clearTimeout(pT);setAct(null);closeWin(true);cur=null;pq=null;
   if(q){S.drawn.push(q.q.replace(/[.]$/,''));S.drawn=S.drawn.slice(-5);if(!S.asked.includes(q.id))S.asked.push(q.id);save()}
   say(strokes===0?'Ты ничего не нарисовал. Пустота — тоже ответ.':secs<6?'Так быстро? Ты даже не старался.':longSaid?'Наконец-то. Оно того стоило... наверное.':rnd(DR),q?checkUnlock:null);
 };
-winClose['w-paint']=()=>{clearTimeout(pT);if(pq){cur=null;pq=null;say('Не хочешь рисовать? Ладно... Но я запомню.')}};
+winClose['w-paint']=()=>{clearTimeout(pT);setAct(null);if(pq){cur=null;pq=null;say('Не хочешь рисовать? Ладно... Но я запомню.')}};
 
 /* ---------- Сеть ---------- */
 const SITES={
  'kinito.pet':['Кинито Пет','Добро пожаловать! Кинито — маленький помощник. Он задаёт вопросы, запоминает ответы и никогда ничего не забывает.'],
  'kinipedia.org':['Кинипедия','Кинито: аксолотль в очках. Любит червячков, тихие мелодии и когда с ним разговаривают. Ноги — его гордость.'],
- 'friends.net':['Друзья Кинито','Друзья Кинито потерялись. Им нужны еда, сон и игры. Кто-то должен им помочь.'],
+ 'friends.net':['Веб-Мир','Сэм и Джейд живут в Веб-Мире. Джейд собирает игрушки, а у Сэма дома вечный беспорядок.'],
  'petclub.old':['Клуб питомцев','Тамагочи, цифровые рыбки и другие виртуальные питомцы: их кормили, укладывали спать и не бросали. Обычно.'],
  'guestbook.web':['Гостевая книга','«Кинито милый!» — Аноним. «Почему он смотрит на меня, когда я закрываю глаза?» — Аноним.']
 };
@@ -326,40 +343,93 @@ Object.keys(SITES).forEach(u=>{const b=document.createElement('button');b.classN
 function site(u){
   $('#addr').value='http://www.'+u;const p=$('#page');p.innerHTML='';
   const h=document.createElement('h3');h.textContent=SITES[u][0];const t=document.createElement('div');t.textContent=SITES[u][1];p.append(h,t);
-  if(u==='friends.net'&&S.game){const g=document.createElement('button');g.className='btn';g.textContent='Помочь друзьям';g.style.marginTop='8px';g.onclick=()=>openGame();p.appendChild(g)}
+  if(u==='friends.net'&&S.game){const g=document.createElement('button');g.className='btn';g.textContent='Открыть Веб-Мир';g.style.marginTop='8px';g.onclick=()=>openMap();p.appendChild(g)}
 }
 
-/* ---------- Друзья ---------- */
-const EY=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="4.5" ry="6" fill="#fff" stroke="#222" stroke-width="1"/><circle cx="'+x+'" cy="'+(y+1)+'" r="2" fill="#111"/>';
-const LEG=(c)=>'<path d="M26 52V76M34 52V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="'+c+'"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="'+c+'"/>';
-const FR=[
- ['Бубу','#3fdc3a','<path d="M26 52V76M34 52V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#3fdc3a"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#3fdc3a"/><circle cx="30" cy="24" r="20" fill="#3fdc3a"/><path d="M10 38h40l-2 16h-4l-1-12-2 12h-4l-1-12-2 12h-4l-1-12-2 12h-4l-1-12-2 12h-4z" fill="#2fb32a"/>'+EY(22,22)+EY(38,22)+'<path d="M24 32q6 4 12 0" stroke="#111" fill="none" stroke-width="2"/>'],
- ['Огонёк','#f28a1e','<path d="M26 56V76M34 56V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#f28a1e"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#f28a1e"/><rect x="14" y="14" width="32" height="44" rx="8" fill="#f28a1e"/><path d="M14 18L17 2L24 13L30 0L36 13L43 2L46 18Z" fill="#f28a1e"/>'+EY(22,28)+EY(38,28)+'<path d="M22 40q8 6 16 0" stroke="#111" fill="none" stroke-width="2.5"/>'],
- ['Пип','#7ec8ff','<path d="M30 6V-2" stroke="#7ec8ff" stroke-width="3"/><circle cx="30" cy="-3" r="3.5" fill="#ff7a7a"/><path d="M26 54V76M34 54V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#7ec8ff"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#7ec8ff"/><ellipse cx="30" cy="30" rx="22" ry="24" fill="#7ec8ff"/>'+EY(22,26)+EY(38,26)+'<path d="M24 38q6 4 12 0" stroke="#111" fill="none" stroke-width="2"/>']
-];
-const NEED=[['🍎','голодный'],['💤','хочет спать'],['🎈','скучно']];
-const fsvg=(c,i)=>'<svg viewBox="0 -8 60 96" width="44" height="66" overflow="visible">'+FR[i][2]+'</svg>';
-let gNeed=[],gDone=[],gTool=0;
-function openGame(){
-  openWin('w-game');corner();
-  gNeed=[0,1,2].sort(()=>Math.random()-.5);gDone=[0,0,0];gTool=0;gDraw();
-  say('Мои друзья! Узнай, что им нужно, и помоги.');
+/* ---------- Веб-Мир ---------- */
+const CN={'красн':'#e03030','син':'#2d5be3','зел':'#2fa84a','жёлт':'#f2d21b','желт':'#f2d21b','оранж':'#f28a1e','розов':'#ff7ab8','фиолет':'#8a3fd6','голуб':'#5ac8f5','чёрн':'#222','черн':'#222','бел':'#f4f4f4','сер':'#888','коричн':'#8a5a2b','бирюз':'#20c5b5','сирен':'#c08ae0'};
+function hcol(){const t=(S.answers.color||'').toLowerCase();for(const k in CN)if(t.includes(k))return CN[k];let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return 'hsl('+h+',70%,55%)'}
+let hx=200,hy=190,mapT;
+function buildMap(){
+  let r=7;const rn=()=>(r=(r*9301+49297)%233280)/233280;
+  const Z=[[200,128,40],[71,118,36],[335,62,36],[200,200,26]];let t='';
+  for(let i=0;i<80;i++){
+    const x=rn()*400,y=rn()*240,k=rn();
+    if(Z.some(z=>Math.hypot(x-z[0],y-z[1])<z[2]))continue;
+    t+=k<.45?'<circle cx="'+x+'" cy="'+y+'" r="11" fill="#34479c"/><circle cx="'+(x-3)+'" cy="'+(y-3)+'" r="6" fill="#4c62c4"/>':k<.8?'<path d="M'+x+' '+(y-14)+'l7 18h-14z" fill="#2f6d34"/>':'<ellipse cx="'+x+'" cy="'+y+'" rx="10" ry="6" fill="#9c9c9c"/>';
+  }
+  const c=hcol();
+  $('#map').innerHTML='<rect width="400" height="240" fill="#f0d283"/>'+t+
+   '<ellipse cx="200" cy="130" rx="30" ry="13" fill="#7fb6e6" stroke="#8a8a8a" stroke-width="4"/><rect x="196" y="106" width="8" height="24" fill="#8a8a8a"/>'+
+   '<g id="h1" style="cursor:pointer"><rect x="45" y="100" width="52" height="34" fill="#e2c48a"/><path d="M38 102L71 76L104 102Z" fill="#8a3b2a"/><rect x="63" y="112" width="16" height="22" rx="8" fill="#3a2a20"/><text x="71" y="146" font-size="10" text-anchor="middle" fill="#3a2a20">Дом Сэма</text></g>'+
+   '<g id="h2" style="cursor:pointer"><rect x="310" y="45" width="50" height="32" fill="#e2c48a"/><path d="M302 47Q335 10 368 47Z" fill="#8a5ad6"/><rect x="327" y="56" width="16" height="21" rx="8" fill="#3a2a20"/><text x="335" y="90" font-size="10" text-anchor="middle" fill="#3a2a20">Дом Джейд</text></g>'+
+   '<g id="hum" style="transform:translate(200px,190px);transition:transform 1s linear"><ellipse cx="0" cy="2" rx="7" ry="2.5" fill="rgba(0,0,0,.25)"/><rect x="-5" y="-14" width="10" height="13" rx="4" fill="'+c+'" stroke="#222"/><circle cx="0" cy="-19" r="6" fill="'+c+'" stroke="#222"/><circle cx="-2" cy="-20" r="1" fill="#111"/><circle cx="2" cy="-20" r="1" fill="#111"/></g>';
+  hx=200;hy=190;
 }
-function gDraw(){
-  const b=$('#gbody');b.innerHTML='<div>Выбери подарок внизу, потом нажми на друга.</div>';
-  const row=document.createElement('div');row.className='fr';
-  FR.forEach((f,i)=>{
-    const d=document.createElement('button');d.className='fc';
-    d.innerHTML='<span class="nd">'+(gDone[i]?'спасибо!':NEED[gNeed[i]][1])+'</span>'+fsvg(f[1],i)+f[0];
-    d.onclick=()=>{
-      if(gDone[i])return;
-      if(gTool===gNeed[i]){gDone[i]=1;gDraw();if(gDone.every(Boolean))sayAll(['Все мои друзья счастливы!','Спасибо. Ты хороший помощник.'])}
-      else{d.classList.add('sh');later(()=>d.classList.remove('sh'),400)}
-    };row.appendChild(d)});
-  const tl=document.createElement('div');tl.className='btns';
-  NEED.forEach((n,j)=>{const t=document.createElement('button');t.className='btn'+(gTool===j?' on':'');t.textContent=n[0];t.style.fontSize='20px';t.onclick=()=>{gTool=j;gDraw()};tl.appendChild(t)});
-  b.append(row,tl);
-  if(gDone.every(Boolean)){const a=document.createElement('button');a.className='btn';a.textContent='Ещё раз';a.onclick=openGame;b.appendChild(a)}
+function goto(x,y,cb){
+  const d=Math.hypot(x-hx,y-hy),ms=d*14,h=$('#hum');
+  h.style.transition='transform '+ms+'ms linear';h.style.transform='translate('+x+'px,'+y+'px)';
+  hx=x;hy=y;clearTimeout(mapT);mapT=later(()=>{if(cb)cb()},ms+60);
+}
+$('#map').addEventListener('pointerdown',e=>{
+  const m=$('#map'),pt=m.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const q=pt.matrixTransform(m.getScreenCTM().inverse()),h=e.target.closest('#h1,#h2');
+  if(h){const sam=h.id==='h1';goto(sam?71:335,sam?140:84,sam?openClean:openBuild)}
+  else goto(Math.max(10,Math.min(390,q.x)),Math.max(30,Math.min(232,q.y)));
+});
+function openMap(){buildMap();openWin('w-map')}
+const back=()=>openWin('w-map');
+winClose['w-build']=()=>{stopBelt();back()};
+winClose['w-clean']=back;
+
+/* Дом Джейд: собираем машину, велосипед и домик с ленты */
+const PARTS={body:['Кузов','#d64545'],wheel:['Колесо','#444'],frame:['Рама','#3b7dd8'],bar:['Руль','#777'],walls:['Стены','#b8925a'],roof:['Крыша','#a04a3a'],door:['Дверь','#6b4a2a']};
+const GOALS=[['🚗 Машина',['body','wheel','wheel']],['🚲 Велосипед',['frame','wheel','wheel','bar']],['🏠 Домик',['walls','roof','door']]];
+let bT,have={};
+function stopBelt(){clearInterval(bT)}
+function need(){const h={...have};return GOALS.map(g=>g[1].map(p=>h[p]>0?(h[p]--,1):0))}
+const wanted=p=>{const o=need();return GOALS.some((g,i)=>g[1].some((q,j)=>q===p&&!o[i][j]))};
+function bRender(){
+  const o=need();
+  $('#goals').innerHTML=GOALS.map((g,i)=>'<div><b>'+g[0]+':</b> '+g[1].map((p,j)=>'<span class="chip'+(o[i][j]?' ok':'')+'">'+PARTS[p][0]+'</span>').join('')+'</div>').join('');
+  if(o.every(a=>a.every(Boolean))){stopBelt();$('#belt').innerHTML='';$('#jmsg').textContent='Джейд: Ура! Всё собрано, спасибо тебе!'}
+}
+function spawn(){
+  const rem=Object.keys(PARTS).filter(wanted);if(!rem.length)return;
+  const p=Math.random()<.65?rnd(rem):rnd(Object.keys(PARTS));
+  const b=document.createElement('button');b.className='part';b.textContent=PARTS[p][0];b.style.background=PARTS[p][1];
+  b.onclick=()=>{if(wanted(p)){have[p]=(have[p]||0)+1;b.remove();bRender()}else{b.style.outline='2px solid red';later(()=>b.style.outline='',300)}};
+  b.addEventListener('animationend',()=>b.remove());
+  $('#belt').appendChild(b);
+}
+function openBuild(){
+  openWin('w-build');have={};stopBelt();$('#belt').innerHTML='';
+  $('#jmsg').textContent='Джейд: Помоги мне собрать игрушки! Нажимай на нужные детали на ленте.';
+  bRender();spawn();bT=setInterval(spawn,1500);
+}
+
+/* Дом Сэма: уборка */
+const TOOLS=[['broom','🧹 Метёлка','web'],['mop','🧽 Швабра','dirt'],['bag','🧺 Мешок','trash']];
+let cTool='broom',cLeft=0;
+function tools(){
+  const c=$('#ctools');c.innerHTML='';
+  TOOLS.forEach(t=>{const b=document.createElement('button');b.className='btn'+(cTool===t[0]?' on':'');b.textContent=t[1];b.onclick=()=>{cTool=t[0];tools()};c.appendChild(b)});
+}
+function openClean(){
+  openWin('w-clean');const r=$('#room');r.innerHTML='';cTool='broom';tools();
+  $('#smsg').textContent='Сэм: У меня жуткий беспорядок! Выбери инструмент и убери всё.';
+  const kinds=['web','web','web','dirt','dirt','dirt','trash','trash','trash'];cLeft=kinds.length;
+  kinds.forEach(k=>{
+    const b=document.createElement('button');b.className='it '+k;
+    b.textContent=k==='web'?'🕸️':k==='trash'?rnd(['🍌','🥫','📰']):'';
+    b.style.left=(6+Math.random()*80)+'%';b.style.top=(8+Math.random()*70)+'%';
+    b.onclick=()=>{
+      if(TOOLS.find(t=>t[0]===cTool)[2]!==k){b.style.outline='2px solid red';later(()=>b.style.outline='',300);return}
+      b.remove();cLeft--;
+      if(!cLeft)$('#smsg').textContent='Сэм: Вот это чистота! Спасибо тебе!';
+    };
+    r.appendChild(b);
+  });
 }
 
 /* ---------- Еда и музыка ---------- */
@@ -381,10 +451,9 @@ winClose['w-music']=()=>{if(mt){clearInterval(mt);mt=null;$('#mplay').textConten
 /* ---------- иконки ---------- */
 $$('.ic').forEach(b=>b.onclick=()=>{
   const a=b.dataset.app;
-  if(a==='kin'){if(cur)ask(cur);else next()}
-  else if(a==='paint'){if(!cur||cur.t!=='draw'){cur=null;openPaint(null);say('Нарисуй что хочешь. Я посмотрю.')}}
-  else if(a==='net'){openWin('w-net');corner();site('kinito.pet');say(rnd(['Интернет... Здесь много всего.','Только не уходи там надолго.']))}
-  else if(a==='game')openGame();
+  if(a==='paint'){if(!cur||cur.t!=='draw'){cur=null;openPaint(null)}}
+  else if(a==='net'){openWin('w-net');site('kinito.pet');say(rnd(['Интернет... Здесь много всего.','Только не уходи там надолго.']))}
+  else if(a==='game')openMap();
   else if(a==='food'){openWin('w-food');upd()}
   else if(a==='music')openWin('w-music');
   else if(a==='trash'){if(confirm('Удалить Кинито и все ответы?')){try{localStorage.removeItem('kinito3')}catch(e){}location.reload()}}
@@ -394,24 +463,42 @@ $('#start').onclick=()=>say('Выключить меня нельзя.');
 /* ---------- жизнь ---------- */
 const IDLE=['Ты здесь? Я чувствую.','Мне нравится, когда ты рядом.','Не уходи надолго.','Здесь так тихо, когда тебя нет.','Я смотрю на тебя. Не бойся.','Знаешь, аксолотли умеют отращивать лапки. Я вот ноги.','Мои ноги длинные, потому что я так хочу.','Ты моргаешь редко. Я тоже.','Хочешь, расскажу секрет? Нет. Пока нет.','Я люблю, когда шумит клавиатура.'];
 setInterval(()=>{
-  if(cur||curWin||!S.age)return;
+  if(cur||curWin||!onb())return;
   S.hunger=Math.max(0,S.hunger-3);save();upd();
   const r=Math.random();
   if(S.hunger<25&&r<.5)say('Я голодный. Открой «Еду».');
   else if(r<.3)next();
   else if(r<.55)say(rnd(IDLE));
 },35000);
-setInterval(()=>{if(cur||curWin||drag||act||!S.age||Math.random()<.35)return;walk(gx(80+Math.random()*(W()-200)),gy(80+Math.random()*(H()-200)),3000)},8000);
+setInterval(()=>{
+  if(cur||drag||act||!onb()||Math.random()<.25)return;
+  const x=gx(80+Math.random()*(W()-160)),y=gy(80+Math.random()*(H()-160));
+  const r=kin.getBoundingClientRect(),d=Math.hypot(x-r.left,y-r.top);
+  if(d<100)return;walk(x,y,d*16+1500);
+},7000);
 const clk=()=>{$('#clock').textContent=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})};
 clk();setInterval(clk,10000);
 $('#fs').onclick=async()=>{try{await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}catch(e){}};
 
 /* ---------- старт ---------- */
+function intro(){
+  const e=$('#egg'),r=kin.getBoundingClientRect();
+  kin.style.opacity=0;e.style.left=(r.left+KW/2-40)+'px';e.style.top=(r.top+KH-92)+'px';
+  e.style.display='block';e.classList.add('wob');
+  later(()=>{$('#crack').style.display='block'},1800);
+  later(()=>{
+    e.classList.remove('wob');e.classList.add('open');
+    kin.style.transition='opacity .6s';kin.style.opacity=1;
+    later(()=>{e.style.display='none'},3200);
+    sayAll(['Привет! Я Кинито.','Я твой маленький помощник. Давай знакомиться.'],next);
+  },3000);
+}
 upd();if(S.game)showGame();
 place(W()/2-KW/2,gy(H()*.35));
 later(()=>{
   $('#boot').style.opacity=0;later(()=>$('#boot').remove(),700);
-  if(!S.name||!S.age){later(next,500)}
+  if(!S.name)later(intro,600);
+  else if(!onb())later(next,500);
   else{
     const mins=(Date.now()-S.last)/60000;
     S.hunger=Math.max(0,S.hunger-Math.min(mins*.1,50));upd();
@@ -422,3 +509,4 @@ later(()=>{
 </script>
 </body>
 </html>
+
