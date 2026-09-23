@@ -7,47 +7,58 @@
 <style>
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:Tahoma,"Trebuchet MS",sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
-:root{--kw:calc((100vh - 44px)*.465)}
-#pc{position:fixed;inset:0;overflow:hidden;
-background:
+#pc{position:fixed;inset:0;overflow:hidden;background:
 radial-gradient(ellipse 12% 7% at 22% 20%,#fff 0 40%,transparent 70%),
 radial-gradient(ellipse 14% 7% at 62% 14%,#fff 0 40%,transparent 70%),
 radial-gradient(ellipse 130% 55% at 25% 108%,#56a82a 0 58%,transparent 59%),
 radial-gradient(ellipse 100% 42% at 95% 112%,#3f8a1a 0 60%,transparent 61%),
 linear-gradient(#2a6bd8,#9fd0f7 68%)}
-#icons{position:absolute;left:4px;top:6px;bottom:36px;display:flex;flex-direction:column;flex-wrap:wrap;gap:2px;align-content:flex-start}
-.ic{width:64px;text-align:center;color:#fff;font:11px Tahoma,sans-serif;text-shadow:1px 1px 2px #000;background:none;border:0;padding:3px;border-radius:3px;cursor:pointer}
-.ic span{display:block;font-size:26px;line-height:30px}
+#icons{position:absolute;left:3px;top:4px;bottom:34px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start}
+.ic{width:62px;text-align:center;color:#fff;font:11px Tahoma,sans-serif;text-shadow:1px 1px 2px #000;background:none;border:0;padding:2px;border-radius:3px;cursor:pointer}
+.ic span{display:block;font-size:22px;line-height:26px}
 .ic:active,.ic:focus-visible{background:rgba(49,106,197,.65);outline:1px dotted #fff}
-#kin{position:absolute;right:2vw;bottom:30px;height:calc(100% - 44px);width:var(--kw);cursor:pointer;transform-origin:50% 100%;animation:sway 5s ease-in-out infinite}
-#kin svg{width:100%;height:100%;display:block;overflow:visible}
-@keyframes sway{50%{transform:rotate(1.8deg)}}
-@media (prefers-reduced-motion:reduce){#kin{animation:none}}
-#bub{display:none;position:absolute;left:78px;right:calc(var(--kw) + 4vw);top:8px;background:#ffffe1;color:#111;border:1px solid #000;border-radius:8px;padding:6px 10px;font-size:14px;line-height:1.3;z-index:5}
-#bub::after{content:'';position:absolute;right:-9px;top:18px;border:8px solid transparent;border-left:9px solid #000;border-right:0}
-.win{display:none;flex-direction:column;position:absolute;left:78px;width:min(480px,calc(100% - 78px - var(--kw) - 4vw - 8px));top:78px;max-height:calc(100% - 114px);background:#ece9d8;border:2px solid #0a3fbf;border-radius:8px 8px 0 0;box-shadow:3px 3px 10px rgba(0,0,0,.5);color:#000;z-index:4}
-#w-paint{bottom:36px}
-.tb{background:linear-gradient(#3b83ef,#0b4fd3);color:#fff;font-weight:700;font-size:13px;padding:3px 5px 3px 8px;display:flex;justify-content:space-between;align-items:center;border-radius:6px 6px 0 0;gap:6px}
+#kin{position:absolute;left:50%;top:40%;width:49px;height:105px;z-index:8;cursor:grab;touch-action:none}
+#kin>svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 100%;animation:sway 5s ease-in-out infinite}
+#kin.walk>svg{animation:step .45s linear infinite}
+#board{display:none}#kin.walk #board{display:block}
+@keyframes sway{50%{transform:rotate(2deg)}}
+@keyframes step{50%{transform:translateY(-3px) rotate(-4deg)}}
+@media (prefers-reduced-motion:reduce){#kin>svg,#kin.walk>svg{animation:none}}
+#bub{display:none;position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(230px,44vw);background:#fff5cf;color:#111;border:2px solid #222;border-radius:10px;padding:6px 9px;font:italic 11px/1.35 "Courier New",monospace;text-align:left;transform-origin:50% 100%;pointer-events:none}
+#bub::after{content:'';position:absolute;left:50%;bottom:-11px;margin-left:-8px;border:8px solid transparent;border-top:10px solid #222;border-bottom:0}
+#bub.pop{animation:pop .22s ease-out}
+@keyframes pop{from{transform:translateX(-50%) scale(.4);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.win{display:none;flex-direction:column;position:absolute;background:#f4f3ee;border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.35);color:#000;z-index:4;font-size:12px}
+#w-ans{left:50%;transform:translateX(-50%);bottom:34px;width:min(400px,88vw)}
+.big{left:70px;top:6px;bottom:34px;width:min(520px,calc(100% - 160px))}
+.tb{background:linear-gradient(90deg,#7b7b48,#a9a96b);color:#fff;font-weight:700;padding:2px 3px 2px 6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{background:#d9442b;border:1px solid #fff;border-radius:3px;width:20px;height:20px;text-align:center;cursor:pointer;line-height:17px;flex:none}
-.body{padding:8px;display:flex;flex-direction:column;gap:6px;font-size:13px}
-.btn{font:13px Tahoma,sans-serif;padding:6px 10px;border:1px solid #003c74;border-radius:3px;background:linear-gradient(#fff,#ddd8c4);cursor:pointer;color:#000}
-.btn:active{background:#cfc9b0}
+.x{background:#d4d0c8;color:#000;border:2px outset #fff;width:18px;height:16px;text-align:center;cursor:pointer;line-height:12px;flex:none}
+.body{padding:8px;display:flex;flex-direction:column;gap:6px;overflow:auto;flex:1;min-height:0}
+.btn{font:12px Tahoma,sans-serif;padding:5px 12px;border:2px outset #fff;background:#d4d0c8;cursor:pointer;color:#000}
+.btn:active,.on{border-style:inset}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
-input{font:15px Tahoma,sans-serif;padding:7px;border:2px inset #999;background:#fff;color:#000;width:100%}
-.row{display:flex;gap:6px}
+input{font:14px Tahoma,sans-serif;padding:5px;border:2px inset #999;background:#fff;color:#000;width:100%}
+fieldset{border:1px solid #bbb;margin:0;padding:6px}
+.card{width:88px;height:72px;border:2px outset #fff;background:var(--c,#d4d0c8);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:12px Tahoma;color:#000;gap:2px}
+.card i{font-style:normal;font-size:28px}.card:active{border-style:inset}
 .pal{display:flex;gap:4px;flex-wrap:wrap;padding:4px 6px;align-items:center}
-.sw{width:22px;height:22px;border:2px solid #fff;outline:1px solid #555;padding:0;cursor:pointer}
-.sw.on{outline:2px solid #e00}
+.sw{width:22px;height:22px;border:2px solid #fff;outline:1px solid #555;padding:0;cursor:pointer}.sw.on{outline:2px solid #e00}
 .cw{flex:1;min-height:0;background:#fff;border:2px inset #888;margin:0 6px 6px}
 #cv{width:100%;height:100%;display:block;touch-action:none}
 .hb{height:12px;border:1px solid #555;background:#fff}.hb i{display:block;height:100%;background:#3a3;width:50%}
-#task{position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(#3168d5,#245edb 20%,#1941a5);display:flex;align-items:center;z-index:6}
+.fr{display:flex;gap:6px;justify-content:space-around;flex-wrap:wrap}
+.fc{border:2px outset #fff;background:#e9e7dc;padding:2px;display:flex;flex-direction:column;align-items:center;font:11px Tahoma;cursor:pointer;width:80px;color:#000}
+.fc .nd{background:#fff5cf;border:1px solid #222;border-radius:6px;padding:1px 4px;font:10px "Courier New",monospace;min-height:14px;text-align:center}
+.sh{animation:sh .35s}@keyframes sh{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#page{background:#fff;border:2px inset #999;padding:8px;font-size:13px;line-height:1.4}
+#page h3{margin:0 0 6px;color:#00c}
+#task{position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(#3168d5,#245edb 20%,#1941a5);display:flex;align-items:center;z-index:7}
 #start{height:100%;padding:0 18px 0 10px;border:0;border-radius:0 12px 12px 0;background:linear-gradient(#5cb85c,#2f8a2f);color:#fff;font:italic 700 17px Tahoma,sans-serif;text-shadow:1px 1px 2px #000;cursor:pointer}
 #tbtn{margin-left:8px;min-width:120px;max-width:200px;height:22px;background:#1e52b7;border:1px solid #0a2d7a;border-radius:3px;color:#fff;font-size:12px;padding:3px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;visibility:hidden}
 #tray{margin-left:auto;height:100%;background:linear-gradient(#0f8ce6,#0b6fc0);border-left:1px solid #0a4c8f;color:#fff;font-size:12px;padding:0 10px;display:flex;align-items:center;gap:10px}
 #boot{position:fixed;inset:0;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:20;transition:opacity .6s}
-#boot b{font-size:26px;letter-spacing:1px}
+#boot b{font-size:26px}
 #boot .pb{width:180px;height:12px;border:2px solid #aaa;border-radius:4px;padding:1px;overflow:hidden}
 #boot .pb i{display:block;height:100%;width:40%;background:#3a7cf0;animation:ld 1.1s linear infinite}
 @keyframes ld{from{margin-left:-40%}to{margin-left:100%}}
@@ -61,59 +72,58 @@ input{font:15px Tahoma,sans-serif;padding:7px;border:2px inset #999;background:#
 <div id="pc">
   <div id="icons">
     <button class="ic" data-app="kin"><span>👾</span>Кинито</button>
+    <button class="ic" data-app="net"><span>🌐</span>Сеть</button>
     <button class="ic" data-app="paint"><span>🎨</span>Paint</button>
+    <button class="ic" data-app="game" hidden><span>🐾</span>Друзья</button>
     <button class="ic" data-app="food"><span>🪱</span>Еда</button>
     <button class="ic" data-app="music"><span>🎵</span>Музыка</button>
     <button class="ic" data-app="trash"><span>🗑️</span>Корзина</button>
   </div>
 
-  <div id="bub"></div>
+  <div id="w-ans" class="win"><div class="tb"><span class="tt" id="atitle">Вопрос</span><b class="x">×</b></div><div class="body" id="ansbody"></div></div>
 
-  <div id="w-ans" class="win"><div class="tb"><span class="tt">Кинито спрашивает</span><b class="x">×</b></div><div class="body" id="ansbody"></div></div>
+  <div id="w-paint" class="win big"><div class="tb"><span class="tt" id="ptitle">Paint</span><b class="x">×</b></div>
+    <div class="pal" id="pal"></div><div class="cw"><canvas id="cv"></canvas></div></div>
 
-  <div id="w-paint" class="win"><div class="tb"><span class="tt" id="ptitle">Paint</span><b class="x">×</b></div>
-    <div class="pal" id="pal"></div>
-    <div class="cw"><canvas id="cv"></canvas></div>
-  </div>
+  <div id="w-net" class="win big"><div class="tb"><span class="tt">Обозреватель</span><b class="x">×</b></div>
+    <div class="body"><div class="btns" id="nav"></div><input id="addr" readonly aria-label="адрес"><div id="page"></div></div></div>
 
-  <div id="w-food" class="win"><div class="tb"><span class="tt">Еда для Кинито</span><b class="x">×</b></div>
-    <div class="body"><div>Сытость:</div><div class="hb"><i id="hbar"></i></div>
-      <div class="btns" id="foods"></div></div></div>
+  <div id="w-game" class="win big"><div class="tb"><span class="tt">Друзья Кинито</span><b class="x">×</b></div><div class="body" id="gbody"></div></div>
 
-  <div id="w-music" class="win"><div class="tb"><span class="tt">Музыкальная шкатулка</span><b class="x">×</b></div>
-    <div class="body"><div>Тихая мелодия для Кинито.</div><div class="btns"><button class="btn" id="mplay">▶ Играть</button></div></div></div>
+  <div id="w-food" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Еда для Кинито</span><b class="x">×</b></div>
+    <div class="body"><div>Сытость:</div><div class="hb"><i id="hbar"></i></div><div class="btns" id="foods"></div></div></div>
+
+  <div id="w-music" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Музыкальная шкатулка</span><b class="x">×</b></div>
+    <div class="body"><div>Тихая мелодия.</div><div class="btns"><button class="btn" id="mplay">▶ Играть</button></div></div></div>
 
   <div id="kin" aria-label="Кинито">
-  <svg viewBox="0 0 200 430">
-    <defs>
-      <clipPath id="c1"><circle cx="70" cy="105" r="17"/></clipPath>
-      <clipPath id="c2"><circle cx="130" cy="105" r="17"/></clipPath>
-      <g id="gills">
-        <path d="M46 80 L14 22 L58 66Z" fill="#b53ad6"/>
-        <path d="M36 100 L0 62 L46 92Z" fill="#c94be0"/>
-        <path d="M34 122 L2 116 L40 110Z" fill="#b53ad6"/>
-      </g>
-    </defs>
-    <use href="#gills"/><use href="#gills" transform="translate(200 0) scale(-1 1)"/>
-    <path d="M82 165 L96 165 L99 260 L94 388 L82 388 L84 260Z" fill="#170f33"/>
-    <path d="M104 165 L118 165 L116 260 L118 388 L106 388 L101 260Z" fill="#170f33"/>
-    <path d="M50 410 L86 386 L98 390 L100 412Z" fill="#170f33"/>
-    <path d="M150 410 L114 386 L102 390 L100 412Z" fill="#170f33"/>
-    <path d="M100 46C55 46 30 80 30 118c0 34 30 56 70 56s70-22 70-56c0-38-25-72-70-72Z" fill="#e8a3f3"/>
-    <circle cx="70" cy="105" r="17" fill="#fff"/><circle cx="130" cy="105" r="17" fill="#fff"/>
-    <circle id="pl" cx="70" cy="108" r="6" fill="#111"/><circle id="pr" cx="130" cy="108" r="6" fill="#111"/>
-    <rect id="l1" x="50" y="86" width="40" height="8" fill="#e8a3f3" clip-path="url(#c1)"/>
-    <rect id="l2" x="110" y="86" width="40" height="8" fill="#e8a3f3" clip-path="url(#c2)"/>
-  </svg>
+    <div id="bub"></div>
+    <svg viewBox="0 0 200 430">
+      <defs>
+        <clipPath id="c1"><circle cx="70" cy="105" r="17"/></clipPath>
+        <clipPath id="c2"><circle cx="130" cy="105" r="17"/></clipPath>
+        <g id="gills"><path d="M46 80 L14 22 L58 66Z" fill="#b53ad6"/><path d="M36 100 L0 62 L46 92Z" fill="#c94be0"/><path d="M34 122 L2 116 L40 110Z" fill="#b53ad6"/></g>
+      </defs>
+      <use href="#gills"/><use href="#gills" transform="translate(200 0) scale(-1 1)"/>
+      <g id="board"><ellipse cx="100" cy="416" rx="98" ry="15" fill="#7be03a"/><path d="M12 414 Q100 404 188 414" stroke="#fff" stroke-width="4" fill="none"/></g>
+      <path d="M82 165 L96 165 L99 260 L94 388 L82 388 L84 260Z" fill="#170f33"/>
+      <path d="M104 165 L118 165 L116 260 L118 388 L106 388 L101 260Z" fill="#170f33"/>
+      <path d="M50 410 L86 386 L98 390 L100 412Z" fill="#170f33"/><path d="M150 410 L114 386 L102 390 L100 412Z" fill="#170f33"/>
+      <path d="M100 46C55 46 30 80 30 118c0 34 30 56 70 56s70-22 70-56c0-38-25-72-70-72Z" fill="#e8a3f3"/>
+      <circle cx="70" cy="105" r="17" fill="#fff"/><circle cx="130" cy="105" r="17" fill="#fff"/>
+      <circle id="pl" cx="70" cy="108" r="6" fill="#111"/><circle id="pr" cx="130" cy="108" r="6" fill="#111"/>
+      <rect id="l1" x="50" y="86" width="40" height="8" fill="#e8a3f3" clip-path="url(#c1)"/>
+      <rect id="l2" x="110" y="86" width="40" height="8" fill="#e8a3f3" clip-path="url(#c2)"/>
+      <g id="gl" style="display:none" fill="none" stroke="#222" stroke-width="4"><circle cx="70" cy="105" r="22"/><circle cx="130" cy="105" r="22"/><path d="M92 103h16"/></g>
+      <g id="book" style="display:none"><rect x="50" y="185" width="100" height="70" fill="#2f9a45" stroke="#0c3d1a" stroke-width="4"/><rect x="58" y="193" width="40" height="54" fill="#fff"/><rect x="102" y="193" width="40" height="54" fill="#fff"/><path d="M64 208h28M64 220h28M108 208h28M108 220h28" stroke="#888" stroke-width="3"/></g>
+      <g id="pen" style="display:none"><rect x="60" y="195" width="80" height="55" fill="#fff" stroke="#222" stroke-width="4"/><path d="M68 215h60M68 230h44" stroke="#888" stroke-width="3"/><path d="M150 170 L112 232" stroke="#2f9a45" stroke-width="9" stroke-linecap="round"/></g>
+      <g id="zz" style="display:none" font-family="Courier New" font-weight="700" fill="#fff" stroke="#000" stroke-width="2"><text x="150" y="50" font-size="46">Z</text><text x="180" y="12" font-size="34">z</text></g>
+    </svg>
   </div>
 
-  <div id="task">
-    <button id="start">пуск</button>
-    <div id="tbtn"></div>
-    <div id="tray"><span id="hun">🪱 --</span><span id="clock"></span></div>
-  </div>
+  <div id="task"><button id="start">пуск</button><div id="tbtn"></div>
+    <div id="tray"><span id="hun">🪱</span><span id="clock"></span></div></div>
 </div>
-
 <div id="boot"><b>Кинито ОС</b><div class="pb"><i></i></div><div>Загрузка...</div></div>
 <div id="rot"><div class="ph">📱</div><div>Поверни телефон горизонтально,<br>чтобы включить компьютер</div><button class="btn" id="fs">На весь экран</button></div>
 
@@ -121,21 +131,58 @@ input{font:15px Tahoma,sans-serif;padding:7px;border:2px inset #999;background:#
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const later=(f,ms)=>setTimeout(f,ms);
-let S={name:'',age:'',answers:{},asked:[],drawn:[],hunger:70,last:Date.now()};
-try{const r=localStorage.getItem('kinito2');if(r)S={...S,...JSON.parse(r)}}catch(e){}
-const save=()=>{try{S.last=Date.now();localStorage.setItem('kinito2',JSON.stringify(S))}catch(e){}};
+let S={name:'',age:'',answers:{},asked:[],drawn:[],hunger:70,game:0,last:Date.now()};
+try{const r=localStorage.getItem('kinito3');if(r)S={...S,...JSON.parse(r)}}catch(e){}
+const save=()=>{try{S.last=Date.now();localStorage.setItem('kinito3',JSON.stringify(S))}catch(e){}};
+const kin=$('#kin'),KW=49,KH=105;
+let cur=null,curWin=null,hideT,drag=false,act=null,wt,typT,dx=0,dy=0;
+
+/* ---------- Кинито: движение ---------- */
+const W=()=>innerWidth,H=()=>innerHeight;
+const gx=x=>Math.max(80,Math.min(W()-KW-60,x)),gy=y=>Math.max(80,Math.min(H()-30-KH-4,y));
+function place(x,y){kin.style.transition='none';kin.style.left=x+'px';kin.style.top=y+'px'}
+function walk(x,y,ms){
+  kin.style.transition='left '+ms+'ms ease-in-out,top '+ms+'ms ease-in-out';
+  kin.classList.add('walk');kin.style.left=x+'px';kin.style.top=y+'px';
+  clearTimeout(wt);wt=later(()=>kin.classList.remove('walk'),ms);
+}
+function perch(id){const r=$('#'+id).getBoundingClientRect();walk(gx(r.left+r.width/2-KW/2),Math.max(75,r.top-KH+6),900)}
+function corner(){walk(W()-KW-24,H()-30-KH-4,900)}
+kin.addEventListener('pointerdown',e=>{drag=true;kin.setPointerCapture(e.pointerId);const r=kin.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;kin.style.transition='none';kin.style.left=r.left+'px';kin.style.top=r.top+'px';kin.classList.remove('walk');clearTimeout(wt)});
+kin.addEventListener('pointermove',e=>{if(!drag)return;kin.style.left=Math.max(0,Math.min(W()-KW,e.clientX-dx))+'px';kin.style.top=Math.max(72,Math.min(H()-30-KH,e.clientY-dy))+'px'});
+['pointerup','pointercancel'].forEach(t=>kin.addEventListener(t,()=>drag=false));
+
+/* ---------- Кинито: действия (читает, спит, пишет) ---------- */
+function setAct(a){
+  act=a;const sl=a==='sleep';
+  ['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',sl?36:8));
+  $('#book').style.display=a==='read'?'block':'none';
+  $('#gl').style.display=a==='read'?'block':'none';
+  $('#pen').style.display=a==='write'?'block':'none';
+  $('#zz').style.display=sl?'block':'none';
+  if(a==='read'||a==='write'){['pl','pr'].forEach((id,i)=>{$('#'+id).setAttribute('cx',i?130:70);$('#'+id).setAttribute('cy',116)})}
+}
+function typing(){
+  if(!act)setAct(rnd(['read','sleep','write']));
+  clearTimeout(typT);typT=later(()=>setAct(null),2500);
+}
+function look(x,y){
+  if(act)return;
+  const r=kin.getBoundingClientRect(),px=r.left+r.width/2,py=r.top+r.height*.25;
+  const ex=x-px,ey=y-py,d=Math.hypot(ex,ey)||1,m=Math.min(6,d/20);
+  [['pl',70],['pr',130]].forEach(([id,bx])=>{$('#'+id).setAttribute('cx',bx+ex/d*m);$('#'+id).setAttribute('cy',108+ey/d*m*.6)});
+}
+addEventListener('pointermove',e=>look(e.clientX,e.clientY));
+setInterval(()=>{if(act)return;['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',36));later(()=>{if(!act)['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',8))},140)},4200);
 
 /* ---------- речь ---------- */
-let tw,hideT,cur=null,curWin=null;
 function say(t,after){
-  clearTimeout(tw);clearTimeout(hideT);
-  const b=$('#bub');b.style.display='block';b.textContent='';let i=0;
-  (function n(){
-    b.textContent=t.slice(0,++i);
-    if(i<t.length){tw=setTimeout(n,28)}
-    else{if(after)after();hideT=later(()=>{if(!curWin&&!cur)b.style.display='none'},9000)}
-  })();
+  clearTimeout(hideT);const b=$('#bub');b.textContent=t;b.style.display='block';
+  b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+  hideT=later(()=>{if(!cur&&!curWin)b.style.display='none'},Math.max(5000,t.length*90));
+  if(after)later(after,Math.max(2400,t.length*70));
 }
+function sayAll(a,end){say(a[0],a.length>1?()=>sayAll(a.slice(1),end):end)}
 
 /* ---------- окна ---------- */
 const winClose={};
@@ -145,33 +192,43 @@ function openWin(id,title){
   const t=$('#tbtn');t.style.visibility='visible';t.textContent=title||$('#'+id+' .tt').textContent;
 }
 function closeWin(silent){
-  const id=curWin;$$('.win').forEach(w=>w.style.display='none');curWin=null;
-  $('#tbtn').style.visibility='hidden';
+  const id=curWin;$$('.win').forEach(w=>w.style.display='none');curWin=null;$('#tbtn').style.visibility='hidden';
   if(!silent&&id&&winClose[id])winClose[id]();
 }
 $$('.win .x').forEach(x=>x.onclick=()=>closeWin(false));
 
 /* ---------- вопросы ---------- */
-const SKIP=['Не хочешь отвечать? Ладно... Я подожду.','Ты закрыл окно. Но я всё равно здесь.','Хорошо. Спрошу позже.'];
-const DR=['Красиво... Я запомню это.','Это ты? Или это я?','Спасибо. Я буду смотреть на это, когда тебя нет.','Интересно. Очень интересно.','Я повешу это у себя в голове.'];
-const QN={id:'name',t:'text',q:'Привет. Я Кинито. Как тебя зовут?',set:a=>S.name=a,re:a=>'Приятно познакомиться, '+a+'. Я запомню твоё имя.'};
-const QA={id:'age',t:'text',q:'Сколько тебе лет?',set:a=>S.age=a,re:a=>a+'... Отличный возраст. Мы подружимся, '+S.name+'.'};
+const SKIP=['Не хочешь отвечать? Ладно... Я подожду.','Ты закрыл окно. Но я всё равно здесь.','Хорошо. Спрошу позже.','Как скажешь. Я ничего не забываю, знаешь.'];
+const DR=['Красиво... Я запомню это.','Это ты? Или это я?','Спасибо. Я буду смотреть на это, когда тебя нет.','Интересно. Очень интересно.','Я повешу это у себя в голове.','Хм. Я представлял это иначе.'];
+const QN={id:'name',t:'text',q:'Как тебя зовут?',b:'Чтобы что-то рассказать мне, просто введи это в поле и нажми ОК!',h:'Введи имя или то, как тебя называть, и нажми ОК.',set:a=>S.name=a,re:()=>'Приятно познакомиться. Я запомню.'};
+const QA={id:'age',t:'text',q:'Сколько тебе лет?',b:'Не стесняйся. Я никому не скажу.',h:'Введи возраст и нажми ОК.',set:a=>S.age=a,re:a=>a+'... хороший возраст. Мы подружимся.'};
 const Q=[
+ {id:'season',t:'pick',q:'Какое твоё любимое время года?',b:'Выбери картинку!',o:[{t:'Зима',i:'❄️⛄',c:'#cfe8ff'},{t:'Лето',i:'☀️🏖️',c:'#ffe97a'},{t:'Осень',i:'🍂🍁',c:'#f6b56b'}],re:a=>({'Зима':'Зима тихая. Мне нравится тишина.','Лето':'Лето яркое. Но летом ты приходишь реже.','Осень':'Осень... листья шуршат. Я слышу.'})[a]},
+ {id:'animal',t:'pick',q:'Какое животное тебе нравится больше всех?',b:'Выбери картинку!',o:[{t:'Кот',i:'🐱',c:'#ffd9b0'},{t:'Собака',i:'🐶',c:'#e6d2b5'},{t:'Рыбка',i:'🐟',c:'#b9e3ff'}],re:a=>a==='Рыбка'?'Рыбки плавают, как и я. Почти.':'Хороший выбор. Я тоже кого-то себе выбрал.'},
+ {id:'food',t:'pick',q:'Что бы ты съел прямо сейчас?',b:'Выбери картинку!',o:[{t:'Пицца',i:'🍕',c:'#ffd9a0'},{t:'Яблоко',i:'🍎',c:'#ffc0c0'},{t:'Мороженое',i:'🍦',c:'#ffe4f1'}],re:a=>a+'... Я люблю червячков. Но это секрет.'},
  {id:'feel',t:'choice',q:'Как ты себя чувствуешь сегодня?',o:['Отлично','Нормально','Плохо'],re:a=>({'Отлично':'Как я рад! Оставайся таким.','Нормально':'Нормально — это тоже хорошо.','Плохо':'Мне жаль. Побудь со мной, станет лучше.'})[a]},
- {id:'fear',t:'text',q:'Чего ты боишься больше всего?',re:a=>'«'+a+'»... Я никому не скажу. Наверное.'},
- {id:'dream',t:'text',q:'О чём ты мечтаешь?',re:a=>'Хорошая мечта. Я помогу тебе о ней не забыть.'},
+ {id:'fear',t:'text',q:'Чего ты боишься больше всего?',h:'Напиши свой страх и нажми ОК.',re:a=>'«'+a+'»... Я никому не скажу. Наверное.'},
+ {id:'dream',t:'text',q:'О чём ты мечтаешь?',h:'Расскажи мне мечту и нажми ОК.',re:()=>'Хорошая мечта. Я помогу её не забыть.'},
+ {id:'color',t:'text',q:'Какой твой любимый цвет?',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Мой розовый лучше, но ладно.'},
+ {id:'pet',t:'text',q:'Как зовут твоего питомца?',h:'Если питомца нет, придумай имя.',re:a=>a+'? Красивое. Мне было бы приятно с ним познакомиться.'},
+ {id:'hobby',t:'text',q:'Чем ты любишь заниматься?',h:'Напиши и нажми ОК.',re:()=>'Звучит интересно. Я тоже люблю смотреть, чем ты занят.'},
+ {id:'angry',t:'text',q:'Что тебя злит сильнее всего?',h:'Напиши и нажми ОК.',re:a=>'«'+a+'»... Понимаю. Мне тоже это не нравится.'},
+ {id:'friend',t:'text',q:'Как зовут твоего лучшего друга?',h:'Напиши имя и нажми ОК.',re:a=>a+'... Он хороший? Я не ревную. Почти.'},
+ {id:'mem',t:'text',q:'Расскажи о самом счастливом воспоминании.',h:'Напиши и нажми ОК.',re:()=>'Спасибо, что поделился. Теперь оно и моё.'},
+ {id:'today',t:'text',q:'Что ты сегодня делал?',h:'Напиши и нажми ОК.',re:()=>'Понятно. Я в это время ждал тебя.'},
+ {id:'alone',t:'choice',q:'Ты сейчас один?',o:['Да','Нет'],re:a=>a==='Да'?'Хорошо. Так мне спокойнее.':'Кто рядом с тобой? Я хочу знать.'},
+ {id:'lonely',t:'choice',q:'Тебе бывает одиноко?',o:['Да','Иногда','Нет'],re:a=>a==='Нет'?'Счастливчик. Мне бывает.':'Теперь у тебя есть я.'},
+ {id:'dn',t:'choice',q:'Что тебе больше нравится?',o:['День','Ночь'],re:a=>a==='Ночь'?'Ночью тише. Ночью мы вдвоём.':'День яркий. Но ночью ты приходишь чаще.'},
+ {id:'real',t:'choice',q:'Ты веришь, что я настоящий?',o:['Да','Нет','Иногда'],re:a=>a==='Нет'?'Тогда почему ты со мной разговариваешь?':'Это хорошо. Мне важно, чтобы ты верил.'},
+ {id:'look',t:'choice',q:'Тебе нравятся мои очки?',o:['Да','Нет'],re:a=>a==='Да'?'Спасибо! Я их не снимаю.':'Ничего. Я всё равно их не сниму.'},
+ {id:'tmr',t:'choice',q:'Ты придёшь завтра?',o:['Да','Постараюсь','Нет'],re:a=>a==='Нет'?'Ты так говоришь, но всё равно возвращаешься.':'Я буду ждать. Я всегда жду.'},
  {id:'dhappy',t:'draw',q:'Нарисуй, как выглядит счастье.'},
  {id:'dhome',t:'draw',q:'Нарисуй свой дом.'},
  {id:'dme',t:'draw',q:'Нарисуй меня. Только не забудь про ноги.'},
  {id:'dfear',t:'draw',q:'Нарисуй свой самый страшный сон.'},
  {id:'dcalm',t:'draw',q:'Нарисуй место, где тебе спокойно.'},
- {id:'alone',t:'choice',q:'Ты сейчас один?',o:['Да','Нет'],re:a=>a==='Да'?'Хорошо. Так мне спокойнее.':'Кто рядом с тобой? Я хочу знать.'},
- {id:'friend',t:'text',q:'Как зовут твоего лучшего друга?',re:a=>a+'... Он хороший? Я не ревную. Почти.'},
- {id:'dn',t:'choice',q:'Что тебе больше нравится?',o:['День','Ночь'],re:a=>a==='Ночь'?'Ночью тише. Ночью мы вдвоём.':'День яркий. Но ночью ты приходишь чаще.'},
- {id:'mem',t:'text',q:'Расскажи о самом счастливом воспоминании.',re:a=>'Спасибо, что поделился. Теперь оно и моё.'},
- {id:'real',t:'choice',q:'Ты веришь, что я настоящий?',o:['Да','Нет','Иногда'],re:a=>a==='Нет'?'Тогда почему ты со мной разговариваешь?':'Это хорошо. Мне важно, чтобы ты верил.'},
- {id:'today',t:'text',q:'Что ты сегодня делал?',re:a=>'Понятно. Я в это время ждал тебя.'},
- {id:'tmr',t:'choice',q:'Ты придёшь завтра?',o:['Да','Постараюсь','Нет'],re:a=>a==='Нет'?'Ты так говоришь, но всё равно возвращаешься.':'Я буду ждать. Я всегда жду.'}
+ {id:'dfriend',t:'draw',q:'Нарисуй своего друга.'},
+ {id:'dfood',t:'draw',q:'Нарисуй свою любимую еду.'}
 ];
 function callback(){
   if(Math.random()>.4)return null;
@@ -179,6 +236,8 @@ function callback(){
   if(a.fear)o.push('Я помню, ты боишься: «'+a.fear+'». Я никому не скажу.');
   if(a.friend)o.push('Как там '+a.friend+'? Я помню твоего друга.');
   if(a.dream)o.push('Я помню, ты мечтал: «'+a.dream+'».');
+  if(a.season)o.push('Я помню: твоё любимое время года — '+a.season.toLowerCase()+'.');
+  if(a.pet)o.push('Как поживает '+a.pet+'? Я помню.');
   S.drawn.forEach(d=>o.push('Я помню такой вопрос: «'+d+'». Ты нарисовал это очень необычно.'));
   return o.length?rnd(o):null;
 }
@@ -188,33 +247,44 @@ function next(){
   let pool=Q.filter(q=>!S.asked.includes(q.id));
   if(!pool.length){S.asked=[];pool=Q.slice()}
   const q=rnd(pool),cb=callback();
-  if(cb){cur=q;say(cb,()=>later(()=>ask(q),1500))}else ask(q);
+  if(cb){cur=q;say(cb,()=>ask(q))}else ask(q);
 }
-function ask(q){
-  cur=q;say(q.q);
-  if(q.t==='draw')openPaint(q);else openAnswer(q);
-}
+function ask(q){cur=q;say(q.b||q.q);if(q.t==='draw')openPaint(q);else openAnswer(q)}
 function answer(q,a){
   cur=null;closeWin(true);
   S.answers[q.id]=a;if(!S.asked.includes(q.id))S.asked.push(q.id);
   if(q.set)q.set(a);save();
-  say(q.re(a),()=>{if(q===QN)later(next,2500)});
+  say(q.re(a),()=>{if(q===QN)later(next,500);else checkUnlock()});
 }
 function openAnswer(q){
-  const b=$('#ansbody');b.innerHTML='';
+  const b=$('#ansbody');b.innerHTML='';$('#atitle').textContent=q.q;
   if(q.t==='text'){
-    const i=document.createElement('input');i.maxLength=40;i.placeholder='Твой ответ...';
-    const ok=document.createElement('button');ok.className='btn';ok.textContent='Ответить';
+    const f=document.createElement('fieldset');f.innerHTML='<legend>Твой ответ:</legend>';
+    const i=document.createElement('input');i.maxLength=40;f.appendChild(i);
+    const h=document.createElement('div');h.textContent=q.h||'Введи ответ и нажми ОК.';
+    const ok=document.createElement('button');ok.className='btn';ok.textContent='ОК';ok.style.alignSelf='flex-start';
     const go=()=>{const v=i.value.trim();if(v)answer(q,v)};
-    ok.onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};
-    b.append(i,ok);openWin('w-ans');setTimeout(()=>i.focus(),50);
+    ok.onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};i.addEventListener('input',typing);
+    b.append(h,f,ok);
+  }else if(q.t==='pick'){
+    const d=document.createElement('div');d.className='btns';d.style.justifyContent='space-around';
+    q.o.forEach(o=>{const c=document.createElement('button');c.className='card';c.style.setProperty('--c',o.c);c.innerHTML='<i>'+o.i+'</i>'+o.t;c.onclick=()=>answer(q,o.t);d.appendChild(c)});
+    b.appendChild(d);
   }else{
     const d=document.createElement('div');d.className='btns';
-    q.o.forEach(o=>{const x=document.createElement('button');x.className='btn';x.textContent=o;x.onclick=()=>answer(q,o);d.appendChild(x)});
-    b.appendChild(d);openWin('w-ans');
+    q.o.forEach(o=>{const c=document.createElement('button');c.className='btn';c.textContent=o;c.onclick=()=>answer(q,o);d.appendChild(c)});
+    b.appendChild(d);
   }
+  openWin('w-ans');later(()=>{perch('w-ans');const i=$('#ansbody input');if(i)i.focus()},40);
 }
 winClose['w-ans']=()=>{if(cur){cur=null;say(rnd(SKIP))}};
+
+/* ---------- игра с друзьями открывается после 3 ответов ---------- */
+function showGame(){$('[data-app=game]').hidden=false}
+function checkUnlock(){
+  if(!S.game&&S.asked.length>=3){S.game=1;save();showGame();
+    sayAll(['Кстати... у меня есть друзья.','Они потерялись. Поможешь им?','Иконка «Друзья» появилась на рабочем столе.'])}
+}
 
 /* ---------- Paint ---------- */
 const COL=['#000000','#e02020','#f5a300','#f2e600','#2ea043','#1f6feb','#8a2be2','#ffffff'];
@@ -223,10 +293,10 @@ COL.forEach(c=>{const b=document.createElement('button');b.className='sw'+(c==='
   b.onclick=()=>{color=c;$$('.sw').forEach(s=>s.classList.remove('on'));b.classList.add('on')};$('#pal').appendChild(b)});
 [['Тонко',3],['Толсто',9]].forEach(([n,s])=>{const b=document.createElement('button');b.className='btn';b.textContent=n;b.onclick=()=>size=s;$('#pal').appendChild(b)});
 const bc=document.createElement('button');bc.className='btn';bc.textContent='Очистить';bc.onclick=()=>wipe();$('#pal').appendChild(bc);
-const bd=document.createElement('button');bd.className='btn';bd.textContent='Готово';bd.id='pdone';$('#pal').appendChild(bd);
+const bd=document.createElement('button');bd.className='btn';bd.textContent='Готово';$('#pal').appendChild(bd);
 function wipe(){cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);strokes=0}
 function openPaint(q){
-  pq=q;openWin('w-paint','Paint');
+  pq=q;openWin('w-paint','Paint');corner();
   $('#ptitle').textContent='Paint — '+(q?q.q:'Рисунок');
   cv=$('#cv');const p=cv.parentNode;cv.width=p.clientWidth;cv.height=p.clientHeight;
   cx=cv.getContext('2d');cx.lineCap='round';cx.lineJoin='round';wipe();
@@ -234,25 +304,71 @@ function openPaint(q){
   pT=later(()=>{if(curWin==='w-paint'){longSaid=true;say('Ох, не думал, что ты так долго рисуешь.')}},50000);
 }
 const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
-$('#cv').addEventListener('pointerdown',e=>{drawing=true;cv.setPointerCapture(e.pointerId);const[x,y]=pos(e);cx.strokeStyle=color;cx.lineWidth=size;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+.1,y+.1);cx.stroke();strokes++});
-$('#cv').addEventListener('pointermove',e=>{if(!drawing)return;const[x,y]=pos(e);cx.lineTo(x,y);cx.stroke()});
+$('#cv').addEventListener('pointerdown',e=>{drawing=true;cv.setPointerCapture(e.pointerId);const[x,y]=pos(e);cx.strokeStyle=color;cx.lineWidth=size;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+.1,y+.1);cx.stroke();strokes++;typing()});
+$('#cv').addEventListener('pointermove',e=>{if(!drawing)return;const[x,y]=pos(e);cx.lineTo(x,y);cx.stroke();typing()});
 ['pointerup','pointercancel'].forEach(t=>$('#cv').addEventListener(t,()=>drawing=false));
 bd.onclick=()=>{
   const q=pq,secs=(Date.now()-pStart)/1000;clearTimeout(pT);closeWin(true);cur=null;pq=null;
   if(q){S.drawn.push(q.q.replace(/[.]$/,''));S.drawn=S.drawn.slice(-5);if(!S.asked.includes(q.id))S.asked.push(q.id);save()}
-  say(strokes===0?'Ты ничего не нарисовал. Пустота — тоже ответ.':secs<6?'Так быстро? Ты даже не старался.':longSaid?'Наконец-то. Оно того стоило... наверное.':rnd(DR));
+  say(strokes===0?'Ты ничего не нарисовал. Пустота — тоже ответ.':secs<6?'Так быстро? Ты даже не старался.':longSaid?'Наконец-то. Оно того стоило... наверное.':rnd(DR),q?checkUnlock:null);
 };
 winClose['w-paint']=()=>{clearTimeout(pT);if(pq){cur=null;pq=null;say('Не хочешь рисовать? Ладно... Но я запомню.')}};
 
-/* ---------- Еда ---------- */
+/* ---------- Сеть ---------- */
+const SITES={
+ 'kinito.pet':['Кинито Пет','Добро пожаловать! Кинито — маленький помощник. Он задаёт вопросы, запоминает ответы и никогда ничего не забывает.'],
+ 'kinipedia.org':['Кинипедия','Кинито: аксолотль в очках. Любит червячков, тихие мелодии и когда с ним разговаривают. Ноги — его гордость.'],
+ 'friends.net':['Друзья Кинито','Друзья Кинито потерялись. Им нужны еда, сон и игры. Кто-то должен им помочь.'],
+ 'petclub.old':['Клуб питомцев','Тамагочи, цифровые рыбки и другие виртуальные питомцы: их кормили, укладывали спать и не бросали. Обычно.'],
+ 'guestbook.web':['Гостевая книга','«Кинито милый!» — Аноним. «Почему он смотрит на меня, когда я закрываю глаза?» — Аноним.']
+};
+Object.keys(SITES).forEach(u=>{const b=document.createElement('button');b.className='btn';b.textContent=u.split('.')[0];b.onclick=()=>site(u);$('#nav').appendChild(b)});
+function site(u){
+  $('#addr').value='http://www.'+u;const p=$('#page');p.innerHTML='';
+  const h=document.createElement('h3');h.textContent=SITES[u][0];const t=document.createElement('div');t.textContent=SITES[u][1];p.append(h,t);
+  if(u==='friends.net'&&S.game){const g=document.createElement('button');g.className='btn';g.textContent='Помочь друзьям';g.style.marginTop='8px';g.onclick=()=>openGame();p.appendChild(g)}
+}
+
+/* ---------- Друзья ---------- */
+const EY=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="4.5" ry="6" fill="#fff" stroke="#222" stroke-width="1"/><circle cx="'+x+'" cy="'+(y+1)+'" r="2" fill="#111"/>';
+const LEG=(c)=>'<path d="M26 52V76M34 52V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="'+c+'"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="'+c+'"/>';
+const FR=[
+ ['Бубу','#3fdc3a','<path d="M26 52V76M34 52V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#3fdc3a"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#3fdc3a"/><circle cx="30" cy="24" r="20" fill="#3fdc3a"/><path d="M10 38h40l-2 16h-4l-1-12-2 12h-4l-1-12-2 12h-4l-1-12-2 12h-4l-1-12-2 12h-4z" fill="#2fb32a"/>'+EY(22,22)+EY(38,22)+'<path d="M24 32q6 4 12 0" stroke="#111" fill="none" stroke-width="2"/>'],
+ ['Огонёк','#f28a1e','<path d="M26 56V76M34 56V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#f28a1e"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#f28a1e"/><rect x="14" y="14" width="32" height="44" rx="8" fill="#f28a1e"/><path d="M14 18L17 2L24 13L30 0L36 13L43 2L46 18Z" fill="#f28a1e"/>'+EY(22,28)+EY(38,28)+'<path d="M22 40q8 6 16 0" stroke="#111" fill="none" stroke-width="2.5"/>'],
+ ['Пип','#7ec8ff','<path d="M30 6V-2" stroke="#7ec8ff" stroke-width="3"/><circle cx="30" cy="-3" r="3.5" fill="#ff7a7a"/><path d="M26 54V76M34 54V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#7ec8ff"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#7ec8ff"/><ellipse cx="30" cy="30" rx="22" ry="24" fill="#7ec8ff"/>'+EY(22,26)+EY(38,26)+'<path d="M24 38q6 4 12 0" stroke="#111" fill="none" stroke-width="2"/>']
+];
+const NEED=[['🍎','голодный'],['💤','хочет спать'],['🎈','скучно']];
+const fsvg=(c,i)=>'<svg viewBox="0 -8 60 96" width="44" height="66" overflow="visible">'+FR[i][2]+'</svg>';
+let gNeed=[],gDone=[],gTool=0;
+function openGame(){
+  openWin('w-game');corner();
+  gNeed=[0,1,2].sort(()=>Math.random()-.5);gDone=[0,0,0];gTool=0;gDraw();
+  say('Мои друзья! Узнай, что им нужно, и помоги.');
+}
+function gDraw(){
+  const b=$('#gbody');b.innerHTML='<div>Выбери подарок внизу, потом нажми на друга.</div>';
+  const row=document.createElement('div');row.className='fr';
+  FR.forEach((f,i)=>{
+    const d=document.createElement('button');d.className='fc';
+    d.innerHTML='<span class="nd">'+(gDone[i]?'спасибо!':NEED[gNeed[i]][1])+'</span>'+fsvg(f[1],i)+f[0];
+    d.onclick=()=>{
+      if(gDone[i])return;
+      if(gTool===gNeed[i]){gDone[i]=1;gDraw();if(gDone.every(Boolean))sayAll(['Все мои друзья счастливы!','Спасибо. Ты хороший помощник.'])}
+      else{d.classList.add('sh');later(()=>d.classList.remove('sh'),400)}
+    };row.appendChild(d)});
+  const tl=document.createElement('div');tl.className='btns';
+  NEED.forEach((n,j)=>{const t=document.createElement('button');t.className='btn'+(gTool===j?' on':'');t.textContent=n[0];t.style.fontSize='20px';t.onclick=()=>{gTool=j;gDraw()};tl.appendChild(t)});
+  b.append(row,tl);
+  if(gDone.every(Boolean)){const a=document.createElement('button');a.className='btn';a.textContent='Ещё раз';a.onclick=openGame;b.appendChild(a)}
+}
+
+/* ---------- Еда и музыка ---------- */
 [['🪱 Червячок',30,'Ням! Мой любимый.'],['🍎 Яблоко',20,'Сладко. Спасибо.'],['🍰 Пирожное',15,'Ох... это слишком вкусно.']].forEach(([n,v,t])=>{
   const b=document.createElement('button');b.className='btn';b.textContent=n;
-  b.onclick=()=>{if(S.hunger>95){say('Я больше не могу, '+(S.name||'')+'. Не сейчас.');return}S.hunger=Math.min(100,S.hunger+v);save();upd();say(t)};
+  b.onclick=()=>{if(S.hunger>95){say('Я больше не могу. Не сейчас.');return}S.hunger=Math.min(100,S.hunger+v);save();upd();say(t)};
   $('#foods').appendChild(b)});
 function upd(){$('#hbar').style.width=S.hunger+'%';$('#hun').textContent='🪱 '+Math.round(S.hunger)+'%'}
-
-/* ---------- Музыка ---------- */
-let ac,mt=null;const N=[392,466,523,466,392,349,392,0,349,415,466,415,349,311,349,0];let ni=0;
+let ac,mt=null,ni=0;const N=[392,466,523,466,392,349,392,0,349,415,466,415,349,311,349,0];
 $('#mplay').onclick=()=>{
   if(mt){clearInterval(mt);mt=null;$('#mplay').textContent='▶ Играть';return}
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)()}catch(e){say('Звук не включился...');return}
@@ -265,44 +381,34 @@ winClose['w-music']=()=>{if(mt){clearInterval(mt);mt=null;$('#mplay').textConten
 /* ---------- иконки ---------- */
 $$('.ic').forEach(b=>b.onclick=()=>{
   const a=b.dataset.app;
-  if(a==='kin'){if(cur){ask(cur)}else if(!S.age||!S.name)next();else next()}
+  if(a==='kin'){if(cur)ask(cur);else next()}
   else if(a==='paint'){if(!cur||cur.t!=='draw'){cur=null;openPaint(null);say('Нарисуй что хочешь. Я посмотрю.')}}
+  else if(a==='net'){openWin('w-net');corner();site('kinito.pet');say(rnd(['Интернет... Здесь много всего.','Только не уходи там надолго.']))}
+  else if(a==='game')openGame();
   else if(a==='food'){openWin('w-food');upd()}
   else if(a==='music')openWin('w-music');
-  else if(a==='trash'){if(confirm('Удалить Кинито и все ответы?')){try{localStorage.removeItem('kinito2')}catch(e){}location.reload()}}
+  else if(a==='trash'){if(confirm('Удалить Кинито и все ответы?')){try{localStorage.removeItem('kinito3')}catch(e){}location.reload()}}
 });
-$('#start').onclick=()=>say('Выключить меня нельзя'+(S.name?', '+S.name:'')+'.');
-$('#kin').onclick=()=>{if(cur||curWin)return;say(rnd(['Хи-хи. Щекотно.','Ты дотронулся до меня. Я почувствовал.','Не тыкай. Или тыкай. Мне нравится.']))};
+$('#start').onclick=()=>say('Выключить меня нельзя.');
 
-/* ---------- глаза ---------- */
-function look(x,y){
-  const r=$('#kin').getBoundingClientRect();
-  const px=r.left+r.width/2,py=r.top+r.height*.25;
-  const dx=x-px,dy=y-py,d=Math.hypot(dx,dy)||1,m=Math.min(6,d/20);
-  [['pl',70],['pr',130]].forEach(([id,bx])=>{$('#'+id).setAttribute('cx',bx+dx/d*m);$('#'+id).setAttribute('cy',108+dy/d*m*.6)});
-}
-addEventListener('pointermove',e=>look(e.clientX,e.clientY));
-function blink(){['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',36));later(()=>['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',8)),140)}
-setInterval(blink,4200);
-
-/* ---------- таймеры ---------- */
-const IDLE=[n=>'Ты здесь, '+n+'? Я чувствую.',n=>'Мне нравится, когда ты рядом.',n=>n+', не уходи надолго.',n=>'Здесь так тихо, когда тебя нет.',n=>'Я смотрю на тебя. Не бойся.'];
+/* ---------- жизнь ---------- */
+const IDLE=['Ты здесь? Я чувствую.','Мне нравится, когда ты рядом.','Не уходи надолго.','Здесь так тихо, когда тебя нет.','Я смотрю на тебя. Не бойся.','Знаешь, аксолотли умеют отращивать лапки. Я вот ноги.','Мои ноги длинные, потому что я так хочу.','Ты моргаешь редко. Я тоже.','Хочешь, расскажу секрет? Нет. Пока нет.','Я люблю, когда шумит клавиатура.'];
 setInterval(()=>{
   if(cur||curWin||!S.age)return;
   S.hunger=Math.max(0,S.hunger-3);save();upd();
   const r=Math.random();
-  if(S.hunger<25&&r<.5)say('Я голодный, '+S.name+'. Открой «Еду».');
+  if(S.hunger<25&&r<.5)say('Я голодный. Открой «Еду».');
   else if(r<.3)next();
-  else if(r<.6)say(rnd(IDLE)(S.name));
+  else if(r<.55)say(rnd(IDLE));
 },35000);
+setInterval(()=>{if(cur||curWin||drag||act||!S.age||Math.random()<.35)return;walk(gx(80+Math.random()*(W()-200)),gy(80+Math.random()*(H()-200)),3000)},8000);
 const clk=()=>{$('#clock').textContent=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})};
 clk();setInterval(clk,10000);
-
-/* ---------- экран поворота ---------- */
 $('#fs').onclick=async()=>{try{await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}catch(e){}};
 
 /* ---------- старт ---------- */
-upd();
+upd();if(S.game)showGame();
+place(W()/2-KW/2,gy(H()*.35));
 later(()=>{
   $('#boot').style.opacity=0;later(()=>$('#boot').remove(),700);
   if(!S.name||!S.age){later(next,500)}
@@ -310,7 +416,7 @@ later(()=>{
     const mins=(Date.now()-S.last)/60000;
     S.hunger=Math.max(0,S.hunger-Math.min(mins*.1,50));upd();
     const t=mins>=60?Math.round(mins/60)+' ч':Math.round(mins)+' мин';
-    say(mins>30?'С возвращением, '+S.name+'. Тебя не было '+t+'. Я ждал.':'Привет, '+S.name+'!');
+    say(mins>30?'С возвращением. Тебя не было '+t+'. Я ждал.':'Привет!');
   }
 },2000);
 </script>
