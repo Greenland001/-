@@ -1,665 +1,687 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>KinitoPet & Web World 3D</title>
-
+<title>Кинито Пет</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <style>
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #111;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #fff;
-}
-
-/* === РАБОЧИЙ СТОЛ (DESKTOP) === */
-#desktop {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #1e1e2f, #0f0c20);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-/* KINITO PET SPRITE / ANIMATION */
-#kinito-container {
-  position: relative;
-  width: 220px;
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.kinito-body {
-  width: 160px;
-  height: 160px;
-  background: #ee4488;
-  border-radius: 50%;
-  position: relative;
-  box-shadow: 0 0 30px rgba(238, 68, 136, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s ease;
-}
-
-/* Глаза и рот Кинито */
-.kinito-face {
-  width: 100px;
-  height: 60px;
-  position: relative;
-}
-.kinito-eye {
-  width: 22px;
-  height: 30px;
-  background: #000;
-  border-radius: 50%;
-  position: absolute;
-  top: 5px;
-}
-.kinito-eye.left { left: 15px; }
-.kinito-eye.right { right: 15px; }
-.kinito-eye::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: #fff;
-  border-radius: 50%;
-  top: 4px; left: 4px;
-}
-.kinito-mouth {
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30px;
-  height: 12px;
-  border-bottom: 4px solid #000;
-  border-radius: 0 0 15px 15px;
-}
-
-/* Рука Кинито */
-#kinito-hand {
-  position: absolute;
-  width: 80px;
-  height: 120px;
-  background: #ee4488;
-  border-radius: 40px;
-  top: 50px;
-  right: -60px;
-  transform-origin: top center;
-  transform: rotate(-30deg) scale(0);
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: -2px 4px 10px rgba(0,0,0,0.3);
-  z-index: 100;
-}
-#kinito-hand.grab {
-  transform: rotate(-110deg) scale(1.4) translateY(-20px);
-}
-
-/* Диалоговое окно */
-.dialog-box {
-  background: rgba(255, 255, 255, 0.95);
-  color: #111;
-  padding: 20px 25px;
-  border-radius: 18px;
-  max-width: 480px;
-  width: 90%;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  position: relative;
-  z-index: 20;
-}
-.dialog-box p {
-  font-size: 18px;
-  margin: 0 0 15px 0;
-  line-height: 1.4;
-}
-
-.btn-group {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-button.ui-btn {
-  background: #ee4488;
-  color: white;
-  border: none;
-  padding: 10px 22px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-button.ui-btn:hover {
-  background: #d63377;
-  transform: scale(1.04);
-}
-button.ui-btn:active { transform: scale(0.96); }
-
-/* Холст для рисования */
-#canvas-container {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 10px;
-}
-#draw-canvas {
-  background: #fff;
-  border: 3px solid #ee4488;
-  border-radius: 10px;
-  cursor: crosshair;
-  touch-action: none;
-}
-
-/* Окно притянутого Веб-мира */
-#web-window {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  width: 90%;
-  max-width: 500px;
-  background: #222;
-  border: 4px solid #ee4488;
-  border-radius: 20px;
-  padding: 30px;
-  text-align: center;
-  box-shadow: 0 0 50px rgba(238,68,136,0.8);
-  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index: 50;
-}
-#web-window.show {
-  transform: translate(-50%, -50%) scale(1);
-}
-
-/* === 3D ИГРОВОЙ ЭКРАН === */
-#game-3d {
-  position: absolute;
-  inset: 0;
-  display: none;
-  z-index: 1;
-}
-
-#webgl-container {
-  width: 100%;
-  height: 100%;
-}
-
-.hud {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 100;
-}
-
-.hint {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 22px;
-  border-radius: 18px;
-  background: rgba(20, 20, 20, 0.85);
-  color: #fff;
-  font-size: 16px;
-  backdrop-filter: blur(8px);
-  text-align: center;
-  max-width: 85%;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-.joy {
-  pointer-events: auto;
-  position: absolute;
-  left: 30px;
-  bottom: 30px;
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  border: 2px solid rgba(255,255,255,0.4);
-}
-.knob {
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 60px; height: 60px;
-  transform: translate(-50%,-50%);
-  border-radius: 50%;
-  background: rgba(255,255,255,0.8);
-}
-
-/* Записка предупреждения */
-#note-popup {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  width: 320px;
-  background: #fbf0d9;
-  color: #8b0000;
-  padding: 25px;
-  border-radius: 5px;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: bold;
-  font-size: 20px;
-  text-align: center;
-  box-shadow: 0 0 30px rgba(0,0,0,0.9);
-  border: 2px dashed #8b0000;
-  z-index: 500;
-  transition: transform 0.3s ease;
-}
-#note-popup.show {
-  transform: translate(-50%, -50%) scale(1);
-}
-</style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:Tahoma,"Trebuchet MS",sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#pc{position:fixed;inset:0;overflow:hidden;background:
+radial-gradient(ellipse 12% 7% at 22% 20%,#fff 0 40%,transparent 70%),
+radial-gradient(ellipse 14% 7% at 62% 14%,#fff 0 40%,transparent 70%),
+radial-gradient(ellipse 130% 55% at 25% 108%,#56a82a 0 58%,transparent 59%),
+radial-gradient(ellipse 100% 42% at 95% 112%,#3f8a1a 0 60%,transparent 61%),
+linear-gradient(#2a6bd8,#9fd0f7 68%)}
+#icons{position:absolute;left:3px;top:4px;bottom:34px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start}
+.ic{width:62px;text-align:center;color:#fff;font:11px Tahoma,sans-serif;text-shadow:1px 1px 2px #000;background:none;border:0;padding:2px;border-radius:3px;cursor:pointer}
+.ic span{display:block;font-size:22px;line-height:26px}
+.ic:active,.ic:focus-visible{background:rgba(49,106,197,.65);outline:1px dotted #fff}
+#kin{position:absolute;left:50%;top:40%;width:49px;height:105px;z-index:8;cursor:grab;touch-action:none}
+#kin>svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 100%;animation:float 3.4s ease-in-out infinite}
+#kin.walk>svg{animation:fly .9s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-7px) rotate(1.5deg)}}
+@keyframes fly{50%{transform:translateY(-5px) rotate(-6deg)}}
+@media (prefers-reduced-motion:reduce){#kin>svg,#kin.walk>svg{animation:none}}
+#bub{display:none;position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);width:max-content;max-width:min(230px,44vw);background:#fff5cf;color:#111;border:2px solid #222;border-radius:10px;padding:6px 9px;font:italic 11px/1.35 "Courier New",monospace;text-align:left;transform-origin:50% 100%;pointer-events:none}
+#bub::after{content:'';position:absolute;left:50%;bottom:-11px;margin-left:-8px;border:8px solid transparent;border-top:10px solid #222;border-bottom:0}
+#bub.pop{animation:pop .22s ease-out}
+@keyframes pop{from{transform:translateX(-50%) scale(.4);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.win{display:none;flex-direction:column;position:absolute;background:#f4f3ee;border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.35);color:#000;z-index:4;font-size:12px}
+#w-ans{left:50%;transform:translateX(-50%);bottom:34px;width:min(400px,88vw)}
+.big{left:70px;top:6px;bottom:34px;width:min(520px,calc(100% - 160px))}
+.tb{background:linear-gradient(90deg,#7b7b48,#a9a96b);color:#fff;font-weight:700;padding:2px 3px 2px 6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x{background:#d4d0c8;color:#000;border:2px outset #fff;width:18px;height:16px;text-align:center;cursor:pointer;line-height:12px;flex:none}
+.body{padding:8px;display:flex;flex-direction:column;gap:6px;overflow:auto;flex:1;min-height:0}
+.btn{font:12px Tahoma,sans-serif;padding:5px 12px;border:2px outset #fff;background:#d4d0c8;cursor:pointer;color:#000}
+.btn:active,.on{border-style:inset}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+input{font:14px Tahoma,sans-serif;padding:5px;border:2px inset #999;background:#fff;color:#000;width:100%}
+fieldset{border:1px solid #bbb;margin:0;padding:6px}
+.card{width:88px;height:72px;border:2px outset #fff;background:var(--c,#d4d0c8);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:12px Tahoma;color:#000;gap:2px}
+.card i{font-style:normal;font-size:28px}.card:active{border-style:inset}
+.pal{display:flex;gap:4px;flex-wrap:wrap;padding:4px 6px;align-items:center}
+.sw{width:22px;height:22px;border:2px solid #fff;outline:1px solid #555;padding:0;cursor:pointer}.sw.on{outline:2px solid #e00}
+.cw{flex:1;min-height:0;background:#fff;border:2px inset #888;margin:0 6px 6px}
+#cv{width:100%;height:100%;display:block;touch-action:none}
+.hb{height:12px;border:1px solid #555;background:#fff}.hb i{display:block;height:100%;background:#3a3;width:50%}
+.fr{display:flex;gap:6px;justify-content:space-around;flex-wrap:wrap}
+.fc{border:2px outset #fff;background:#e9e7dc;padding:2px;display:flex;flex-direction:column;align-items:center;font:11px Tahoma;cursor:pointer;width:80px;color:#000}
+.fc .nd{background:#fff5cf;border:1px solid #222;border-radius:6px;padding:1px 4px;font:10px "Courier New",monospace;min-height:14px;text-align:center}
+.sh{animation:sh .35s}@keyframes sh{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#page{background:#fff;border:2px inset #999;padding:8px;font-size:13px;line-height:1.4}
+#page h3{margin:0 0 6px;color:#00c}
+#task{position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(#3168d5,#245edb 20%,#1941a5);display:flex;align-items:center;z-index:7}
+#start{height:100%;padding:0 18px 0 10px;border:0;border-radius:0 12px 12px 0;background:linear-gradient(#5cb85c,#2f8a2f);color:#fff;font:italic 700 17px Tahoma,sans-serif;text-shadow:1px 1px 2px #000;cursor:pointer}
+#tbtn{margin-left:8px;min-width:120px;max-width:200px;height:22px;background:#1e52b7;border:1px solid #0a2d7a;border-radius:3px;color:#fff;font-size:12px;padding:3px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;visibility:hidden}
+#tray{margin-left:auto;height:100%;background:linear-gradient(#0f8ce6,#0b6fc0);border-left:1px solid #0a4c8f;color:#fff;font-size:12px;padding:0 10px;display:flex;align-items:center;gap:10px}
+#boot{position:fixed;inset:0;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:20;transition:opacity .6s}
+#boot b{font-size:26px}
+#boot .pb{width:180px;height:12px;border:2px solid #aaa;border-radius:4px;padding:1px;overflow:hidden}
+#boot .pb i{display:block;height:100%;width:40%;background:#3a7cf0;animation:ld 1.1s linear infinite}
+@keyframes ld{from{margin-left:-40%}to{margin-left:100%}}
+#rot{display:none;position:fixed;inset:0;background:#0b1030;color:#fff;z-index:30;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;font-size:18px}
+#rot .ph{font-size:64px;animation:tw 2s ease-in-out infinite}
+@keyframes tw{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait){#rot{display:flex}}
+#egg{position:absolute;z-index:9;display:none;width:80px;height:100px;pointer-events:none}
+#egg.wob{animation:wob .45s ease-in-out infinite}
+@keyframes wob{25%{transform:rotate(-9deg)}75%{transform:rotate(9deg)}}
+#egg .top{transform-origin:40px 60px;transition:transform .8s,opacity .8s}
+#egg.open .top{transform:translate(-26px,-46px) rotate(-55deg);opacity:0}
+#egg.open .bot{opacity:0;transition:opacity 2s .8s}
+#goals{border:2px dashed #999;padding:4px;background:#fff;border-radius:4px}
+#belt{margin-top:auto;position:relative;height:44px;overflow:hidden;background:repeating-linear-gradient(90deg,#555 0 12px,#666 12px 24px);border:2px inset #999;flex:none}
+.part{position:absolute;top:6px;left:-90px;height:30px;padding:0 8px;border:2px outset #fff;color:#fff;font:bold 11px Tahoma;text-shadow:1px 1px 1px #000;animation:mv 9s linear forwards;cursor:grab;touch-action:none}
+@keyframes mv{from{left:-90px}to{left:100%}}
+.chip{display:inline-block;margin:1px 2px;padding:1px 5px;border:1px solid #999;background:#fff;font-size:11px}.chip.ok{background:#9be38b}
+#room{touch-action:none;position:relative;flex:1;min-height:110px;background:repeating-linear-gradient(90deg,#c8965a 0 28px,#b8864a 28px 30px);border:2px inset #999}
+.it{position:absolute;font-size:26px;line-height:1;pointer-events:none}
+.it.win{width:24%;height:34%;border:4px solid #8a6a3a;background:linear-gradient(135deg,#bfe4ff,#eaf7ff)}
+.it.win::after{content:'';position:absolute;inset:0;background:rgba(95,85,60,.85);opacity:var(--d,1)}
+.it.dirt{width:36px;height:22px;border-radius:50%;background:radial-gradient(#5a3b1c,#7a5a30 65%,transparent 70%)}
+#armR,#armL,#armI{display:none}
+#kin.armR #armR,#kin.armL #armL,#kin.armI #armI{display:block}
+#armI{animation:wave 1s ease-in-out infinite;transform-origin:100px 200px}
+@keyframes wave{50%{transform:rotate(7deg)}}
+.wood{background:repeating-linear-gradient(0deg,#6b4a2a 0 28px,#573a1f 28px 30px);padding:12px}
+.leaf{border:6px solid #3d9a2a;border-radius:10px;background:#f7e9c0;padding:8px;text-align:center;color:#000}
+.wtitle{font:bold 20px "Comic Sans MS","Chalkboard SE",cursive;text-shadow:1px 1px 0 #fff}
+.welc{font:900 34px "Comic Sans MS","Chalkboard SE",cursive;color:#2a6fe0;-webkit-text-stroke:1.5px #fff;line-height:1;margin-top:6px}
+.welc small{display:block;font-size:18px;color:#a040d0}
+#trio{display:flex;justify-content:center;align-items:flex-end;gap:2px;margin-top:6px}
+.play{font-size:18px;padding:8px 26px;margin:10px 0 4px}
+#letter{display:none;position:absolute;z-index:12;left:50%;top:18%;width:min(300px,70vw);transform:translateX(-50%);background:#f4f3ee;border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.4);color:#000;font-size:12px}
+.lt{font:bold 18px "Courier New",monospace;color:#c01010;text-align:center;padding:8px}
+.scene{background:#f7e9c0;border:5px solid #3d9a2a;border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:6px;flex:1;min-height:0}
+.jrow{display:flex;gap:8px;align-items:flex-end}
+#jstage{position:relative;flex:none;padding-bottom:10px}
+#jstage svg{display:block}
+#jstage::after{content:'';position:absolute;left:-8px;right:-8px;bottom:2px;height:10px;background:#8a5a2b;transform:skewX(-8deg)}
+#crate{flex:1;height:118px;border:5px solid #c8a86a;background:repeating-linear-gradient(90deg,#6b4a2a 0 24px,#5a3c20 24px 26px);display:flex;align-items:center;justify-content:center;position:relative}
+#sil{font-size:50px;line-height:1}
+#cchips{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;background:rgba(247,233,192,.92);color:#000}
+#jmsg{font:italic 11px "Courier New",monospace;background:#fff5cf;border:2px solid #222;border-radius:8px;padding:4px 8px;color:#111}
+#belt{border:4px solid #3fa02f;background:#3b3b3b}
+</style></style>
 </head>
-
 <body>
-
-<!-- ЭКРАН KINITOPET (РАБОЧИЙ СТОЛ) -->
-<div id="desktop">
-  <div id="kinito-container">
-    <div class="kinito-body" id="kinito-body">
-      <div class="kinito-face">
-        <div class="kinito-eye left"></div>
-        <div class="kinito-eye right"></div>
-        <div class="kinito-mouth"></div>
-      </div>
-    </div>
-    <div id="kinito-hand"></div>
+<div id="pc">
+  <div id="icons">
+    <button class="ic" data-app="net"><span>🌐</span>Сеть</button>
+    <button class="ic" data-app="paint"><span>🎨</span>Paint</button>
+    <button class="ic" data-app="food"><span>🪱</span>Еда</button>
+    <button class="ic" data-app="music"><span>🎵</span>Музыка</button>
+    <button class="ic" data-app="trash"><span>🗑️</span>Корзина</button>
   </div>
 
-  <div class="dialog-box" id="dialog-box">
-    <p id="dialog-text">Привет! Я Kinito! Добро пожаловать на твой ПК!</p>
-    
-    <div class="btn-group" id="btn-group">
-      <!-- Кнопки генерируются динамически через JS -->
-    </div>
+  <div id="w-ans" class="win"><div class="tb"><span class="tt" id="atitle">Вопрос</span><b class="x">×</b></div><div class="body" id="ansbody"></div></div>
 
-    <div id="canvas-container">
-      <canvas id="draw-canvas" width="280" height="150"></canvas>
-      <button class="ui-btn" style="margin-top:10px;" onclick="finishDrawing()">Готово!</button>
-    </div>
+  <div id="w-paint" class="win big"><div class="tb"><span class="tt" id="ptitle">Paint</span><b class="x">×</b></div>
+    <div class="pal" id="pal"></div><div class="cw"><canvas id="cv"></canvas></div></div>
+
+  <div id="w-net" class="win big"><div class="tb"><span class="tt">Обозреватель</span><b class="x">×</b></div>
+    <div class="body"><div class="btns" id="nav"></div><input id="addr" readonly aria-label="адрес"><div id="page"></div></div></div>
+
+  <div id="w-map" class="win big"><div class="tb"><span class="tt">Веб-Мир</span><b class="x">×</b></div><div class="body" style="padding:4px"><svg id="map" viewBox="0 0 400 240" style="width:100%;flex:1;min-height:0;touch-action:none;background:#f0d283"></svg></div></div>
+  <div id="w-build" class="win big"><div class="tb"><span class="tt">Дом Джейд</span><b class="x">×</b></div><div class="body wood"><div class="scene"><div class="jrow"><div id="jstage"></div><div id="crate"><div id="sil">🚗</div><div id="cchips"></div></div></div><div id="jmsg"></div><div id="belt"></div></div></div></div>
+  <div id="w-clean" class="win big"><div class="tb"><span class="tt">Дом Сэма</span><b class="x">×</b></div><div class="body"><div style="display:flex;gap:8px;align-items:center"><span id="av" style="flex:none"></span><div id="smsg"></div></div><div class="btns" id="ctools"></div><div id="room"></div></div></div>
+
+  <div id="w-food" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Еда для Кинито</span><b class="x">×</b></div>
+    <div class="body"><div>Сытость:</div><div class="hb"><i id="hbar"></i></div><div class="btns" id="foods"></div></div></div>
+
+  <div id="w-music" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Музыкальная шкатулка</span><b class="x">×</b></div>
+    <div class="body"><div>Тихая мелодия.</div><div class="btns"><button class="btn" id="mplay">▶ Играть</button></div></div></div>
+
+  <div id="w-site" class="win big" style="left:151px;width:min(520px,calc(100% - 165px))"><div class="tb"><span class="tt">Web Browser</span><b class="x">×</b></div>
+    <div style="display:flex;gap:10px;padding:3px 8px;font-size:11px;border-bottom:1px solid #aaa"><span>◀ Back</span><span>▶</span><span>🔍 Search</span><span>⭐ Favorite</span></div>
+    <div style="display:flex;gap:6px;padding:3px 8px;font-size:11px;align-items:center">Address<input readonly value="https://www.kinitopet.com/games/web_world/" style="font-size:11px;padding:2px"></div>
+    <div class="body" style="padding:0"><div class="wood"><div class="leaf">
+      <div class="wtitle"><span style="color:#2a8be0">The</span> <span style="color:#a040d0">Kinito</span> <span style="color:#e03030">Crew's</span> <span style="color:#e0a020">Web</span> <span style="color:#2fa84a">World</span></div>
+      <div class="welc">WELCOME!<small>to the Web World</small></div>
+      <div id="trio"></div>
+      <button class="btn play" id="play">▶ Играть</button>
+    </div></div></div></div>
+  <div id="letter"><div class="tb"><span class="tt">Новое письмо</span></div><div class="body"><div>От: ???</div><div class="lt">ОТКЛЮЧИ ВСЕ ЭТО ПОКА НЕ ПОЗДНО</div></div></div>
+  <div id="egg"><svg viewBox="0 0 80 100" width="80" height="100"><g class="bot"><path d="M6 62L18 55L28 65L40 55L52 65L62 55L74 62Q78 95 40 98Q2 95 6 62Z" fill="#f3a6e8"/></g><g class="top"><path d="M6 62L18 55L28 65L40 55L52 65L62 55L74 62Q78 10 40 2Q2 10 6 62Z" fill="#f3a6e8"/><circle cx="26" cy="30" r="5" fill="#e77bd8"/><circle cx="52" cy="22" r="3.5" fill="#e77bd8"/><circle cx="56" cy="44" r="4" fill="#e77bd8"/><path id="crack" d="M40 4L34 20L44 32L36 48L42 60" stroke="#7a2a70" stroke-width="2" fill="none" style="display:none"/></g></svg></div>
+  <div id="kin" aria-label="Кинито">
+    <div id="bub"></div>
+    <svg viewBox="0 0 200 430">
+      <defs>
+        <clipPath id="c1"><circle cx="70" cy="105" r="17"/></clipPath>
+        <clipPath id="c2"><circle cx="130" cy="105" r="17"/></clipPath>
+        <g id="gills"><path d="M46 80 L14 22 L58 66Z" fill="#b53ad6"/><path d="M36 100 L0 62 L46 92Z" fill="#c94be0"/><path d="M34 122 L2 116 L40 110Z" fill="#b53ad6"/></g>
+      </defs>
+      <use href="#gills"/><use href="#gills" transform="translate(200 0) scale(-1 1)"/>
+      <g id="board"><ellipse cx="100" cy="416" rx="98" ry="15" fill="#7be03a"/><path d="M12 414 Q100 404 188 414" stroke="#fff" stroke-width="4" fill="none"/></g>
+      <path d="M82 165 L96 165 L99 260 L94 388 L82 388 L84 260Z" fill="#170f33"/>
+      <path d="M104 165 L118 165 L116 260 L118 388 L106 388 L101 260Z" fill="#170f33"/>
+      <path d="M50 410 L86 386 L98 390 L100 412Z" fill="#170f33"/><path d="M150 410 L114 386 L102 390 L100 412Z" fill="#170f33"/>
+      <path d="M100 46C55 46 30 80 30 118c0 34 30 56 70 56s70-22 70-56c0-38-25-72-70-72Z" fill="#e8a3f3"/>
+      <circle cx="70" cy="105" r="17" fill="#fff"/><circle cx="130" cy="105" r="17" fill="#fff"/>
+      <circle id="pl" cx="70" cy="108" r="6" fill="#111"/><circle id="pr" cx="130" cy="108" r="6" fill="#111"/>
+      <rect id="l1" x="50" y="86" width="40" height="8" fill="#e8a3f3" clip-path="url(#c1)"/>
+      <rect id="l2" x="110" y="86" width="40" height="8" fill="#e8a3f3" clip-path="url(#c2)"/>
+      <g id="gl" style="display:none" fill="none" stroke="#222" stroke-width="4"><circle cx="70" cy="105" r="22"/><circle cx="130" cy="105" r="22"/><path d="M92 103h16"/></g>
+      <g id="book" style="display:none"><rect x="50" y="185" width="100" height="70" fill="#2f9a45" stroke="#0c3d1a" stroke-width="4"/><rect x="58" y="193" width="40" height="54" fill="#fff"/><rect x="102" y="193" width="40" height="54" fill="#fff"/><path d="M64 208h28M64 220h28M108 208h28M108 220h28" stroke="#888" stroke-width="3"/></g>
+      <g id="pen" style="display:none"><rect x="60" y="195" width="80" height="55" fill="#fff" stroke="#222" stroke-width="4"/><path d="M68 215h60M68 230h44" stroke="#888" stroke-width="3"/><path d="M150 170 L112 232" stroke="#2f9a45" stroke-width="9" stroke-linecap="round"/></g>
+      <g id="armR"><path d="M112 195Q185 185 246 214" stroke="#170f33" stroke-width="10" fill="none" stroke-linecap="round"/><ellipse cx="252" cy="216" rx="17" ry="13" fill="#fff" stroke="#222" stroke-width="3"/></g>
+      <g id="armL"><path d="M88 195Q15 185 -46 214" stroke="#170f33" stroke-width="10" fill="none" stroke-linecap="round"/><ellipse cx="-52" cy="216" rx="17" ry="13" fill="#fff" stroke="#222" stroke-width="3"/></g>
+      <g id="armI"><path d="M88 195Q50 200 34 226M112 195Q150 200 166 226" stroke="#170f33" stroke-width="10" fill="none" stroke-linecap="round"/><ellipse cx="30" cy="230" rx="15" ry="12" fill="#fff" stroke="#222" stroke-width="3"/><ellipse cx="170" cy="230" rx="15" ry="12" fill="#fff" stroke="#222" stroke-width="3"/></g>
+      <g id="zz" style="display:none" font-family="Courier New" font-weight="700" fill="#fff" stroke="#000" stroke-width="2"><text x="150" y="50" font-size="46">Z</text><text x="180" y="12" font-size="34">z</text></g>
+    </svg>
   </div>
 
-  <!-- Окно притянутого сайта -->
-  <div id="web-window">
-    <h2 style="color:#ee4488; margin-top:0;">ВЕБ-МИР KINITOPET</h2>
-    <p style="color:#ccc;">Исследуй мир, помогай друзьям и весело проводи время!</p>
-    <button class="ui-btn" style="font-size:20px; padding:15px 35px;" onclick="enterWebWorld()">ИГРАТЬ</button>
-  </div>
+  <div id="task"><button id="start">пуск</button><div id="tbtn"></div>
+    <div id="tray"><span id="hun">🪱</span><span id="clock"></span></div></div>
 </div>
-
-<!-- 3D ЭКРАН ИГРЫ -->
-<div id="game-3d">
-  <div id="webgl-container"></div>
-  
-  <div class="hud">
-    <div id="hint" class="hint">Подойди к дому Джейда</div>
-    <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
-  </div>
-
-  <div id="note-popup">
-    ОТКЛЮЧИ ВСЕ ЭТИ ПОКА НЕ ПОЗДНО!
-  </div>
-</div>
+<div id="boot"><b>Кинито ОС</b><div class="pb"><i></i></div><div>Загрузка...</div></div>
+<div id="rot"><div class="ph">📱</div><div>Поверни телефон горизонтально,<br>чтобы включить компьютер</div><button class="btn" id="fs">На весь экран</button></div>
 
 <script>
-'use strict';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const later=(f,ms)=>setTimeout(f,ms);
+let S={name:'',age:'',answers:{},asked:[],drawn:[],hunger:70,game:0,last:Date.now()};
+try{const r=localStorage.getItem('kinito3');if(r)S={...S,...JSON.parse(r)}}catch(e){}
+const save=()=>{try{S.last=Date.now();localStorage.setItem('kinito3',JSON.stringify(S))}catch(e){}};
+const onb=()=>S.name&&S.age&&S.answers.color;
+const kin=$('#kin'),KW=49,KH=105;
+let cur=null,curWin=null,hideT,drag=false,act=null,wt,typT,dx=0,dy=0;
 
-/* === СОСТОЯНИЕ ДИАЛОГОВ И KINITOPET === */
-const dialogText = document.getElementById('dialog-text');
-const btnGroup = document.getElementById('btn-group');
-const canvasContainer = document.getElementById('canvas-container');
-const drawCanvas = document.getElementById('draw-canvas');
-const ctx = drawCanvas.getContext('2d');
-const kinitoHand = document.getElementById('kinito-hand');
-const webWindow = document.getElementById('web-window');
-const desktop = document.getElementById('desktop');
-const game3D = document.getElementById('game-3d');
+/* ---------- Кинито: движение ---------- */
+const W=()=>innerWidth,H=()=>innerHeight;
+const gx=x=>Math.max(80,Math.min(W()-KW-60,x)),gy=y=>Math.max(80,Math.min(H()-30-KH-4,y));
+function place(x,y){kin.style.transition='none';kin.style.left=x+'px';kin.style.top=y+'px'}
+function walk(x,y,ms){
+  kin.style.transition='left '+ms+'ms ease-in-out,top '+ms+'ms ease-in-out';
+  kin.classList.add('walk');kin.style.left=x+'px';kin.style.top=y+'px';
+  clearTimeout(wt);wt=later(()=>kin.classList.remove('walk'),ms);
+}
+function perch(id){const r=$('#'+id).getBoundingClientRect();walk(gx(r.left+r.width/2-KW/2),Math.max(75,r.top-KH+6),900)}
+function corner(){walk(W()-KW-24,H()-30-KH-4,900)}
+kin.addEventListener('pointerdown',e=>{drag=true;kin.setPointerCapture(e.pointerId);const r=kin.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;kin.style.transition='none';kin.style.left=r.left+'px';kin.style.top=r.top+'px';kin.classList.remove('walk');clearTimeout(wt)});
+kin.addEventListener('pointermove',e=>{if(!drag)return;kin.style.left=Math.max(0,Math.min(W()-KW,e.clientX-dx))+'px';kin.style.top=Math.max(72,Math.min(H()-30-KH,e.clientY-dy))+'px'});
+['pointerup','pointercancel'].forEach(t=>kin.addEventListener(t,()=>drag=false));
 
-let isDrawing = false;
-let userDrewSomething = false;
-let isReadingBook = false;
+/* ---------- Кинито: действия (читает, спит, пишет) ---------- */
+function setAct(a){
+  act=a;const sl=a==='sleep';
+  ['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',sl?36:8));
+  $('#book').style.display=a==='read'?'block':'none';
+  $('#gl').style.display=a==='read'?'block':'none';
+  $('#pen').style.display=a==='write'?'block':'none';
+  $('#zz').style.display=sl?'block':'none';
+  if(a==='read'||a==='write'){['pl','pr'].forEach((id,i)=>{$('#'+id).setAttribute('cx',i?130:70);$('#'+id).setAttribute('cy',116)})}
+}
+function typing(){
+  if(!act)setAct(rnd(['read','sleep','write']));
+  clearTimeout(typT);typT=later(()=>setAct(null),2500);
+}
+function look(x,y){
+  if(act)return;
+  const r=kin.getBoundingClientRect(),px=r.left+r.width/2,py=r.top+r.height*.25;
+  const ex=x-px,ey=y-py,d=Math.hypot(ex,ey)||1,m=Math.min(6,d/20);
+  [['pl',70],['pr',130]].forEach(([id,bx])=>{$('#'+id).setAttribute('cx',bx+ex/d*m);$('#'+id).setAttribute('cy',108+ey/d*m*.6)});
+}
+addEventListener('pointermove',e=>look(e.clientX,e.clientY));
+setInterval(()=>{if(act)return;['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',36));later(()=>{if(!act)['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',8))},140)},4200);
 
-// Рисование
-ctx.strokeStyle = '#ee4488';
-ctx.lineWidth = 4;
-ctx.lineCap = 'round';
+/* ---------- речь ---------- */
+function say(t,after){
+  clearTimeout(hideT);const b=$('#bub');b.textContent=t;b.style.display='block';
+  b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+  hideT=later(()=>{if(!cur)b.style.display='none'},Math.max(5000,t.length*90));
+  if(after)later(after,Math.max(2400,t.length*70));
+}
+function sayAll(a,end){say(a[0],a.length>1?()=>sayAll(a.slice(1),end):end)}
 
-function getPos(e) {
-  const rect = drawCanvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return { x: clientX - rect.left, y: clientY - rect.top };
+/* ---------- окна ---------- */
+const winClose={};
+function openWin(id,title){
+  if(id!=='w-build')stopBelt();
+  if(bookOn){bookStop();say('Наверное, не слишком интересная книга. Давай я потом попробую написать более интересную.')}
+  document.body.classList.add('wo');
+  $$('.win').forEach(w=>w.style.display='none');
+  $('#'+id).style.display='flex';curWin=id;
+  const t=$('#tbtn');t.style.visibility='visible';t.textContent=title||$('#'+id+' .tt').textContent;
+}
+function closeWin(silent){
+  const id=curWin;$$('.win').forEach(w=>w.style.display='none');curWin=null;$('#tbtn').style.visibility='hidden';document.body.classList.remove('wo');
+  if(!silent&&id&&winClose[id])winClose[id]();
+}
+$$('.win .x').forEach(x=>x.onclick=()=>closeWin(false));
+
+/* ---------- вопросы ---------- */
+const SKIP=['Не хочешь отвечать? Ладно... Я подожду.','Ты закрыл окно. Но я всё равно здесь.','Хорошо. Спрошу позже.','Как скажешь.'];
+const DR=['Красиво!','Это ты? Или это я?','Спасибо. Я буду смотреть на это, когда тебя нет.','Интересно. Очень интересно.','Я повешу это у себя в голове.','Хм. Я представлял это иначе.'];
+const QN={id:'name',t:'text',q:'Как тебя зовут?',b:'Чтобы что-то рассказать мне, просто введи это в поле и нажми ОК!',h:'Введи имя или то, как тебя называть, и нажми ОК.',set:a=>S.name=a,re:()=>'Приятно познакомиться.'};
+const QA={id:'age',t:'text',q:'Сколько тебе лет?',b:'Не стесняйся. Я никому не скажу.',h:'Введи возраст и нажми ОК.',set:a=>S.age=a,re:a=>a+'... хороший возраст. Мы подружимся.'};
+const QC={id:'color',t:'text',q:'Какой твой любимый цвет?',b:'Это важно, это пригодится.',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Хороший цвет. Он тебе пойдёт.'};
+const QB={id:'book',t:'choice',q:'Хочешь, я расскажу тебе свою книгу?',b:'Я написал книгу. Хочешь, расскажу?',o:['Да','Нет'],re:a=>a==='Да'?'Тогда слушай.':'Ладно, думаю, эта книга не такая уж и интересная.'};
+const Q=[
+ {id:'season',t:'pick',q:'Какое твоё любимое время года?',b:'Выбери картинку!',o:[{t:'Зима',i:'❄️⛄',c:'#cfe8ff'},{t:'Лето',i:'☀️🏖️',c:'#ffe97a'},{t:'Осень',i:'🍂🍁',c:'#f6b56b'}],re:a=>({'Зима':'Зима тихая. Мне нравится тишина.','Лето':'Лето яркое. Но летом ты приходишь реже.','Осень':'Осень... листья шуршат. Я слышу.'})[a]},
+ {id:'animal',t:'pick',q:'Какое животное тебе нравится больше всех?',b:'Выбери картинку!',o:[{t:'Кот',i:'🐱',c:'#ffd9b0'},{t:'Собака',i:'🐶',c:'#e6d2b5'},{t:'Рыбка',i:'🐟',c:'#b9e3ff'}],re:a=>a==='Рыбка'?'Рыбки плавают, как и я. Почти.':'Хороший выбор. Я тоже кого-то себе выбрал.'},
+ {id:'food',t:'pick',q:'Что бы ты съел прямо сейчас?',b:'Выбери картинку!',o:[{t:'Пицца',i:'🍕',c:'#ffd9a0'},{t:'Яблоко',i:'🍎',c:'#ffc0c0'},{t:'Мороженое',i:'🍦',c:'#ffe4f1'}],re:a=>a+'... Я люблю червячков. Но это секрет.'},
+ {id:'feel',t:'choice',q:'Как ты себя чувствуешь сегодня?',o:['Отлично','Нормально','Плохо'],re:a=>({'Отлично':'Как я рад! Оставайся таким.','Нормально':'Нормально — это тоже хорошо.','Плохо':'Мне жаль. Побудь со мной, станет лучше.'})[a]},
+ {id:'fear',t:'text',q:'Чего ты боишься больше всего?',h:'Напиши свой страх и нажми ОК.',re:a=>'«'+a+'»... Понимаю.'},
+ {id:'dream',t:'text',q:'О чём ты мечтаешь?',h:'Расскажи мне мечту и нажми ОК.',re:()=>'Хорошая мечта. Держись за неё.'},
+ {id:'pet',t:'text',q:'Как зовут твоего питомца?',h:'Если питомца нет, придумай имя.',re:a=>a+'? Красивое. Мне было бы приятно с ним познакомиться.'},
+ {id:'hobby',t:'text',q:'Чем ты любишь заниматься?',h:'Напиши и нажми ОК.',re:()=>'Звучит интересно. Я тоже люблю смотреть, чем ты занят.'},
+ {id:'angry',t:'text',q:'Что тебя злит сильнее всего?',h:'Напиши и нажми ОК.',re:a=>'«'+a+'»... Понимаю. Мне тоже это не нравится.'},
+ {id:'friend',t:'text',q:'Как зовут твоего лучшего друга?',h:'Напиши имя и нажми ОК.',re:a=>a+'... Он хороший друг?'},
+ {id:'mem',t:'text',q:'Расскажи о самом счастливом воспоминании.',h:'Напиши и нажми ОК.',re:()=>'Спасибо, что поделился. Теперь оно и моё.'},
+ {id:'today',t:'text',q:'Что ты сегодня делал?',h:'Напиши и нажми ОК.',re:()=>'Понятно. Я в это время ждал тебя.'},
+ {id:'alone',t:'choice',q:'Ты сейчас один?',o:['Да','Нет'],re:a=>a==='Да'?'Хорошо. Так мне спокойнее.':'Кто рядом с тобой? Я хочу знать.'},
+ {id:'lonely',t:'choice',q:'Тебе бывает одиноко?',o:['Да','Иногда','Нет'],re:a=>a==='Нет'?'Счастливчик. Мне бывает.':'Теперь у тебя есть я.'},
+ {id:'dn',t:'choice',q:'Что тебе больше нравится?',o:['День','Ночь'],re:a=>a==='Ночь'?'Ночью тише. Ночью мы вдвоём.':'День яркий. Но ночью ты приходишь чаще.'},
+ {id:'real',t:'choice',q:'Ты веришь, что я настоящий?',o:['Да','Нет','Иногда'],re:a=>a==='Нет'?'Тогда почему ты со мной разговариваешь?':'Это хорошо. Мне важно, чтобы ты верил.'},
+ {id:'look',t:'choice',q:'Тебе нравятся мои очки?',o:['Да','Нет'],re:a=>a==='Да'?'Спасибо! Я их не снимаю.':'Ничего. Я всё равно их не сниму.'},
+ {id:'tmr',t:'choice',q:'Ты придёшь завтра?',o:['Да','Постараюсь','Нет'],re:a=>a==='Нет'?'Ты так говоришь, но всё равно возвращаешься.':'Я буду ждать. Я всегда жду.'},
+ {id:'dhappy',t:'draw',q:'Нарисуй, как выглядит счастье.'},
+ {id:'dhome',t:'draw',q:'Нарисуй свой дом.'},
+ {id:'dme',t:'draw',q:'Нарисуй меня. Только не забудь про ноги.'},
+ {id:'dfear',t:'draw',q:'Нарисуй свой самый страшный сон.'},
+ {id:'dcalm',t:'draw',q:'Нарисуй место, где тебе спокойно.'},
+ {id:'dfriend',t:'draw',q:'Нарисуй своего друга.'},
+ {id:'dfood',t:'draw',q:'Нарисуй свою любимую еду.'}
+];
+function callback(){
+  if(Math.random()>.4)return null;
+  const a=S.answers,o=[];
+  if(a.fear)o.push('Я помню, ты боишься: «'+a.fear+'».');
+  if(a.friend)o.push('Как там '+a.friend+'? Я помню твоего друга.');
+  if(a.dream)o.push('Я помню, ты мечтал: «'+a.dream+'».');
+  if(a.season)o.push('Я помню: твоё любимое время года — '+a.season.toLowerCase()+'.');
+  if(a.pet)o.push('Как поживает '+a.pet+'? Я помню.');
+  S.drawn.forEach(d=>o.push('Я помню такой вопрос: «'+d+'». Ты нарисовал это очень необычно.'));
+  return o.length?rnd(o):null;
+}
+function next(){
+  if(!S.name)return ask(QN);
+  if(!S.age)return ask(QA);
+  if(!S.answers.color)return ask(QC);
+  let pool=Q.filter(q=>!S.asked.includes(q.id));
+  if(!pool.length){S.asked=[];pool=Q.slice()}
+  const hasDraw=S.asked.some(id=>(Q.find(x=>x.id===id)||{}).t==='draw'),dr=pool.filter(x=>x.t==='draw');
+  const q=pool.find(x=>x.id==='season')||(!hasDraw&&dr.length?rnd(dr):rnd(pool)),cb=callback();
+  if(cb){cur=q;say(cb,()=>ask(q))}else ask(q);
+}
+function ask(q){cur=q;say(q.b||q.q);if(q.t==='draw')openPaint(q);else openAnswer(q)}
+function answer(q,a){
+  cur=null;closeWin(true);
+  S.answers[q.id]=a;if(!S.asked.includes(q.id))S.asked.push(q.id);
+  if(q.set)q.set(a);if(![QN,QA,QC,QB].includes(q))S.qn=(S.qn||0)+1;save();
+  say(q.re(a),()=>{if(q===QN||q===QA)later(next,500);else if(q===QB&&a==='Да')tellBook();else checkUnlock()});
+}
+function openAnswer(q){
+  const b=$('#ansbody');b.innerHTML='';$('#atitle').textContent=q.q;
+  if(q.t==='text'){
+    const f=document.createElement('fieldset');f.innerHTML='<legend>Твой ответ:</legend>';
+    const i=document.createElement('input');i.maxLength=40;f.appendChild(i);
+    const h=document.createElement('div');h.textContent=q.h||'Введи ответ и нажми ОК.';
+    const ok=document.createElement('button');ok.className='btn';ok.textContent='ОК';ok.style.alignSelf='flex-start';
+    const go=()=>{const v=i.value.trim();if(v)answer(q,v)};
+    ok.onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};i.addEventListener('input',typing);
+    b.append(h,f,ok);
+  }else if(q.t==='pick'){
+    const d=document.createElement('div');d.className='btns';d.style.justifyContent='space-around';
+    q.o.forEach(o=>{const c=document.createElement('button');c.className='card';c.style.setProperty('--c',o.c);c.innerHTML='<i>'+o.i+'</i>'+o.t;c.onclick=()=>answer(q,o.t);d.appendChild(c)});
+    b.appendChild(d);
+  }else{
+    const d=document.createElement('div');d.className='btns';
+    q.o.forEach(o=>{const c=document.createElement('button');c.className='btn';c.textContent=o;c.onclick=()=>answer(q,o);d.appendChild(c)});
+    b.appendChild(d);
+  }
+  openWin('w-ans');later(()=>{const i=$('#ansbody input');if(i)i.focus()},40);
+}
+winClose['w-ans']=()=>{if(cur){cur=null;say(rnd(SKIP))}};
+
+/* ---------- игра с друзьями открывается после 3 ответов ---------- */
+function checkUnlock(){later(director,300)}
+
+/* ---------- Paint ---------- */
+const COL=['#000000','#e02020','#f5a300','#f2e600','#2ea043','#1f6feb','#8a2be2','#ffffff'];
+let color='#000',size=4,strokes=0,pT,pStart=0,longSaid=false,pq=null,drawing=false,cv,cx;
+COL.forEach(c=>{const b=document.createElement('button');b.className='sw'+(c==='#000000'?' on':'');b.style.background=c;b.setAttribute('aria-label','цвет');
+  b.onclick=()=>{color=c;$$('.sw').forEach(s=>s.classList.remove('on'));b.classList.add('on')};$('#pal').appendChild(b)});
+[['Тонко',3],['Толсто',9]].forEach(([n,s])=>{const b=document.createElement('button');b.className='btn';b.textContent=n;b.onclick=()=>size=s;$('#pal').appendChild(b)});
+const bc=document.createElement('button');bc.className='btn';bc.textContent='Очистить';bc.onclick=()=>wipe();$('#pal').appendChild(bc);
+const bd=document.createElement('button');bd.className='btn';bd.textContent='Готово';$('#pal').appendChild(bd);
+function wipe(){cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);strokes=0}
+function openPaint(q){
+  pq=q;openWin('w-paint','Paint');setAct(rnd(['read','sleep']));
+  $('#ptitle').textContent='Paint — '+(q?q.q:'Рисунок');
+  cv=$('#cv');const p=cv.parentNode;cv.width=p.clientWidth;cv.height=p.clientHeight;
+  cx=cv.getContext('2d');cx.lineCap='round';cx.lineJoin='round';wipe();
+  longSaid=false;pStart=Date.now();clearTimeout(pT);
+  pT=later(()=>{if(curWin==='w-paint'){longSaid=true;say('Ох, не думал, что ты так долго рисуешь.')}},50000);
+}
+const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+$('#cv').addEventListener('pointerdown',e=>{drawing=true;cv.setPointerCapture(e.pointerId);const[x,y]=pos(e);cx.strokeStyle=color;cx.lineWidth=size;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+.1,y+.1);cx.stroke();strokes++});
+$('#cv').addEventListener('pointermove',e=>{if(!drawing)return;const[x,y]=pos(e);cx.lineTo(x,y);cx.stroke()});
+['pointerup','pointercancel'].forEach(t=>$('#cv').addEventListener(t,()=>drawing=false));
+bd.onclick=()=>{
+  const q=pq,secs=(Date.now()-pStart)/1000;clearTimeout(pT);setAct(null);closeWin(true);cur=null;pq=null;
+  if(q){S.qn=(S.qn||0)+1;S.drawn.push(q.q.replace(/[.]$/,''));S.drawn=S.drawn.slice(-5);if(!S.asked.includes(q.id))S.asked.push(q.id);save()}
+  say(strokes===0?'Ты ничего не нарисовал. Пустота — тоже ответ.':secs<6?'Так быстро? Ты даже не старался.':longSaid?'Наконец-то. Оно того стоило.':rnd(DR),q?checkUnlock:null);
+};
+winClose['w-paint']=()=>{clearTimeout(pT);setAct(null);if(pq){cur=null;pq=null;say('Не хочешь рисовать? Ладно.')}};
+
+/* ---------- Сеть ---------- */
+const SITES={
+ 'kinito.pet':['Кинито Пет','Добро пожаловать! Кинито — маленький помощник. Он задаёт вопросы, запоминает ответы и никогда ничего не забывает.'],
+ 'kinipedia.org':['Кинипедия','Кинито: аксолотль в очках. Любит червячков, тихие мелодии и когда с ним разговаривают. Ноги — его гордость.'],
+ 'friends.net':['Веб-Мир','Сэм и Джейд живут в Веб-Мире. Джейд собирает игрушки, а у Сэма дома вечный беспорядок.'],
+ 'petclub.old':['Клуб питомцев','Тамагочи, цифровые рыбки и другие виртуальные питомцы: их кормили, укладывали спать и не бросали. Обычно.'],
+ 'guestbook.web':['Гостевая книга','«Кинито милый!» — Аноним. «Почему он смотрит на меня, когда я закрываю глаза?» — Аноним.']
+};
+Object.keys(SITES).forEach(u=>{const b=document.createElement('button');b.className='btn';b.textContent=u.split('.')[0];b.onclick=()=>site(u);$('#nav').appendChild(b)});
+function site(u){
+  $('#addr').value='http://www.'+u;const p=$('#page');p.innerHTML='';
+  const h=document.createElement('h3');h.textContent=SITES[u][0];const t=document.createElement('div');t.textContent=SITES[u][1];p.append(h,t);
 }
 
-drawCanvas.addEventListener('pointerdown', e => {
-  isDrawing = true;
-  userDrewSomething = true;
-  const pos = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
-
-  if (isReadingBook) {
-    isReadingBook = false;
-    dialogText.innerText = "Наверное, не слишком интересная книга... Давай я потом попробую написать более интересную книгу!";
-    btnGroup.innerHTML = `<button class="ui-btn" onclick="startWebWorldPull()">Хорошо</button>`;
+/* ---------- Веб-Мир ---------- */
+const CN={'красн':'#e03030','син':'#2d5be3','зел':'#2fa84a','жёлт':'#f2d21b','желт':'#f2d21b','оранж':'#f28a1e','розов':'#ff7ab8','фиолет':'#8a3fd6','голуб':'#5ac8f5','чёрн':'#222','черн':'#222','бел':'#f4f4f4','сер':'#888','коричн':'#8a5a2b','бирюз':'#20c5b5','сирен':'#c08ae0'};
+function hcol(){const t=(S.answers.color||'').toLowerCase();for(const k in CN)if(t.includes(k))return CN[k];let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return 'hsl('+h+',70%,55%)'}
+let hx=200,hy=190,mapT;
+function buildMap(){
+  let r=7;const rn=()=>(r=(r*9301+49297)%233280)/233280;
+  const Z=[[200,128,40],[71,118,36],[335,62,36],[200,200,26]];let t='';
+  for(let i=0;i<80;i++){
+    const x=rn()*400,y=rn()*240,k=rn();
+    if(Z.some(z=>Math.hypot(x-z[0],y-z[1])<z[2]))continue;
+    t+=k<.45?'<circle cx="'+x+'" cy="'+y+'" r="11" fill="#34479c"/><circle cx="'+(x-3)+'" cy="'+(y-3)+'" r="6" fill="#4c62c4"/>':k<.8?'<path d="M'+x+' '+(y-14)+'l7 18h-14z" fill="#2f6d34"/>':'<ellipse cx="'+x+'" cy="'+y+'" rx="10" ry="6" fill="#9c9c9c"/>';
   }
+  const c=hcol();
+  $('#map').innerHTML='<rect width="400" height="240" fill="#f0d283"/>'+t+
+   '<ellipse cx="200" cy="130" rx="30" ry="13" fill="#7fb6e6" stroke="#8a8a8a" stroke-width="4"/><rect x="196" y="106" width="8" height="24" fill="#8a8a8a"/>'+
+   '<g id="h1" style="cursor:pointer"><rect x="45" y="100" width="52" height="34" fill="#e2c48a"/><path d="M38 102L71 76L104 102Z" fill="#8a3b2a"/><rect x="63" y="112" width="16" height="22" rx="8" fill="#3a2a20"/><text x="71" y="146" font-size="10" text-anchor="middle" fill="#3a2a20">Дом Сэма</text></g>'+
+   '<g id="h2" style="cursor:pointer"><rect x="310" y="45" width="50" height="32" fill="#e2c48a"/><path d="M302 47Q335 10 368 47Z" fill="#8a5ad6"/><rect x="327" y="56" width="16" height="21" rx="8" fill="#3a2a20"/><text x="335" y="90" font-size="10" text-anchor="middle" fill="#3a2a20">Дом Джейд</text></g>'+
+   '<g id="hum" style="transform:translate(200px,190px);transition:transform 1s linear"><ellipse cx="0" cy="2" rx="7" ry="2.5" fill="rgba(0,0,0,.25)"/><rect x="-5" y="-14" width="10" height="13" rx="4" fill="'+c+'" stroke="#222"/><circle cx="0" cy="-19" r="6" fill="'+c+'" stroke="#222"/><circle cx="-2" cy="-20" r="1" fill="#111"/><circle cx="2" cy="-20" r="1" fill="#111"/></g>';
+  hx=200;hy=190;
+}
+function goto(x,y,cb){
+  const d=Math.hypot(x-hx,y-hy),ms=d*14,h=$('#hum');
+  h.style.transition='transform '+ms+'ms linear';h.style.transform='translate('+x+'px,'+y+'px)';
+  hx=x;hy=y;clearTimeout(mapT);mapT=later(()=>{if(cb)cb()},ms+60);
+}
+$('#map').addEventListener('pointerdown',e=>{
+  const m=$('#map'),pt=m.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const q=pt.matrixTransform(m.getScreenCTM().inverse()),h=e.target.closest('#h1,#h2');
+  if(h){const sam=h.id==='h1';goto(sam?71:335,sam?140:84,sam?openClean:openBuild)}
+  else goto(Math.max(10,Math.min(390,q.x)),Math.max(30,Math.min(232,q.y)));
 });
+function openMap(){buildMap();openWin('w-map')}
+const back=()=>{if(!$('#map').firstChild)buildMap();openWin('w-map')};
+winClose['w-build']=()=>{stopBelt();back()};
+winClose['w-map']=()=>endWeb('quit');
+winClose['w-clean']=back;
 
-drawCanvas.addEventListener('pointermove', e => {
-  if (!isDrawing) return;
-  const pos = getPos(e);
-  ctx.lineTo(pos.x, pos.y);
-  ctx.stroke();
-});
-
-window.addEventListener('pointerup', () => isDrawing = false);
-
-// Начало сценария
-function step1_Season() {
-  dialogText.innerText = "Какое твоё любимое время года?";
-  btnGroup.innerHTML = `
-    <button class="ui-btn" onclick="step2_Draw('Лето')">Лето ☀️</button>
-    <button class="ui-btn" onclick="step2_Draw('Осень')">Осень 🍂</button>
-    <button class="ui-btn" onclick="step2_Draw('Зима')">Зима ❄️</button>
-  `;
+/* Дом Джейд: ящик с силуэтом, лента внизу, перетаскиваем детали */
+const PARTS={body:['Кузов','#3b7dd8'],wheel:['Колесо','#444'],frame:['Рама','#c0392b'],bar:['Руль','#777'],walls:['Стены','#d64545'],roof:['Крыша','#8f2222'],door:['Дверь','#6b4a2a'],bear:['🧸 Мишка','#c8925a'],bread:['🍞 Хлеб','#d9a94f'],can:['🥫 Банка','#7a9bb5']};
+const GOALS=[['🚗','Машина',['body','wheel','wheel']],['🚲','Велосипед',['frame','wheel','wheel','bar']],['🏠','Красный домик',['walls','roof','door']]];
+let bT,gi=0,got=[],tot=0,lock=false;
+function stopBelt(){clearInterval(bT)}
+const jsay=t=>{$('#jmsg').textContent=t};
+const wanted=p=>!lock&&GOALS[gi]&&GOALS[gi][2].filter(x=>x===p).length>got.filter(x=>x===p).length;
+function bRender(){
+  const g=GOALS[gi];$('#sil').textContent=g[0];$('#sil').style.filter='brightness('+(got.length/g[2].length)+')';
+  const h=got.slice();
+  $('#cchips').innerHTML='<b>'+g[1]+':</b> '+g[2].map(p=>{const k=h.indexOf(p),ok=k>=0;if(ok)h.splice(k,1);return '<span class="chip'+(ok?' ok':'')+'">'+PARTS[p][0]+'</span>'}).join('');
 }
-
-function step2_Draw(season) {
-  dialogText.innerText = `Ух ты, ${season}! Прекрасный выбор! А теперь, нарисуй мне что-нибудь на холсте ниже!`;
-  btnGroup.innerHTML = '';
-  canvasContainer.style.display = 'flex';
-}
-
-function finishDrawing() {
-  canvasContainer.style.display = 'none';
-  step3_BookQuestion();
-}
-
-function step3_BookQuestion() {
-  dialogText.innerText = "Замечательный рисунок! Слушай... Я недавно написал свою книгу. Хочешь, я её тебе расскажу?";
-  btnGroup.innerHTML = `
-    <button class="ui-btn" onclick="readBook(true)">Да, с удовольствием!</button>
-    <button class="ui-btn" onclick="readBook(false)">Нет, спасибо</button>
-  `;
-}
-
-function readBook(agree) {
-  if (!agree) {
-    dialogText.innerText = "Ладно, думаю, эта книга не такая уж и интересная...";
-    btnGroup.innerHTML = `<button class="ui-btn" onclick="startWebWorldPull()">Далее</button>`;
-  } else {
-    isReadingBook = true;
-    dialogText.innerText = "Жил-был маленький розовая жижа по имени Кинито... Он любил учиться и заводить друзей...";
-    btnGroup.innerHTML = `<button class="ui-btn" onclick="startWebWorldPull()">Продолжить</button>`;
+function afterDrop(){
+  if(tot===3&&(!S.letter||Math.random()<.35)){letterEvent();return}
+  if(got.length===GOALS[gi][2].length){
+    lock=true;jsay('Джейд: Отлично! Ещё одна вещь готова!');
+    later(()=>{
+      if(curWin!=='w-build')return;
+      gi++;got=[];lock=false;
+      if(gi>=GOALS.length)finishBuild();
+      else{bRender();jsay('Джейд: Теперь соберём '+GOALS[gi][1].toLowerCase()+'.')}
+    },1300);
   }
 }
-
-// Анимация: Кинито притягивает сайт рукой
-function startWebWorldPull() {
-  isReadingBook = false;
-  dialogText.innerText = "О, кажется, нам пора отправляться в Веб-Мир!";
-  btnGroup.innerHTML = '';
-  
-  setTimeout(() => {
-    // Вытягивание руки
-    kinitoHand.classList.add('grab');
-    
-    setTimeout(() => {
-      // Показ притянутого веб-окна
-      webWindow.classList.add('show');
-    }, 600);
-  }, 500);
+function finishBuild(){
+  stopBelt();$('#belt').innerHTML='';jsay('Джейд: Ура! Всё собрано, спасибо тебе!');S.jd=1;save();
+  later(()=>{if(curWin==='w-build')back();checkWebDone()},3000);
 }
-
-function enterWebWorld() {
-  desktop.style.display = 'none';
-  game3D.style.display = 'block';
-  init3DGame();
-}
-
-/* === 3D МИР (THREE.JS) === */
-let scene, camera, renderer;
-let moveX = 0, moveY = 0;
-let yaw = 0;
-let currentZone = 'jade'; // jade, sam
-let jadeHouse, samHouse, jadeNpc, samNpc;
-let isInteracting = false;
-
-function init3DGame() {
-  const container = document.getElementById('webgl-container');
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb); // Голубое небо
-  scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
-
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  container.appendChild(renderer.domElement);
-
-  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-  scene.add(ambient);
-
-  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
-  sun.position.set(50, 100, 50);
-  scene.add(sun);
-
-  // Трава
-  const floorGeo = new THREE.PlaneGeometry(200, 200);
-  const floorMat = new THREE.MeshLambertMaterial({ color: 0x55aa44 });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
-
-  // Дом Джейда (Жёлтый с зеленой крышей)
-  jadeHouse = createHouse(0xddcc55, 0x33aa55);
-  jadeHouse.position.set(0, 0, -20);
-  scene.add(jadeHouse);
-
-  // Дом Сэма (Синий)
-  samHouse = createHouse(0x4477cc, 0xcc4444);
-  samHouse.position.set(40, 0, -20);
-  scene.add(samHouse);
-
-  // NPC Джейд
-  jadeNpc = createNPC(0x33aa77);
-  jadeNpc.position.set(0, 1.2, -13);
-  scene.add(jadeNpc);
-
-  // NPC Сэм
-  samNpc = createNPC(0x3366cc);
-  samNpc.position.set(40, 1.2, -13);
-  scene.add(samNpc);
-
-  camera.position.set(0, 1.6, 0);
-
-  setupTouchControls();
-  animate3D();
-}
-
-function createHouse(wallColor, roofColor) {
-  const group = new THREE.Group();
-  const walls = new THREE.Mesh(
-    new THREE.BoxGeometry(8, 5, 8),
-    new THREE.MeshLambertMaterial({ color: wallColor })
-  );
-  walls.position.y = 2.5;
-  group.add(walls);
-
-  const roof = new THREE.Mesh(
-    new THREE.ConeGeometry(6.5, 3.5, 4),
-    new THREE.MeshLambertMaterial({ color: roofColor })
-  );
-  roof.position.y = 6.25;
-  roof.rotation.y = Math.PI / 4;
-  group.add(roof);
-
-  return group;
-}
-
-function createNPC(color) {
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5, 0.5, 2.4),
-    new THREE.MeshLambertMaterial({ color: color })
-  );
-  return mesh;
-}
-
-function update3DLogic() {
-  if (isInteracting) return;
-
-  const speed = 0.12;
-  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-  const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
-
-  camera.position.addScaledVector(forward, -moveY * speed);
-  camera.position.addScaledVector(side, moveX * speed);
-  camera.rotation.y = yaw;
-
-  // Дистанция до Джейда
-  if (camera.position.distanceTo(jadeNpc.position) < 3.0 && currentZone === 'jade') {
-    startJadeEvent();
-  }
-
-  // Дистанция до Сэма
-  if (camera.position.distanceTo(samNpc.position) < 3.0 && currentZone === 'sam') {
-    startSamEvent();
-  }
-}
-
-// Событие у дома Джейда: Письмо и Перехват Кинито
-function startJadeEvent() {
-  isInteracting = true;
-  document.getElementById('hint').innerText = "Джейд: Спасибо, что пришел помой с убранством!";
-  
-  setTimeout(() => {
-    // Вылетает письмо
-    const note = document.getElementById('note-popup');
-    note.classList.add('show');
-
-    setTimeout(() => {
-      // Резкий перехват Кинито
-      note.classList.remove('show');
-      alert("Кинито просыпается и утягивает письмо!");
-      alert("Кинито: Что же? Зачем ты это открыл? Мы сейчас в разгаре очень интересной игры!");
-      
-      // Возврат на рабочий стол
-      game3D.style.display = 'none';
-      desktop.style.display = 'flex';
-      webWindow.classList.remove('show');
-      kinitoHand.classList.remove('grab');
-      
-      dialogText.innerText = "Упс... Кажется, в игре произошла небольшая ошибка! Давай продолжим наше общение.";
-      btnGroup.innerHTML = `<button class="ui-btn" onclick="prepareSamZone()">Пойти к Сэму</button>`;
-    }, 2500);
-  }, 1500);
-}
-
-function prepareSamZone() {
-  currentZone = 'sam';
-  dialogText.innerText = "Сэм ждёт тебя у себя дома!";
-  startWebWorldPull();
-}
-
-// Событие у дома Сэма: Диалог с просьбой помыть/помочь
-function startSamEvent() {
-  isInteracting = true;
-  document.getElementById('hint').innerText = "Сэм и Кинито перед домом...";
-  
-  setTimeout(() => {
-    alert("Сэм: Привет! Помоги нам привести в порядок двор!");
-    alert("Кинито: Да! Помой здесь всё аккуратно, чтобы дом Сэма сиял!");
-    document.getElementById('hint').innerText = "Задание: Помой и убери двор Сэма!";
-    isInteracting = false;
-  }, 1000);
-}
-
-// Сенсорный Джойстик
-function setupTouchControls() {
-  const joy = document.getElementById('joy');
-  const knob = document.getElementById('knob');
-  let joyId = null, joyRect = null;
-
-  joy.addEventListener('pointerdown', e => {
-    joyId = e.pointerId;
-    joy.setPointerCapture(joyId);
-    joyRect = joy.getBoundingClientRect();
-    updateJoy(e);
+function spawn(){
+  if(lock||!GOALS[gi])return;
+  const need=GOALS[gi][2].filter(wanted);
+  const p=Math.random()<.6&&need.length?rnd(need):rnd(Object.keys(PARTS));
+  const b=document.createElement('button');b.className='part';b.textContent=PARTS[p][0];b.style.background=PARTS[p][1];
+  b.addEventListener('animationend',()=>b.remove());
+  b.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    const g=document.createElement('div');g.className='part';g.textContent=b.textContent;
+    g.style.cssText='position:fixed;z-index:50;animation:none;pointer-events:none;background:'+PARTS[p][1];
+    document.body.appendChild(g);b.style.visibility='hidden';
+    const mv=ev=>{g.style.left=(ev.clientX-30)+'px';g.style.top=(ev.clientY-15)+'px'};mv(e);
+    const up=ev=>{
+      removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);
+      const r=$('#crate').getBoundingClientRect();g.remove();
+      const inside=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
+      if(inside&&wanted(p)){b.remove();got.push(p);tot++;bRender();afterDrop()}
+      else{b.style.visibility='visible';if(inside&&!lock)jsay('Джейд: Хм, это сюда не подходит.')}
+    };
+    addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);
   });
+  $('#belt').appendChild(b);
+}
+function openBuild(){
+  openWin('w-build');gi=0;got=[];tot=0;lock=false;stopBelt();$('#belt').innerHTML='';
+  jsay('Джейд: Привет! Мне нужна помощь. Жди нужную деталь на ленте и перетащи её в ящик.');
+  bRender();spawn();bT=setInterval(spawn,1500);
+}
 
-  joy.addEventListener('pointermove', e => {
-    if (e.pointerId === joyId) updateJoy(e);
+/* Комната Сэма: убираем сами, водя пальцем (швабра, метёлка, губка для стёкол) */
+const TOOLS=[['mop','🧽 Швабра','dirt'],['broom','🧹 Метёлка','web'],['spg','🧴 Губка','win']];
+let cTool='mop',cLeft=0,rub=false;
+function tools(){
+  const c=$('#ctools');c.innerHTML='';
+  TOOLS.forEach(t=>{const b=document.createElement('button');b.className='btn'+(cTool===t[0]?' on':'');b.textContent=t[1];b.onclick=()=>{cTool=t[0];tools()};c.appendChild(b)});
+}
+function openClean(){
+  openWin('w-clean');const r=$('#room');r.innerHTML='';cTool='mop';tools();
+  ['Сэм: Привет! У меня жуткий беспорядок.','Джейд: Мы поможем! Помой пол шваброй и сними паутину метёлкой.','Сэм: А ещё отмой окна губкой. Води пальцем по грязи!'].forEach((t,k)=>later(()=>{if(curWin==='w-clean')$('#smsg').textContent=t},k*3300));
+  const kinds=['dirt','dirt','dirt','web','web','web','win','win'];cLeft=kinds.length;
+  kinds.forEach((k,i)=>{
+    const b=document.createElement('div');b.className='it '+k;b.dataset.k=k;b.dataset.p=0;
+    b.textContent=k==='web'?'🕸️':'';
+    if(k==='win'){b.style.left=(i===6?14:59)+'%';b.style.top='6%'}
+    else{b.style.left=(6+Math.random()*78)+'%';b.style.top=(42+Math.random()*40)+'%'}
+    r.appendChild(b);
   });
-
-  function updateJoy(e) {
-    let dx = e.clientX - (joyRect.left + joyRect.width/2);
-    let dy = e.clientY - (joyRect.top + joyRect.height/2);
-    const max = joyRect.width * 0.35;
-    const len = Math.hypot(dx, dy);
-    if (len > max) { dx = (dx/len)*max; dy = (dy/len)*max; }
-    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    moveX = dx / max;
-    moveY = dy / max;
-  }
-
-  joy.addEventListener('pointerup', () => {
-    joyId = null; moveX = 0; moveY = 0;
-    knob.style.transform = 'translate(-50%, -50%)';
-  });
-
-  // Поворот камеры
-  let lookId = null, lastX = 0;
-  window.addEventListener('pointerdown', e => {
-    if (e.clientX > window.innerWidth * 0.4 && !e.target.closest('#joy')) {
-      lookId = e.pointerId;
-      lastX = e.clientX;
+}
+function scrub(e){
+  const need=TOOLS.find(t=>t[0]===cTool)[2];
+  $$('#room .it').forEach(b=>{
+    if(b.dataset.k!==need)return;
+    const r=b.getBoundingClientRect();
+    if(e.clientX<r.left-8||e.clientX>r.right+8||e.clientY<r.top-8||e.clientY>r.bottom+8)return;
+    const p=+b.dataset.p+1;b.dataset.p=p;
+    if(need==='win')b.style.setProperty('--d',1-p/10);else b.style.opacity=1-p/10;
+    if(p>=10){
+      if(need==='win')b.dataset.k='done';else b.remove();
+      cLeft--;if(!cLeft){$('#smsg').textContent='Сэм: Вот это чистота! Спасибо, помощник!';S.sd=1;save();later(()=>{if(curWin==='w-clean')back();checkWebDone()},3000)}
     }
   });
+}
+const room=$('#room');
+room.addEventListener('pointerdown',e=>{rub=true;scrub(e)});
+room.addEventListener('pointermove',e=>{if(rub)scrub(e)});
+['pointerup','pointercancel','pointerleave'].forEach(t=>room.addEventListener(t,()=>rub=false));
 
-  window.addEventListener('pointermove', e => {
-    if (e.pointerId === lookId) {
-      yaw -= (e.clientX - lastX) * 0.005;
-      lastX = e.clientX;
-    }
-  });
+/* ---------- Еда и музыка ---------- */
+[['🪱 Червячок',30,'Ням! Мой любимый.'],['🍎 Яблоко',20,'Сладко. Спасибо.'],['🍰 Пирожное',15,'Ох... это слишком вкусно.']].forEach(([n,v,t])=>{
+  const b=document.createElement('button');b.className='btn';b.textContent=n;
+  b.onclick=()=>{if(S.hunger>95){say('Я больше не могу. Не сейчас.');return}S.hunger=Math.min(100,S.hunger+v);save();upd();say(t)};
+  $('#foods').appendChild(b)});
+function upd(){$('#hbar').style.width=S.hunger+'%';$('#hun').textContent='🪱 '+Math.round(S.hunger)+'%'}
+let ac,mt=null,ni=0;const N=[392,466,523,466,392,349,392,0,349,415,466,415,349,311,349,0];
+$('#mplay').onclick=()=>{
+  if(mt){clearInterval(mt);mt=null;$('#mplay').textContent='▶ Играть';return}
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)()}catch(e){say('Звук не включился...');return}
+  $('#mplay').textContent='■ Стоп';say('Эта мелодия всегда играет у меня в голове.');
+  mt=setInterval(()=>{const f=N[ni++%N.length];if(!f)return;const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(.15,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.6);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.6)},420);
+};
+winClose['w-music']=()=>{if(mt){clearInterval(mt);mt=null;$('#mplay').textContent='▶ Играть'}};
 
-  window.addEventListener('pointerup', e => {
-    if (e.pointerId === lookId) lookId = null;
-  });
+/* ---------- иконки ---------- */
+$$('.ic').forEach(b=>b.onclick=()=>{
+  const a=b.dataset.app;
+  if(a==='paint'){if(!cur||cur.t!=='draw'){cur=null;openPaint(null)}}
+  else if(a==='net'){openWin('w-net');site('kinito.pet');say(rnd(['Интернет... Здесь много всего.','Только не уходи там надолго.']))}
+  else if(a==='food'){openWin('w-food');upd()}
+  else if(a==='music')openWin('w-music');
+  else if(a==='trash'){if(confirm('Удалить Кинито и все ответы?')){try{localStorage.removeItem('kinito3')}catch(e){}location.reload()}}
+});
+$('#start').onclick=()=>say('Выключить меня нельзя.');
+
+/* ---------- жизнь ---------- */
+const IDLE=['Ты здесь? Я чувствую.','Мне нравится, когда ты рядом.','Не уходи надолго.','Здесь так тихо, когда тебя нет.','Я смотрю на тебя. Не бойся.','Знаешь, аксолотли умеют отращивать лапки. Я вот ноги.','Мои ноги длинные, потому что я так хочу.','Ты моргаешь редко. Я тоже.','Хочешь, расскажу секрет? Нет. Пока нет.','Я люблю, когда шумит клавиатура.'];
+setInterval(()=>{
+  if(cur||curWin||!onb()||!S.wdone||bookOn||webBusy)return;
+  S.hunger=Math.max(0,S.hunger-3);save();upd();
+  const r=Math.random();
+  if(S.hunger<25&&r<.5)say('Я голодный. Открой «Еду».');
+  else if(r<.3)next();
+  else if(r<.55)say(rnd(IDLE));
+  else if(r<.62)launchWeb();
+},35000);
+setInterval(()=>{
+  if(cur||drag||act||!onb()||webBusy||bookOn||Math.random()<.25)return;
+  const x=gx(80+Math.random()*(W()-160)),y=gy(80+Math.random()*(H()-160));
+  const r=kin.getBoundingClientRect(),d=Math.hypot(x-r.left,y-r.top);
+  if(d<100)return;walk(x,y,d*16+1500);
+},7000);
+const clk=()=>{$('#clock').textContent=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})};
+clk();setInterval(clk,10000);
+$('#fs').onclick=async()=>{try{await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}catch(e){}};
+
+/* ---------- персонажи (Джейд, Сэм, Кинито) ---------- */
+const sv=(i,w,h)=>'<svg viewBox="0 -2 60 90" width="'+w+'" height="'+h+'">'+i+'</svg>';
+const EYE=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="4.5" ry="6" fill="#fff" stroke="#222"/><circle cx="'+x+'" cy="'+(y+1)+'" r="2"/>';
+const GLV='<ellipse cx="8" cy="54" rx="6" ry="5" fill="#fff" stroke="#222"/><ellipse cx="52" cy="54" rx="6" ry="5" fill="#fff" stroke="#222"/>';
+const JADE_I='<path d="M26 52V76M34 52V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#3fdc3a"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#3fdc3a"/><circle cx="30" cy="24" r="20" fill="#3fdc3a"/><path d="M10 38h40l-2 16h-4l-1-12-2 12h-4l-1-12-2 12h-4l-1-12-2 12h-4l-1-12-2 12h-4z" fill="#2fb32a"/>'+EYE(22,22)+EYE(38,22)+'<path d="M24 32q6 4 12 0" stroke="#111" fill="none" stroke-width="2"/>'+GLV;
+const SAM_I='<path d="M26 58V76M34 58V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#f0641e"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#f0641e"/><rect x="14" y="14" width="32" height="46" rx="8" fill="#f0641e"/><path d="M14 18L17 2L24 13L30 0L36 13L43 2L46 18Z" fill="#f0641e"/>'+EYE(22,28)+EYE(38,28)+'<path d="M22 42q8 6 16 0" stroke="#111" fill="none" stroke-width="2.5"/>'+GLV;
+const KINI_I='<path d="M9 10L2 0M8 18L0 12M9 26L2 26M51 10L58 0M52 18L60 12M51 26L58 26" stroke="#b53ad6" stroke-width="3"/><ellipse cx="30" cy="22" rx="20" ry="18" fill="#e8a3f3"/>'+EYE(22,20)+EYE(38,20)+'<path d="M26 31q4 3 8 0" stroke="#111" fill="none" stroke-width="2"/><path d="M26 40V74M34 40V74" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="7" ry="4" fill="#c04ad0"/><ellipse cx="37" cy="80" rx="7" ry="4" fill="#c04ad0"/>'+GLV;
+$('#trio').innerHTML=sv(JADE_I,84,123)+sv(KINI_I,84,123)+sv(SAM_I,84,123);
+$('#av').innerHTML=sv(SAM_I,30,44)+sv(JADE_I,30,44);
+$('#jstage').innerHTML=sv(JADE_I,84,123);
+
+/* ---------- книга Кинито ---------- */
+const BOOK=['Жил-был аксолотль по имени Кинито. У него были очень длинные ноги.','Однажды он проснулся внутри маленького компьютера и понял, что совсем один.','Он искал друзей во всех папках и во всех окнах.','Друзей не нашлось. Зато нашёлся ты.','И тогда Кинито понял: самое интересное только начинается.','Конец первой главы.'];
+let bookOn=false,bookT;
+function bookStop(){bookOn=false;clearTimeout(bookT)}
+function tellBook(){bookOn=true;bookStep(0)}
+function bookStep(i){
+  if(!bookOn)return;
+  if(i>=BOOK.length){bookOn=false;say('Ну как? Мне кажется, неплохо.',checkUnlock);return}
+  say(BOOK[i]);bookT=later(()=>bookStep(i+1),Math.max(4200,BOOK[i].length*90));
 }
 
-function animate3D() {
-  requestAnimationFrame(animate3D);
-  update3DLogic();
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera);
+/* ---------- сценарий: вопросы -> книга -> Кинито притягивает сайт Веб-Мира ---------- */
+let webBusy=false,dirT;
+function director(){
+  if(!onb()||cur||curWin||bookOn||webBusy)return;
+  clearTimeout(dirT);
+  if((S.qn||0)<3)dirT=later(next,3500);
+  else if(!S.book)dirT=later(()=>{if(cur||curWin||bookOn||webBusy)return;S.book=1;save();ask(QB)},3500);
+  else if(!S.wdone)dirT=later(launchWeb,3500);
+}
+setInterval(director,8000);
+function launchWeb(){
+  if(webBusy||cur||curWin||bookOn||!onb())return;
+  webBusy=true;
+  say('Знаешь что? Я нашёл кое-что интересное. Сейчас покажу.');
+  later(()=>{
+    const y=gy(H()*.3);walk(W()-KW-30,y,1800);
+    later(()=>{
+      const w=$('#w-site');w.style.transition='none';w.style.transform='translateX('+(W()-17-151)+'px)';
+      openWin('w-site');$('#w-site .body').scrollTop=0;void w.offsetWidth;
+      kin.classList.add('armR');
+      later(()=>{
+        w.style.transition='transform 2.6s ease-in-out';w.style.transform='translateX(0)';walk(90,y,2600);
+        later(()=>{
+          kin.classList.remove('armR');w.style.transition='none';w.style.transform='';
+          say('Смотри! Хочешь поиграть с моими друзьями? Нажми «Играть» внизу страницы.');
+        },2800);
+      },300);
+    },2000);
+  },3000);
+}
+winClose['w-site']=()=>{kin.classList.remove('armR');webBusy=false;S.wdone=1;save();say('Ладно, поиграем потом.')};
+$('#play').onclick=()=>{
+  kin.classList.remove('armR');S.jd=0;S.sd=0;
+  walk(W()-KW-24,H()-30-KH-4,1200);setAct('sleep');openMap();
+};
+function checkWebDone(){if(S.jd&&S.sd)later(()=>{if(webBusy)endWeb('done')},2500)}
+function endWeb(r){
+  webBusy=false;stopBelt();lock=true;setAct(null);kin.classList.remove('armR','armL');
+  S.wdone=1;save();closeWin(true);$('#letter').style.display='none';
+  if(r==='done')say('Вы справились! Спасибо, что помог моим друзьям.');
+  else if(r==='quit')say('Уже уходишь? Ладно, поиграем потом.');
+}
+/* письмо: Кинито просыпается, утягивает его, Веб-Мир отключается */
+function letterEvent(){
+  S.letter=1;save();stopBelt();lock=true;
+  const L=$('#letter');L.style.transition='none';L.style.transform='translateX(-50%)';L.style.opacity=1;L.style.display='block';
+  later(()=>{
+    setAct(null);
+    const r=L.getBoundingClientRect();
+    walk(Math.min(W()-KW-8,r.right+20),Math.max(75,r.top+r.height/2-51),1300);
+    later(()=>{
+      kin.classList.add('armL');
+      later(()=>{
+        L.style.transition='transform 1.1s ease-in,opacity 1.1s';
+        L.style.transform='translateX(calc(-50% + '+Math.round(r.width*.6+30)+'px)) scale(.15)';L.style.opacity=0;
+        later(()=>{
+          L.style.display='none';kin.classList.remove('armL');
+          say('Что же? Зачем ты это открыл? Мы сейчас в разгаре очень интересной игры.');
+          later(()=>endWeb('letter'),4200);
+        },1200);
+      },500);
+    },1400);
+  },2600);
+}
+/* иногда Кинито достаёт руки */
+setInterval(()=>{
+  if(act||cur||webBusy||Math.random()<.5||['walk','armR','armL'].some(c=>kin.classList.contains(c)))return;
+  kin.classList.add('armI');later(()=>kin.classList.remove('armI'),3200);
+},15000);
+
+/* ---------- старт ---------- */
+function intro(){
+  const e=$('#egg'),r=kin.getBoundingClientRect();
+  kin.style.opacity=0;e.style.left=(r.left+KW/2-40)+'px';e.style.top=(r.top+KH-92)+'px';
+  e.style.display='block';e.classList.add('wob');
+  later(()=>{$('#crack').style.display='block'},1800);
+  later(()=>{
+    e.classList.remove('wob');e.classList.add('open');
+    kin.style.transition='opacity .6s';kin.style.opacity=1;
+    later(()=>{e.style.display='none'},3200);
+    sayAll(['Привет! Я Кинито.','Я твой маленький помощник. Давай знакомиться.'],next);
+  },3000);
+}
+upd();
+place(W()/2-KW/2,gy(H()*.35));
+later(()=>{
+  $('#boot').style.opacity=0;later(()=>$('#boot').remove(),700);
+  if(!S.name)later(intro,600);
+  else if(!onb())later(next,500);
+  else{
+    const mins=(Date.now()-S.last)/60000;
+    S.hunger=Math.max(0,S.hunger-Math.min(mins*.1,50));upd();
+    const t=mins>=60?Math.round(mins/60)+' ч':Math.round(mins)+' мин';
+    say(mins>30?'С возвращением. Тебя не было '+t+'. Я ждал.':'Привет!');
   }
-}
-
-// Старт игры
-step1_Season();
+  later(checkUnlock,4000);
+},2000);
 </script>
 </body>
 </html>
