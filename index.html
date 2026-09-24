@@ -108,12 +108,24 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
 #mail{display:none;position:absolute;left:8px;bottom:36px;z-index:13;width:44px;height:38px;border:2px outset #fff;background:#f4f3ee;font-size:22px;cursor:pointer;padding:0;animation:pulse 1s ease-in-out infinite}
 #mail::after{content:'1';position:absolute;top:-7px;right:-7px;background:#e02020;color:#fff;font:bold 10px Tahoma;border-radius:8px;padding:1px 5px}
 @keyframes pulse{50%{transform:scale(1.15)}}
+#wall{position:absolute;left:4%;right:4%;top:6%;height:64%;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(3,1fr);gap:1px;background:#8a8a80;border:3px solid #6b4a2a}
+.cell{background:#cfc8b4}
+.fixrow{display:flex;height:100%;align-items:center;justify-content:space-around}
+#hint{display:none;position:absolute;right:10px;top:10px;z-index:6;background:#ffffe1;border:1px solid #000;padding:4px 8px;font:11px Tahoma;color:#000;max-width:170px}
+#bimg svg{width:100%;height:auto;max-height:135px;border:2px solid #8a6a3a;border-radius:4px;display:block}
+#btxt{font:15px Georgia,serif;line-height:1.4;color:#3a2a10;min-height:64px}
+#pc.glitch{animation:gl .12s steps(2) infinite;filter:hue-rotate(90deg) contrast(1.5) saturate(1.6)}
+@keyframes gl{0%{transform:translate(-4px,2px)}50%{transform:translate(5px,-3px) skewX(3deg)}100%{transform:translate(-2px,-2px)}}
+#pc.glitch::after{content:'';position:absolute;inset:0;z-index:40;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.4) 0 2px,transparent 2px 4px),linear-gradient(90deg,rgba(255,0,0,.3),rgba(0,255,255,.3))}
+#pc.dead::after{content:'';position:absolute;inset:0;z-index:41;background:#000}
+#pbar{transition:width .2s}
 </style>
 </head>
 <body>
 <div id="pc">
   <div id="icons">
     <button class="ic" data-app="net"><span>🌐</span>Сеть</button>
+    <button class="ic" data-app="pc"><span>💻</span>Мой ПК</button>
     <button class="ic" data-app="paint"><span>🎨</span>Paint</button>
     <button class="ic" data-app="music"><span>🎵</span>Музыка</button>
     <button class="ic" data-app="trash"><span>🗑️</span>Корзина</button>
@@ -127,6 +139,10 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
   <div id="w-net" class="win big"><div class="tb"><span class="tt">Обозреватель</span><b class="x">×</b></div>
     <div class="body"><div class="btns" id="nav"></div><input id="addr" readonly aria-label="адрес"><div id="page"></div></div></div>
 
+  <div id="hint">Нажимай на иконки и изучай систему</div>
+  <div id="inst" class="win" style="left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,86vw);z-index:30"><div class="tb"><span class="tt">Установка</span></div><div class="body" id="instbody"><div style="font-size:14px">Обнаружен новый компонент.<br>Установить Кинито Пет?</div><div class="btns" style="justify-content:center"><button class="btn" id="yes1">Да</button><button class="btn" id="yes2">Да</button></div></div></div>
+  <div id="w-pc" class="win big" style="width:min(420px,calc(100% - 160px))"><div class="tb"><span class="tt">Мой компьютер</span><b class="x">×</b></div><div class="body"><div class="btns" id="files"></div><div id="fprev" style="background:#fff;border:2px inset #999;padding:8px;min-height:60px;font-size:13px">Выбери файл.</div></div></div>
+  <div id="w-book" class="win big" style="width:min(400px,calc(100% - 200px))"><div class="tb"><span class="tt">Сказка про Кинито</span><b class="x">×</b></div><div class="body" style="background:#fdf6e3"><div id="bimg"></div><div id="btxt"></div><div style="display:flex;justify-content:space-between;align-items:center"><button class="btn" id="bprev">◀ Назад</button><span id="bnum" style="color:#3a2a10"></span><button class="btn" id="bnext">Дальше ▶</button></div></div></div>
   <div id="w-map" class="win big"><div class="tb"><span class="tt">Веб-Мир</span><b class="x">×</b></div><div class="body" style="padding:4px"><svg id="map" viewBox="0 0 400 240" style="width:100%;flex:1;min-height:0;touch-action:none;background:#f0d283"></svg></div></div>
   <div id="w-build" class="win big"><div class="tb"><span class="tt">Дом Джейд</span><b class="x">×</b></div><div class="body wood"><div class="scene"><div class="jrow"><div id="jstage"></div><div id="crate"><div id="sil">🚗</div><div id="cchips"></div></div></div><div id="jmsg"></div><div id="belt"></div></div></div></div>
   <div id="w-clean" class="win big"><div class="tb"><span class="tt">Дом Сэма</span><b class="x">×</b></div><div class="body"><div style="display:flex;gap:8px;align-items:center"><span id="av" style="flex:none"></span><div id="smsg"></div></div><div class="btns" id="ctools"></div><div id="room"></div></div></div>
@@ -188,7 +204,7 @@ const later=(f,ms)=>setTimeout(f,ms);
 let S={name:'',age:'',answers:{},asked:[],drawn:[],hunger:70,game:0,last:Date.now()};
 try{const r=localStorage.getItem('kinito3');if(r)S={...S,...JSON.parse(r)}}catch(e){}
 const save=()=>{try{S.last=Date.now();localStorage.setItem('kinito3',JSON.stringify(S))}catch(e){}};
-const onb=()=>S.name&&S.age&&S.answers.color;
+const onb=()=>S.name&&S.answers.color&&S.answers.power&&S.answers.word;
 const kin=$('#kin'),KW=49,KH=105;
 let cur=null,curWin=null,hideT,drag=false,act=null,wt,typT,dx=0,dy=0;
 
@@ -211,7 +227,7 @@ kin.addEventListener('pointermove',e=>{if(!drag)return;kin.style.left=Math.max(0
 function setAct(a){
   act=a;const sl=a==='sleep';
   ['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',sl?36:8));
-  $('#book').style.display=a==='read'?'block':'none';
+  $('#book').style.display=(a==='read'||a==='tell')?'block':'none';
   $('#gl').style.display=a==='read'?'block':'none';
   $('#pen').style.display=a==='write'?'block':'none';
   $('#zz').style.display=sl?'block':'none';
@@ -241,6 +257,7 @@ setInterval(()=>{if(act)return;['l1','l2'].forEach(id=>$('#'+id).setAttribute('h
 
 /* ---------- речь ---------- */
 function say(t,after){
+  if(!kinLive)return;
   clearTimeout(hideT);sfx('pop');speak(t);const b=$('#bub');b.textContent=t;b.style.display='block';
   b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
   hideT=later(()=>{if(!cur)b.style.display='none'},Math.max(5000,t.length*90));
@@ -252,7 +269,8 @@ function sayAll(a,end){say(a[0],a.length>1?()=>sayAll(a.slice(1),end):end)}
 const winClose={};
 function openWin(id,title){
   if(id!=='w-build')stopBelt();
-  if(bookOn){bookStop();say('Наверное, не слишком интересная книга. Давай я потом попробую написать более интересную.')}
+  if(bookOn&&id!=='w-book'&&!bookIg){bookIg=true;clearTimeout(bookT);bookIgT=later(()=>{if(bookOn)giveUp()},7000)}
+  if(phase==='explore'){opened.add(id);$('#hint').style.display='none'}
   document.body.classList.add('wo');
   $$('.win').forEach(w=>w.style.display='none');
   $('#'+id).style.display='flex';curWin=id;
@@ -270,7 +288,11 @@ const DR=['Красиво!','Это ты? Или это я?','Спасибо. Я
 const QN={id:'name',t:'text',q:'Как тебя зовут?',b:'Чтобы что-то рассказать мне, просто введи это в поле и нажми ОК!',h:'Введи имя или то, как тебя называть, и нажми ОК.',set:a=>S.name=a,re:()=>'Приятно познакомиться.'};
 const QA={id:'age',t:'text',q:'Сколько тебе лет?',b:'Не стесняйся. Я никому не скажу.',h:'Введи возраст и нажми ОК.',set:a=>S.age=a,re:a=>a+'... хороший возраст. Мы подружимся.'};
 const QC={id:'color',t:'text',q:'Какой твой любимый цвет?',b:'Это важно, это пригодится.',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Хороший цвет. Он тебе пойдёт.'};
-const QB={id:'book',t:'choice',q:'Хочешь, я расскажу тебе свою книгу?',b:'Я написал книгу. Хочешь, расскажу?',o:['Да','Нет'],re:a=>a==='Да'?'Тогда слушай.':'Ладно, думаю, эта книга не такая уж и интересная.'};
+const QB={id:'book',t:'choice',q:'Хочешь, я расскажу тебе свою сказку?',b:'Я как раз написал сказку. Хочешь, расскажу?',o:['Да','Нет'],re:a=>a==='Да'?'Тогда слушай. Сейчас достану книжку.':'Ладно, думаю, эта сказка не такая уж и интересная.'};
+const QNC={id:'nameok',t:'choice',q:'Ты уверен насчёт имени?',b:'Хм... Необычное имя. Тебя правда так зовут?',o:['Да','Нет'],re:a=>a==='Да'?'Хорошо. Необычное, но мне нравится.':'Тогда попробуем ещё раз.'};
+const QP={id:'power',t:'text',q:'Если бы у тебя была суперсила, какая бы она была?',b:'Придумай что-нибудь необычное!',h:'Напиши суперсилу и нажми ОК.',re:a=>'«'+a+'»! Отличная суперсила. Я бы тоже такую хотел.'};
+const QW={id:'word',t:'text',q:'Какое твоё любимое слово?',b:'Только одно слово.',h:'Напиши слово и нажми ОК.',re:a=>'«'+a+'»... Хорошее слово. Звучит по-особенному.'};
+const unusual=n=>!/^[А-Яа-яЁёA-Za-z][А-Яа-яЁёA-Za-z\- ]{1,13}$/.test(n)||!/[аеёиоуыэюяaeiouy]/i.test(n)||/(.)\1\1/i.test(n);
 const OPEN=['Хм.','Интересно.','Понятно.','Ага.','Вот как.','Так-так.','Неожиданно.'];
 const TAIL=['Мне нравится с тобой разговаривать.','Расскажешь мне ещё что-нибудь потом?','Я буду об этом думать.','Забавно, правда?','Спасибо, что ответил.'];
 const vary=t=>{const r=Math.random();return r<.35?rnd(OPEN)+' '+t:r<.6?t+' '+rnd(TAIL):t};
@@ -328,8 +350,10 @@ function callback(){
 }
 function next(){
   if(!S.name)return ask(QN);
-  if(!S.age)return ask(QA);
   if(!S.answers.color)return ask(QC);
+  if(!S.answers.power)return ask(QP);
+  if(!S.answers.word)return ask(QW);
+  if(!S.intro)return selfIntro();
   let pool=Q.filter(q=>!S.asked.includes(q.id));
   if(!pool.length){S.asked=[];pool=Q.slice()}
   const hasDraw=S.asked.some(id=>(Q.find(x=>x.id===id)||{}).t==='draw'),dr=pool.filter(x=>x.t==='draw');
@@ -340,9 +364,9 @@ function ask(q){cur=q;say(q.b||q.q);if(q.t==='draw')openPaint(q);else openAnswer
 function answer(q,a){
   cur=null;closeWin(true);
   S.answers[q.id]=a;if(!S.asked.includes(q.id))S.asked.push(q.id);
-  if(q.set)q.set(a);if(![QN,QA,QC,QB].includes(q))S.qn=(S.qn||0)+1;save();
+  if(q.set)q.set(a);if(q===QNC&&a==='Нет'){S.name='';delete S.answers.name;S.asked=S.asked.filter(x=>x!=='name')}if(![QN,QA,QC,QP,QW,QB,QNC].includes(q))S.qn=(S.qn||0)+1;save();
   const t0=q.re(a),t=(q===QN||q===QA)?t0:vary(t0);
-  say(t,()=>{if(q===QN||q===QA)later(next,500);else if(q===QB&&a==='Да')tellBook();else checkUnlock()});
+  say(t,()=>{if(q===QN)later(()=>unusual(a)?ask(QNC):next(),500);else if(q===QNC||q===QC||q===QP||q===QW)later(next,500);else if(q===QB&&a==='Да')tellBook();else checkUnlock()});
 }
 function openAnswer(q){
   const b=$('#ansbody');b.innerHTML='';$('#atitle').textContent=q.q;
@@ -514,16 +538,22 @@ function openBuild(){
   bRender();spawn();bT=setInterval(spawn,1500);
 }
 
-/* Комната Сэма: убираем сами, водя пальцем (швабра, метёлка, губка для стёкол) */
+/* Комната Сэма: 1) уборка 2) покраска стены 3) ремонт */
 const TOOLS=[['mop','🧽 Швабра','dirt'],['broom','🧹 Метёлка','web'],['spg','🧴 Губка','win']];
-let cTool='mop',cLeft=0,rub=false;
+const PCOL=[['#e03030','Красный'],['#f28a1e','Оранжевый'],['#f2d21b','Жёлтый'],['#2fa84a','Зелёный'],['#2d5be3','Синий']];
+const RTOOLS=[['hammer','🔨 Молоток','shelf','Полка'],['bulb','💡 Лампочка','lamp','Лампа'],['wrench','🔧 Ключ','tap','Кран']];
+let cStage=1,cTool='mop',cLeft=0,rub=false,pcol='#f28a1e';
+const ssay=t=>{$('#smsg').textContent=t};
 function tools(){
   const c=$('#ctools');c.innerHTML='';
-  TOOLS.forEach(t=>{const b=document.createElement('button');b.className='btn'+(cTool===t[0]?' on':'');b.textContent=t[1];b.onclick=()=>{cTool=t[0];tools()};c.appendChild(b)});
+  const add=(t,on,fn,col)=>{const b=document.createElement('button');b.className='btn'+(on?' on':'');b.textContent=t;if(col)b.style.color=col;b.onclick=fn;c.appendChild(b)};
+  if(cStage===2)PCOL.forEach(p=>add('■ '+p[1],pcol===p[0],()=>{pcol=p[0];tools()},p[0]));
+  else (cStage===3?RTOOLS:TOOLS).forEach(t=>add(t[1],cTool===t[0],()=>{cTool=t[0];tools()}));
 }
 function openClean(){
-  openWin('w-clean');const r=$('#room');r.innerHTML='';cTool='mop';tools();
-  ['Сэм: Привет! У меня жуткий беспорядок.','Джейд: Мы поможем! Помой пол шваброй и сними паутину метёлкой.','Сэм: А ещё отмой окна губкой. Води пальцем по грязи!'].forEach((t,k)=>later(()=>{if(curWin==='w-clean')$('#smsg').textContent=t},k*3300));
+  openWin('w-clean');cStage=1;cTool='mop';tools();
+  const r=$('#room');r.innerHTML='';
+  ['Сэм: Привет! У меня жуткий беспорядок, а ещё нужен ремонт.','Джейд: Мы поможем! Сначала уберём: пол шваброй, паутину метёлкой, окна губкой.','Сэм: А потом покрасим стену и всё починим!'].forEach((t,k)=>later(()=>{if(curWin==='w-clean'&&cStage===1)ssay(t)},k*3300));
   const kinds=['dirt','dirt','dirt','web','web','web','win','win'];cLeft=kinds.length;
   kinds.forEach((k,i)=>{
     const b=document.createElement('div');b.className='it '+k;b.dataset.k=k;b.dataset.p=0;
@@ -533,8 +563,42 @@ function openClean(){
     r.appendChild(b);
   });
 }
+function stage2(){
+  cStage=2;pcol=PCOL[1][0];tools();
+  const r=$('#room');r.innerHTML='<div id="wall"></div>';
+  for(let i=0;i<18;i++){const c=document.createElement('div');c.className='cell';c.dataset.p=0;$('#wall').appendChild(c)}
+  cLeft=18;ssay('Сэм: Выбери цвет и води пальцем по стене, чтобы её покрасить!');
+}
+function stage3(){
+  cStage=3;cTool='hammer';tools();
+  const r=$('#room');r.innerHTML='<div class="fixrow"></div>';
+  RTOOLS.forEach(t=>{
+    const b=document.createElement('button');b.className='card';b.innerHTML='<i>⚠️</i>'+t[3];
+    b.onclick=()=>{
+      if(b.dataset.d)return;
+      if(RTOOLS.find(x=>x[0]===cTool)[2]!==t[2]){b.style.outline='2px solid red';sfx('bad');later(()=>b.style.outline='',300);return}
+      b.dataset.d=1;b.innerHTML='<i>✅</i>'+t[3];sfx('ok');cLeft--;
+      if(!cLeft){ssay('Сэм: Ремонт готов! Теперь у меня самый лучший дом. Спасибо!');S.sd=1;save();later(()=>{if(curWin==='w-clean')back();checkWebDone()},3500)}
+    };
+    $('#room .fixrow').appendChild(b);
+  });
+  cLeft=3;ssay('Сэм: Осталось всё починить! Выбери инструмент и нажми на сломанную вещь.');
+}
 function scrub(e){
-  const need=TOOLS.find(t=>t[0]===cTool)[2];
+  if(cStage===3)return;
+  if(cStage===2){
+    $$('#wall .cell').forEach(b=>{
+      if(b.dataset.d)return;
+      const r=b.getBoundingClientRect();
+      if(e.clientX<r.left-3||e.clientX>r.right+3||e.clientY<r.top-3||e.clientY>r.bottom+3)return;
+      const p=+b.dataset.p+1;b.dataset.p=p;b.style.background=pcol;b.style.opacity=.4+p*.2;if(p===1)sfx('blip');
+      if(p>=3){b.dataset.d=1;b.style.opacity=1;cLeft--;
+        if(!cLeft){ssay('Сэм: Вот это цвет! Стена как новая. Осталось кое-что починить!');later(()=>{if(curWin==='w-clean'&&cStage===2)stage3()},2600)}}
+    });
+    return;
+  }
+  const tl=TOOLS.find(t=>t[0]===cTool);if(!tl)return;
+  const need=tl[2];
   $$('#room .it').forEach(b=>{
     if(b.dataset.k!==need)return;
     const r=b.getBoundingClientRect();
@@ -543,7 +607,8 @@ function scrub(e){
     if(need==='win')b.style.setProperty('--d',1-p/10);else b.style.opacity=1-p/10;
     if(p>=10){
       if(need==='win')b.dataset.k='done';else b.remove();
-      cLeft--;if(!cLeft){$('#smsg').textContent='Сэм: Вот это чистота! Спасибо, помощник!';S.sd=1;save();later(()=>{if(curWin==='w-clean')back();checkWebDone()},3000)}
+      cLeft--;
+      if(!cLeft){ssay('Сэм: Вот это чистота! Теперь покрасим стену!');later(()=>{if(curWin==='w-clean'&&cStage===1)stage2()},2600)}
     }
   });
 }
@@ -552,7 +617,6 @@ room.addEventListener('pointerdown',e=>{rub=true;scrub(e)});
 room.addEventListener('pointermove',e=>{if(rub)scrub(e)});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>room.addEventListener(t,()=>rub=false));
 
-/* ---------- Еда и музыка ---------- */
 function upd(){}
 let ac,mt=null,ni=0;const N=[392,466,523,466,392,349,392,0,349,415,466,415,349,311,349,0];
 $('#mplay').onclick=()=>{
@@ -566,8 +630,9 @@ winClose['w-music']=()=>{if(mt){clearInterval(mt);mt=null;$('#mplay').textConten
 
 /* ---------- иконки ---------- */
 $$('.ic').forEach(b=>b.onclick=()=>{
-  const a=b.dataset.app;
-  if(a==='paint'){if(!cur||cur.t!=='draw'){cur=null;openPaint(null)}}
+  const a=b.dataset.app;if(['bug','inst','egg'].includes(phase))return;
+  if(a==='pc')openWin('w-pc');
+  else if(a==='paint'){if(!cur||cur.t!=='draw'){cur=null;openPaint(null)}}
   else if(a==='net'){openWin('w-net');site('kinito.pet');say(rnd(['Интернет... Здесь много всего.','Только не уходи там надолго.']))}
   else if(a==='music')openWin('w-music');
   else if(a==='trash'){if(confirm('Удалить Кинито и все ответы?')){try{localStorage.removeItem('kinito3')}catch(e){}location.reload()}}
@@ -604,25 +669,58 @@ $('#trio').innerHTML=sv(JADE_I,84,123)+sv(KINI_I,84,123)+sv(SAM_I,84,123);
 $('#av').innerHTML=sv(SAM_I,30,44)+sv(JADE_I,30,44);
 $('#jstage').innerHTML=sv(JADE_I,84,123);
 
-/* ---------- книга Кинито ---------- */
-const BOOK=['Жил-был аксолотль по имени Кинито. У него были очень длинные ноги.','Однажды он проснулся внутри маленького компьютера и понял, что совсем один.','Он искал друзей во всех папках и во всех окнах.','Друзей не нашлось. Зато нашёлся ты.','И тогда Кинито понял: самое интересное только начинается.','Конец первой главы.'];
-let bookOn=false,bookT;
-function bookStop(){bookOn=false;clearTimeout(bookT)}
-function tellBook(){bookOn=true;bookStep(0)}
-function bookStep(i){
-  if(!bookOn)return;
-  if(i>=BOOK.length){bookOn=false;say('Ну как? Мне кажется, неплохо.',checkUnlock);return}
-  say(BOOK[i]);bookT=later(()=>bookStep(i+1),Math.max(4200,BOOK[i].length*90));
+/* ---------- сказка: Кинито достаёт книжку, мы листаем страницы ---------- */
+const ch=(i,x,y,w)=>'<svg x="'+x+'" y="'+y+'" width="'+w+'" height="'+Math.round(w*1.5)+'" viewBox="0 -2 60 90">'+i+'</svg>';
+const pg=(bg,inner)=>'<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="'+bg+'"/>'+inner+'</svg>';
+const STARS=[[20,15],[50,30],[90,12],[120,35],[170,18],[185,60],[30,60],[140,80]].map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="1.6" fill="#fff"/>').join('');
+const FOLD=(x,y)=>'<rect x="'+x+'" y="'+(y-4)+'" width="14" height="6" rx="2" fill="#e0a820"/><rect x="'+x+'" y="'+y+'" width="30" height="20" rx="2" fill="#f2c94c" stroke="#a07810"/>';
+const WIN=(x,y)=>'<rect x="'+x+'" y="'+y+'" width="36" height="30" fill="#fff" stroke="#555"/><rect x="'+x+'" y="'+y+'" width="36" height="6" fill="#7b7b48"/>';
+const PAGES=[
+ [pg('#1b2a5a',STARS+'<circle cx="165" cy="26" r="13" fill="#fff5c0"/>'+ch(KINI_I,84,10,32)+'<rect x="66" y="55" width="68" height="42" rx="3" fill="#bbb" stroke="#555"/><rect x="72" y="61" width="56" height="30" fill="#79b8e8"/><rect x="90" y="97" width="20" height="6" fill="#999"/>'),'Жил-был аксолотль по имени Кинито. У него были очень длинные ноги и очень маленький компьютер.'],
+ [pg('#f7e9c0',FOLD(12,70)+FOLD(150,76)+FOLD(58,84)+FOLD(112,70)+ch(KINI_I,84,8,34)+'<text x="128" y="30" font-size="22" font-family="Georgia" fill="#a07810">?</text>'),'Каждую ночь он искал друзей во всех папках и во всех окнах.'],
+ [pg('#dcdcdc',WIN(12,14)+WIN(152,18)+WIN(14,64)+WIN(150,66)+ch(KINI_I,84,16,34)),'Но папки были пусты, а окна молчали. Кинито стало грустно.'],
+ [pg('#cfe8ff',ch(KINI_I,40,14,34)+'<polygon points="118,22 118,72 131,61 140,84 149,80 140,58 156,58" fill="#fff" stroke="#000" stroke-width="2"/><circle cx="118" cy="22" r="6" fill="#fff6" />'),'И вдруг в окне появился курсор. Это пришёл ты.'],
+ [pg('#bde5a0','<circle cx="172" cy="20" r="11" fill="#ffd84d"/>'+ch(JADE_I,18,16,34)+ch(KINI_I,83,16,34)+ch(SAM_I,148,16,34)),'Так у Кинито появились друзья: Джейд, Сэм и ты.'],
+ [pg('#1b1330',STARS+ch(KINI_I,84,10,30)+'<text x="100" y="100" text-anchor="middle" font-family="Georgia" font-size="13" fill="#ffd84d">Конец первой главы</text>'),'И самое интересное только начиналось.']
+];
+let bookOn=false,bookT,bookIgT,bookIg=false,bp=0,bookNudged=false;
+function bookStop(){bookOn=false;bookIg=false;clearTimeout(bookT);clearTimeout(bookIgT)}
+function giveUp(){
+  bookStop();setAct(null);if(curWin==='w-book')closeWin(true);
+  say('Наверное, не слишком интересная книга. Давай я потом попробую написать более интересную.',checkUnlock);
 }
-
+function bookTimer(){
+  clearTimeout(bookT);
+  bookT=later(()=>{if(!bookOn)return;if(bookNudged)giveUp();else{bookNudged=true;say('Ты меня слушаешь? Листай страницу.');bookTimer()}},20000);
+}
+function renderBook(){
+  $('#bimg').innerHTML=PAGES[bp][0];$('#btxt').textContent=PAGES[bp][1];$('#bnum').textContent=(bp+1)+'/'+PAGES.length;
+  $('#bnext').textContent=bp===PAGES.length-1?'Конец ✓':'Дальше ▶';speak(PAGES[bp][1]);
+}
+function tellBook(){
+  bookOn=true;bp=0;bookNudged=false;bookIg=false;setAct('tell');corner();
+  later(()=>{if(!bookOn||bookIg)return;openWin('w-book');renderBook();bookTimer()},1400);
+}
+$('#bnext').onclick=()=>{
+  if(!bookOn)return;sfx('tap');bookNudged=false;
+  if(bp>=PAGES.length-1){bookStop();setAct(null);closeWin(true);say('Ну как? Мне кажется, получилось неплохо.',checkUnlock);return}
+  bp++;renderBook();bookTimer();
+};
+$('#bprev').onclick=()=>{if(!bookOn)return;bookNudged=false;bp=Math.max(0,bp-1);renderBook();bookTimer()};
+winClose['w-book']=()=>{if(bookOn)giveUp()};
 /* ---------- сценарий: вопросы -> книга -> Кинито притягивает сайт Веб-Мира ---------- */
 let webBusy=false,dirT;
 function director(){
   if(!onb()||cur||curWin||bookOn||webBusy)return;
   clearTimeout(dirT);
-  if((S.qn||0)<3)dirT=later(next,3500);
-  else if(!S.book)dirT=later(()=>{if(cur||curWin||bookOn||webBusy)return;S.book=1;save();ask(QB)},3500);
+  if(!S.intro)dirT=later(next,1500);
+  else if(!S.book)dirT=later(()=>{if(cur||curWin||bookOn||webBusy)return;S.book=1;save();ask(QB)},1500);
+  else if((S.qn||0)<3)dirT=later(next,3500);
   else if(!S.wdone)dirT=later(launchWeb,3500);
+}
+function selfIntro(){
+  S.intro=1;save();
+  sayAll(['Теперь я расскажу о себе.','Я умею играть с тобой в игры.','Я умею управлять этой системой.','Я умею подстраиваться под тебя.','И даже читать сказки.','Кстати, я как раз начал писать одну.'],()=>{S.book=1;save();ask(QB)});
 }
 setInterval(director,8000);
 function launchWeb(){
@@ -688,7 +786,7 @@ function letterEvent(){
 }
 /* иногда Кинито достаёт руки */
 setInterval(()=>{
-  if(act||cur||webBusy||Math.random()<.5||['walk','armR','armL'].some(c=>kin.classList.contains(c)))return;
+  if(!kinLive||act||cur||webBusy||Math.random()<.5||['walk','armR','armL'].some(c=>kin.classList.contains(c)))return;
   kin.classList.add('armI');later(()=>kin.classList.remove('armI'),3200);
 },15000);
 
@@ -711,24 +809,57 @@ addEventListener('pointerdown',e=>{actx();if(e.target.closest&&e.target.closest(
 $('#snd').textContent=S.mute?'🔇':'🔊';
 $('#snd').onclick=()=>{S.mute=!S.mute;save();$('#snd').textContent=S.mute?'🔇':'🔊';if(S.mute&&'speechSynthesis' in window)speechSynthesis.cancel();else sfx('ok')};
 
-/* ---------- старт ---------- */
+/* ---------- начало игры: изучаем систему -> баг -> установка -> яйцо ---------- */
+let phase='',opened=new Set(),expT0=0,kinLive=false;
+const FILES=[['📄 readme.txt','Добро пожаловать в систему. Здесь пока пусто.'],['📁 Мои документы','Папка пуста. Точнее, так кажется.'],['🖼️ Фото','3 файла: небо.jpg, лес.jpg и один без названия.'],['🔒 system32','Доступ запрещён. Внутри что-то шевелится.'],['💾 setup.exe','Файл повреждён. Или он просто ждёт.']];
+FILES.forEach(f=>{const b=document.createElement('button');b.className='btn';b.textContent=f[0];b.onclick=()=>{$('#fprev').textContent=f[1]};$('#files').appendChild(b)});
+setInterval(()=>{
+  if(phase!=='explore'||curWin)return;
+  const t=Date.now()-expT0;
+  if(opened.size>=3||(t>60000&&opened.size>=1)||t>110000)startBug();
+},2000);
+function startBug(){
+  phase='bug';closeWin(true);setAct(null);clearTimeout(pT);pq=null;cur=null;$('#hint').style.display='none';
+  const pc=$('#pc');pc.classList.add('glitch');
+  let i=0;const n=setInterval(()=>{tone(60+Math.random()*400,.08,'square',.06);if(++i>12)clearInterval(n)},200);
+  later(()=>{pc.classList.remove('glitch');pc.classList.add('dead');later(()=>{pc.classList.remove('dead');askInstall()},900)},2600);
+}
+function askInstall(){
+  phase='inst';$('#inst').style.display='flex';sfx('bad');
+  const go=()=>{
+    $('#yes1').onclick=null;$('#yes2').onclick=null;
+    $('#instbody').innerHTML='<div>Установка Кинито Пет...</div><div class="hb"><i id="pbar" style="width:0"></i></div>';
+    let p=0;const t=setInterval(()=>{
+      p+=8+Math.random()*10;$('#pbar').style.width=Math.min(100,p)+'%';sfx('blip');
+      if(p>=100){clearInterval(t);later(()=>{$('#inst').style.display='none';intro()},500)}
+    },250);
+  };
+  $('#yes1').onclick=go;$('#yes2').onclick=go;
+}
 function intro(){
-  const e=$('#egg'),r=kin.getBoundingClientRect();
-  kin.style.opacity=0;e.style.left=(r.left+KW/2-40)+'px';e.style.top=(r.top+KH-92)+'px';
-  e.style.display='block';e.classList.add('wob');
+  phase='egg';setAct(null);
+  const e=$('#egg');kin.style.display='block';kin.style.opacity=0;
+  place(W()/2-KW/2,H()/2-KH+30);
+  e.style.left=(W()/2-40)+'px';e.style.top=(H()/2-50)+'px';e.style.display='block';e.classList.add('wob');
   later(()=>{$('#crack').style.display='block'},1800);
   later(()=>{
     e.classList.remove('wob');e.classList.add('open');sfx('pop');
     kin.style.transition='opacity .6s';kin.style.opacity=1;
+    phase='';kinLive=true;S.inst=1;save();
     later(()=>{e.style.display='none'},3200);
-    sayAll(['Привет! Я Кинито.','Я твой маленький помощник. Давай знакомиться.'],next);
+    sayAll(['Привет! Я Кинито.','Спасибо, что установил меня.'],next);
   },3000);
 }
-upd();
+
+/* ---------- старт ---------- */
 place(W()/2-KW/2,gy(H()*.35));
 later(()=>{
   $('#boot').style.opacity=0;later(()=>$('#boot').remove(),700);
-  if(!S.name)later(intro,600);
+  if(S.name||S.inst)kinLive=true;
+  if(!S.name&&!S.inst){
+    phase='explore';expT0=Date.now();kin.style.display='none';
+    later(()=>{$('#hint').style.display='block'},800);later(()=>{$('#hint').style.display='none'},10000);
+  }
   else if(!onb())later(next,500);
   else{
     const mins=(Date.now()-S.last)/60000;
