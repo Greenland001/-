@@ -487,7 +487,7 @@ winClose['w-map']=()=>endWeb('quit');
 winClose['w-clean']=back;
 
 /* Дом Джейд: ящик с силуэтом, лента внизу, перетаскиваем детали */
-const PARTS={body:['Кузов','#3b7dd8'],wheel:['Колесо','#444'],frame:['Рама','#c0392b'],bar:['Руль','#777'],head:['Голова мишки','#c8925a'],torso:['Туловище','#b07a45'],paws:['Лапы','#8a5a2b'],bread:['🍞 Хлеб','#d9a94f'],can:['🥫 Банка','#7a9bb5'],sock:['🧦 Носок','#d05a9a']};
+const PARTS={body:['Кузов','#3b7dd8'],wheel:['Колесо','#444'],frame:['Рама','#c0392b'],bar:['Руль','#777'],head:['Голова мишки','#c8925a'],torso:['Туловище','#b07a45'],paws:['Лапы','#8a5a2b'],bread:['🍞 Хлеб','#d9a94f'],can:['🥫 Банка','#7a9bb5'],sock:['🧦 Носок','#d05a9a'],heart:['❤️ Сердце','#c81038']};
 const GOALS=[['🚗','Машина',['body','wheel','wheel']],['🚲','Велосипед',['frame','wheel','wheel','bar']],['🧸','Мишка',['head','torso','paws']]];
 let bT,gi=0,got=[],tot=0,lock=false;
 function stopBelt(){clearInterval(bT)}
@@ -514,12 +514,10 @@ function finishBuild(){
   sfx('ok');stopBelt();$('#belt').innerHTML='';jsay('Джейд: Ура! Всё собрано, спасибо тебе!');S.jd=1;save();
   later(()=>{if(curWin==='w-build')back();checkWebDone()},3000);
 }
-function spawn(){
-  if(lock||!GOALS[gi])return;
-  const need=GOALS[gi][2].filter(wanted);
-  const p=Math.random()<.6&&need.length?rnd(need):rnd(Object.keys(PARTS));
+let heartOut=false;
+function spawnPart(p){
   const b=document.createElement('button');b.className='part';b.textContent=PARTS[p][0];b.style.background=PARTS[p][1];
-  b.addEventListener('animationend',()=>b.remove());
+  b.addEventListener('animationend',()=>{b.remove();if(p==='heart')heartOut=false});
   b.addEventListener('pointerdown',e=>{
     e.preventDefault();
     const g=document.createElement('div');g.className='part';g.textContent=b.textContent;
@@ -530,12 +528,48 @@ function spawn(){
       removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);
       const r=$('#crate').getBoundingClientRect();g.remove();
       const inside=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
+      if(inside&&p==='heart'){b.remove();heartOut=false;S.heartDone=1;save();heartGlitch();return}
       if(inside&&wanted(p)){sfx('ok');b.remove();got.push(p);tot++;bRender();afterDrop()}
       else{b.style.visibility='visible';if(inside&&!lock){sfx('bad');jsay('Джейд: Хм, это сюда не подходит.')}}
     };
     addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);
   });
   $('#belt').appendChild(b);
+}
+function spawn(){
+  if(lock||!GOALS[gi])return;
+  if(!S.heartDone&&!heartOut&&Math.random()<.05){heartOut=true;spawnPart('heart');return}
+  const need=GOALS[gi][2].filter(wanted);
+  const p=Math.random()<.6&&need.length?rnd(need):rnd(Object.keys(PARTS).filter(k=>k!=='heart'));
+  spawnPart(p);
+}
+function heartGlitch(){
+  stopBelt();lock=true;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px';
+  document.body.appendChild(ov);
+  const big=t=>'<div style="font:900 22px Tahoma;color:#ff1e1e;text-shadow:2px 2px 0 #000;line-height:1.3">'+t+'</div>';
+  ov.innerHTML=big('ЭТО ВСЕ МОЯ ВИНА');sfx('bad');
+  later(()=>{ov.innerHTML='';
+    later(()=>{kin.style.display='none';
+      later(()=>{
+        later(()=>{
+          ov.style.background='#3a0000';ov.innerHTML=big('ЖИВ ЛИ Я ВООБЩЕ?');sfx('bad');
+          later(()=>{
+            ov.style.background='#000';ov.innerHTML='';
+            later(()=>{
+              ov.innerHTML='<div style="color:#ddd;font:13px Tahoma">Кинито Пет не отвечает...</div>';
+              later(()=>{
+                ov.remove();kin.style.display='block';lock=false;
+                gi=0;got=[];tot=0;bRender();spawn();bT=setInterval(spawn,1500);
+                jsay('Джейд: ...Показалось. Давай продолжим.');
+              },1700);
+            },1200);
+          },1500);
+        },800);
+      },800);
+    },800);
+  },1400);
 }
 function openBuild(){
   openWin('w-build');gi=0;got=[];tot=0;lock=false;stopBelt();$('#belt').innerHTML='';
@@ -547,8 +581,16 @@ function openBuild(){
 const TOOLS=[['mop','🧽 Швабра','dirt'],['broom','🧹 Метёлка','web'],['spg','🧴 Губка','win']];
 const PCOL=[['#e03030','Красный'],['#f28a1e','Оранжевый'],['#f2d21b','Жёлтый'],['#2fa84a','Зелёный'],['#2d5be3','Синий']];
 const RTOOLS=[['hammer','🔨 Молоток','shelf','Полка'],['bulb','💡 Лампочка','lamp','Лампа'],['wrench','🔧 Ключ','tap','Кран']];
-let cStage=1,cTool='mop',cLeft=0,rub=false,pcol='#f28a1e';
+let cStage=1,cTool='mop',rub=false,pcol='#f28a1e',remain=new Set(),scareT,scared=false;
 const ssay=t=>{$('#smsg').textContent=t};
+function samScare(){
+  if(curWin!=='w-clean'||scared)return;scared=true;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:absolute;inset:0;z-index:9;background:rgba(120,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden';
+  ov.innerHTML='<div style="position:absolute;left:8%;bottom:0;width:56px;height:126px;background:#000;clip-path:polygon(50% 0%,78% 14%,78% 100%,22% 100%,22% 14%);opacity:.9"></div><div style="font:900 19px Tahoma;color:#ff1414;text-shadow:2px 2px 0 #000;text-align:center;padding:0 14%">ЖИВ ЛИ Я ВООБЩЕ?</div>';
+  $('#w-clean .body').appendChild(ov);sfx('bad');
+  later(()=>ov.remove(),850);
+}
 function tools(){
   const c=$('#ctools');c.innerHTML='';
   const add=(t,on,fn,col)=>{const b=document.createElement('button');b.className='btn'+(on?' on':'');b.textContent=t;if(col)b.style.color=col;b.onclick=fn;c.appendChild(b)};
@@ -556,64 +598,67 @@ function tools(){
   else (cStage===3?RTOOLS:TOOLS).forEach(t=>add(t[1],cTool===t[0],()=>{cTool=t[0];tools()}));
 }
 function openClean(){
-  openWin('w-clean');cStage=1;cTool='mop';tools();
+  openWin('w-clean');cStage=1;cTool='mop';tools();scared=false;clearTimeout(scareT);
   const r=$('#room');r.innerHTML='';
   ['Сэм: Привет! У меня жуткий беспорядок, а ещё нужен ремонт.','Джейд: Мы поможем! Сначала уберём: пол шваброй, паутину метёлкой, окна губкой.','Сэм: А потом покрасим стену и всё починим!'].forEach((t,k)=>later(()=>{if(curWin==='w-clean'&&cStage===1)ssay(t)},k*3300));
-  const kinds=['dirt','dirt','dirt','web','web','web','win','win'];cLeft=kinds.length;
+  const kinds=['dirt','dirt','dirt','web','web','web','win','win'];
+  remain=new Set();
   kinds.forEach((k,i)=>{
     const b=document.createElement('div');b.className='it '+k;b.dataset.k=k;b.dataset.p=0;
     b.textContent=k==='web'?'🕸️':'';
     if(k==='win'){b.style.left=(i===6?14:59)+'%';b.style.top='6%'}
     else{b.style.left=(6+Math.random()*78)+'%';b.style.top=(42+Math.random()*40)+'%'}
-    r.appendChild(b);
+    r.appendChild(b);remain.add(b);
   });
+  scareT=later(samScare,6000+Math.random()*9000);
 }
 function stage2(){
   cStage=2;pcol=PCOL[1][0];tools();
   const r=$('#room');r.innerHTML='<div id="wall"></div>';
-  for(let i=0;i<18;i++){const c=document.createElement('div');c.className='cell';c.dataset.p=0;$('#wall').appendChild(c)}
-  cLeft=18;ssay('Сэм: Выбери цвет и води пальцем по стене, чтобы её покрасить!');
+  remain=new Set();
+  for(let i=0;i<18;i++){const c=document.createElement('div');c.className='cell';c.dataset.p=0;$('#wall').appendChild(c);remain.add(c)}
+  ssay('Сэм: Выбери цвет и води пальцем по стене, чтобы её покрасить!');
 }
 function stage3(){
   cStage=3;cTool='hammer';tools();
   const r=$('#room');r.innerHTML='<div class="fixrow"></div>';
+  remain=new Set(RTOOLS.map(t=>t[2]));
   RTOOLS.forEach(t=>{
     const b=document.createElement('button');b.className='card';b.innerHTML='<i>⚠️</i>'+t[3];
     b.onclick=()=>{
-      if(b.dataset.d)return;
+      if(!remain.has(t[2]))return;
       if(RTOOLS.find(x=>x[0]===cTool)[2]!==t[2]){b.style.outline='2px solid red';sfx('bad');later(()=>b.style.outline='',300);return}
-      b.dataset.d=1;b.innerHTML='<i>✅</i>'+t[3];sfx('ok');cLeft--;
-      if(!cLeft){ssay('Сэм: Ремонт готов! Теперь у меня самый лучший дом. Спасибо!');S.sd=1;save();later(()=>{if(curWin==='w-clean')back();checkWebDone()},3500)}
+      remain.delete(t[2]);b.innerHTML='<i>✅</i>'+t[3];sfx('ok');
+      if(!remain.size){ssay('Сэм: Ремонт готов! Теперь у меня самый лучший дом. Спасибо!');S.sd=1;save();later(()=>{if(curWin==='w-clean')back();checkWebDone()},3500)}
     };
     $('#room .fixrow').appendChild(b);
   });
-  cLeft=3;ssay('Сэм: Осталось всё починить! Выбери инструмент и нажми на сломанную вещь.');
+  ssay('Сэм: Осталось всё починить! Выбери инструмент и нажми на сломанную вещь.');
 }
 function scrub(e){
   if(cStage===3)return;
   if(cStage===2){
-    $$('#wall .cell').forEach(b=>{
-      if(b.dataset.d)return;
+    remain.forEach(b=>{
       const r=b.getBoundingClientRect();
       if(e.clientX<r.left-3||e.clientX>r.right+3||e.clientY<r.top-3||e.clientY>r.bottom+3)return;
       const p=+b.dataset.p+1;b.dataset.p=p;b.style.background=pcol;b.style.opacity=.4+p*.2;if(p===1)sfx('blip');
-      if(p>=3){b.dataset.d=1;b.style.opacity=1;cLeft--;
-        if(!cLeft){ssay('Сэм: Вот это цвет! Стена как новая. Осталось кое-что починить!');later(()=>{if(curWin==='w-clean'&&cStage===2)stage3()},2600)}}
+      if(p>=3){b.style.opacity=1;remain.delete(b);
+        if(!remain.size){ssay('Сэм: Вот это цвет! Стена как новая. Осталось кое-что починить!');later(()=>{if(curWin==='w-clean'&&cStage===2)stage3()},2600)}}
     });
     return;
   }
   const tl=TOOLS.find(t=>t[0]===cTool);if(!tl)return;
   const need=tl[2];
-  $$('#room .it').forEach(b=>{
+  remain.forEach(b=>{
     if(b.dataset.k!==need)return;
     const r=b.getBoundingClientRect();
     if(e.clientX<r.left-8||e.clientX>r.right+8||e.clientY<r.top-8||e.clientY>r.bottom+8)return;
     const p=+b.dataset.p+1;b.dataset.p=p;if(p%3===0)sfx('blip');
     if(need==='win')b.style.setProperty('--d',1-p/10);else b.style.opacity=1-p/10;
-    if(p>=10){
+    if(p>=6){
+      remain.delete(b);
       if(need==='win')b.dataset.k='done';else b.remove();
-      cLeft--;
-      if(!cLeft){ssay('Сэм: Вот это чистота! Теперь покрасим стену!');later(()=>{if(curWin==='w-clean'&&cStage===1)stage2()},2600)}
+      if(!remain.size){ssay('Сэм: Вот это чистота! Теперь покрасим стену!');later(()=>{if(curWin==='w-clean'&&cStage===1)stage2()},2600)}
     }
   });
 }
