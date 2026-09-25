@@ -21,6 +21,7 @@ linear-gradient(#2a6bd8,#9fd0f7 68%)}
 #kin{position:absolute;left:50%;top:40%;width:49px;height:105px;z-index:8;cursor:grab;touch-action:none}
 #kin>svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 100%;animation:float 3.4s ease-in-out infinite}
 #kin.walk>svg{animation:fly .9s ease-in-out infinite}
+#kin.walk #board{display:block!important}
 @keyframes float{50%{transform:translateY(-7px) rotate(1.5deg)}}
 @keyframes fly{50%{transform:translateY(-5px) rotate(-6deg)}}
 @media (prefers-reduced-motion:reduce){#kin>svg,#kin.walk>svg{animation:none}}
@@ -171,7 +172,7 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
         <g id="gills"><path d="M46 80 L14 22 L58 66Z" fill="#b53ad6"/><path d="M36 100 L0 62 L46 92Z" fill="#c94be0"/><path d="M34 122 L2 116 L40 110Z" fill="#b53ad6"/></g>
       </defs>
       <use href="#gills"/><use href="#gills" transform="translate(200 0) scale(-1 1)"/>
-      <g id="board"><ellipse cx="100" cy="416" rx="98" ry="15" fill="#7be03a"/><path d="M12 414 Q100 404 188 414" stroke="#fff" stroke-width="4" fill="none"/></g>
+      <g id="board" style="display:none"><ellipse cx="100" cy="416" rx="98" ry="15" fill="#7be03a"/><path d="M12 414 Q100 404 188 414" stroke="#fff" stroke-width="4" fill="none"/></g>
       <path d="M82 165 L96 165 L99 260 L94 388 L82 388 L84 260Z" fill="#170f33"/>
       <path d="M104 165 L118 165 L116 260 L118 388 L106 388 L101 260Z" fill="#170f33"/>
       <path d="M50 410 L86 386 L98 390 L100 412Z" fill="#170f33"/><path d="M150 410 L114 386 L102 390 L100 412Z" fill="#170f33"/>
@@ -219,7 +220,7 @@ function walk(x,y,ms){
 }
 function perch(id){const r=$('#'+id).getBoundingClientRect();walk(gx(r.left+r.width/2-KW/2),Math.max(75,r.top-KH+6),1500)}
 function corner(){walk(W()-KW-24,H()-30-KH-4,900)}
-kin.addEventListener('pointerdown',e=>{drag=true;kin.setPointerCapture(e.pointerId);const r=kin.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;kin.style.transition='none';kin.style.left=r.left+'px';kin.style.top=r.top+'px';kin.classList.remove('walk');clearTimeout(wt)});
+kin.addEventListener('pointerdown',e=>{if(bookOn&&!curWin){e.preventDefault();openWin('w-book');renderBook();bookTimer();return}drag=true;kin.setPointerCapture(e.pointerId);const r=kin.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;kin.style.transition='none';kin.style.left=r.left+'px';kin.style.top=r.top+'px';kin.classList.remove('walk');clearTimeout(wt)});
 kin.addEventListener('pointermove',e=>{if(!drag)return;kin.style.left=Math.max(0,Math.min(W()-KW,e.clientX-dx))+'px';kin.style.top=Math.max(72,Math.min(H()-30-KH,e.clientY-dy))+'px'});
 ['pointerup','pointercancel'].forEach(t=>kin.addEventListener(t,()=>drag=false));
 
@@ -256,14 +257,18 @@ glance();
 setInterval(()=>{if(act)return;['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',36));later(()=>{if(!act)['l1','l2'].forEach(id=>$('#'+id).setAttribute('height',8))},140)},4200);
 
 /* ---------- речь ---------- */
-function say(t,after){
-  if(!kinLive)return;
-  clearTimeout(hideT);sfx('pop');speak(t);const b=$('#bub');b.textContent=t;b.style.display='block';
+let sayQ=[],talking=false;
+function say(t,after){sayQ.push([t,after]);if(!talking)pump()}
+function pump(){
+  if(!kinLive||!sayQ.length){talking=false;return}
+  talking=true;const[t,after]=sayQ.shift();
+  sfx('pop');speak(t);const b=$('#bub');b.textContent=t;b.style.display='block';
   b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
-  hideT=later(()=>{if(!cur)b.style.display='none'},Math.max(5000,t.length*90));
-  if(after)later(after,Math.max(2400,t.length*70));
+  clearTimeout(hideT);
+  hideT=later(()=>{if(!sayQ.length&&!cur&&!curWin)b.style.display='none'},Math.max(5000,t.length*90));
+  later(()=>{if(after)after();pump()},Math.max(2400,t.length*70));
 }
-function sayAll(a,end){say(a[0],a.length>1?()=>sayAll(a.slice(1),end):end)}
+function sayAll(a,end){a.forEach((t,i)=>say(t,i===a.length-1?end:undefined))}
 
 /* ---------- окна ---------- */
 const winClose={};
@@ -648,12 +653,6 @@ setInterval(()=>{
   else if(r<.55)say(rnd(IDLE));
   else if(r<.62)launchWeb();
 },35000);
-setInterval(()=>{
-  if(cur||drag||act||!onb()||webBusy||bookOn||Math.random()<.25)return;
-  const x=gx(80+Math.random()*(W()-160)),y=gy(80+Math.random()*(H()-160));
-  const r=kin.getBoundingClientRect(),d=Math.hypot(x-r.left,y-r.top);
-  if(d<100)return;walk(x,y,d*16+1500);
-},7000);
 const clk=()=>{$('#clock').textContent=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})};
 clk();setInterval(clk,10000);
 $('#fs').onclick=async()=>{try{await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}catch(e){}};
@@ -707,7 +706,7 @@ $('#bnext').onclick=()=>{
   bp++;renderBook();bookTimer();
 };
 $('#bprev').onclick=()=>{if(!bookOn)return;bookNudged=false;bp=Math.max(0,bp-1);renderBook();bookTimer()};
-winClose['w-book']=()=>{if(bookOn)giveUp()};
+winClose['w-book']=()=>{};
 /* ---------- сценарий: вопросы -> книга -> Кинито притягивает сайт Веб-Мира ---------- */
 let webBusy=false,dirT;
 function director(){
@@ -801,9 +800,21 @@ function tone(f,d,type,v,f2,t0){
 }
 const SFX={pop:()=>tone(520,.12,'sine',.12,900),tap:()=>tone(300,.05,'square',.04),ok:()=>{tone(523,.12,'triangle',.14);tone(784,.2,'triangle',.14,0,.1)},bad:()=>tone(160,.25,'sawtooth',.08,90),ding:()=>{tone(880,.3,'sine',.15);tone(1320,.4,'sine',.1,0,.15)},whoosh:()=>tone(900,.5,'sawtooth',.04,150),blip:()=>tone(600+Math.random()*300,.05,'square',.03)};
 const sfx=n=>{try{SFX[n]()}catch(e){}};
+let ruVoice=null;
+function pickVoice(){
+  try{
+    const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.toLowerCase().startsWith('ru'));
+    if(!vs.length)return;
+    ruVoice=vs.find(v=>/male|man|pavel|dmitri|dmitry|yuri|maxim|artemiy|ivan(?!a)/i.test(v.name))||vs.find(v=>!/female|woman|milena|katya|tatyana|anna|elena|olga/i.test(v.name))||vs[0];
+  }catch(e){}
+}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
 function speak(t){
   if(S.mute||!('speechSynthesis' in window))return;
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.pitch=1.8;u.rate=1.05;speechSynthesis.speak(u)}catch(e){}
+  try{
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';
+    if(ruVoice)u.voice=ruVoice;u.pitch=.72;u.rate=.98;speechSynthesis.speak(u);
+  }catch(e){}
 }
 addEventListener('pointerdown',e=>{actx();if(e.target.closest&&e.target.closest('button,.card,.ic'))sfx('tap')});
 $('#snd').textContent=S.mute?'🔇':'🔊';
@@ -818,7 +829,16 @@ setInterval(()=>{
   const t=Date.now()-expT0;
   if(opened.size>=3||(t>60000&&opened.size>=1)||t>110000)startBug();
 },2000);
+let skipBtn=null;
+function showSkip(){
+  if(skipBtn||phase!=='explore')return;
+  skipBtn=document.createElement('button');skipBtn.className='btn';skipBtn.textContent='✨ Позвать Кинито';
+  skipBtn.style.cssText='position:absolute;right:10px;bottom:40px;z-index:14';
+  skipBtn.onclick=()=>{skipBtn.remove();skipBtn=null;startBug()};
+  $('#pc').appendChild(skipBtn);
+}
 function startBug(){
+  if(skipBtn){skipBtn.remove();skipBtn=null}
   phase='bug';closeWin(true);setAct(null);clearTimeout(pT);pq=null;cur=null;$('#hint').style.display='none';
   const pc=$('#pc');pc.classList.add('glitch');
   let i=0;const n=setInterval(()=>{tone(60+Math.random()*400,.08,'square',.06);if(++i>12)clearInterval(n)},200);
@@ -859,6 +879,7 @@ later(()=>{
   if(!S.name&&!S.inst){
     phase='explore';expT0=Date.now();kin.style.display='none';
     later(()=>{$('#hint').style.display='block'},800);later(()=>{$('#hint').style.display='none'},10000);
+    later(showSkip,15000);
   }
   else if(!onb())later(next,500);
   else{
