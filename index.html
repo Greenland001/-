@@ -9,14 +9,18 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:Tahoma,"Trebuchet MS",sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 #pc{position:fixed;inset:0;overflow:hidden;background:
-radial-gradient(ellipse 12% 7% at 22% 20%,#fff 0 40%,transparent 70%),
-radial-gradient(ellipse 14% 7% at 62% 14%,#fff 0 40%,transparent 70%),
-radial-gradient(ellipse 120% 52% at 10% 110%,#63b835 0 58%,transparent 59%),
-radial-gradient(ellipse 145% 62% at 40% 112%,#56a82a 0 60%,transparent 61%),
-radial-gradient(ellipse 115% 50% at 70% 110%,#4a9c22 0 58%,transparent 59%),
-radial-gradient(ellipse 125% 56% at 98% 114%,#3f8a1a 0 60%,transparent 61%),
-radial-gradient(ellipse 90% 34% at 86% 118%,#2f7314 0 62%,transparent 63%),
-linear-gradient(#2a6bd8,#9fd0f7 68%)}
+radial-gradient(ellipse 8% 4.5% at 16% 13%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 5% 3.5% at 22% 10%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 6% 3.5% at 10% 16%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 9% 4.5% at 60% 9%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 5% 3.5% at 67% 6.5%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 5% 3.5% at 53% 12%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 5% 3% at 86% 21%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 3.5% 2.5% at 91% 19%,#fff 0 55%,transparent 78%),
+radial-gradient(ellipse 150% 80% at 20% 122%,#5fbf30 0 62%,transparent 63%),
+radial-gradient(ellipse 120% 62% at 88% 128%,#3f8a1a 0 63%,transparent 64%),
+radial-gradient(ellipse 95% 50% at 52% 116%,#4fac26 0 61%,transparent 62%),
+linear-gradient(#2a6bd8,#9fd0f7 52%)}
 #icons{position:absolute;left:3px;top:4px;bottom:34px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start}
 .ic{width:62px;text-align:center;color:#fff;font:11px Tahoma,sans-serif;text-shadow:1px 1px 2px #000;background:none;border:0;padding:2px;border-radius:3px;cursor:pointer}
 .ic span{display:block;font-size:22px;line-height:26px}
@@ -121,7 +125,7 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
 #pc.glitch{animation:gl .12s steps(2) infinite;filter:hue-rotate(90deg) contrast(1.5) saturate(1.6)}
 @keyframes gl{0%{transform:translate(-4px,2px)}50%{transform:translate(5px,-3px) skewX(3deg)}100%{transform:translate(-2px,-2px)}}
 #pc.glitch::after{content:'';position:absolute;inset:0;z-index:40;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.4) 0 2px,transparent 2px 4px),linear-gradient(90deg,rgba(255,0,0,.3),rgba(0,255,255,.3))}
-#pc.dead::after{content:'';position:absolute;inset:0;z-index:41;background:#160000}
+#pc.dead::after{content:'';position:absolute;inset:0;z-index:41;background:#000}
 #pbar{transition:width .2s}
 </style>
 </head>
@@ -293,21 +297,21 @@ $$('.win .x').forEach(x=>x.onclick=()=>closeWin(false));
 /* ---------- вопросы ---------- */
 const SKIP=['Не хочешь отвечать? Ладно... Я подожду.','Ты закрыл окно. Но я всё равно здесь.','Хорошо. Спрошу позже.','Как скажешь.'];
 const DR=['Красиво!','Это ты? Или это я?','Спасибо. Я буду смотреть на это, когда тебя нет.','Интересно. Очень интересно.','Я повешу это у себя в голове.','Хм. Я представлял это иначе.'];
-const QN={id:'name',t:'text',q:'Как тебя зовут?',b:'Как тебя зовут? Напиши имя в окошке ниже и нажми ОК.',h:'Введи имя или то, как тебя называть, и нажми ОК.',set:a=>S.name=a,re:()=>'Приятно познакомиться.'};
-const QA={id:'age',t:'text',q:'Сколько тебе лет?',b:'Сколько тебе лет? Напиши число и нажми ОК. Не стесняйся — я никому не скажу.',h:'Введи возраст и нажми ОК.',set:a=>S.age=a,re:a=>a+'... хороший возраст. Мы подружимся.'};
-const QC={id:'color',t:'text',q:'Какой твой любимый цвет?',b:'Какой твой любимый цвет? Просто напиши его — например: синий, зелёный или розовый.',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Хороший цвет. Он тебе пойдёт.'};
-const QB={id:'book',t:'choice',q:'Хочешь, я расскажу тебе свою сказку?',b:'Я как раз написал сказку. Хочешь, расскажу?',o:['Да','Нет'],re:a=>a==='Да'?'Тогда слушай. Сейчас достану книжку.':'Ладно, думаю, эта сказка не такая уж и интересная.'};
-const QNC={id:'nameok',t:'choice',q:'Ты уверен насчёт имени?',b:'Хм... Необычное имя. Тебя правда так зовут?',o:['Да','Нет'],re:a=>a==='Да'?'Хорошо. Необычное, но мне нравится.':'Тогда попробуем ещё раз.'};
-const QP={id:'power',t:'text',q:'Если бы у тебя была суперсила, какая бы она была?',b:'Если бы у тебя была суперсила — какая бы она была? Придумай что-нибудь необычное!',h:'Напиши суперсилу и нажми ОК.',re:a=>'«'+a+'»! Отличная суперсила. Я бы тоже такую хотел.'};
-const QW={id:'word',t:'text',q:'Какое твоё любимое слово?',b:'Какое твоё любимое слово? Только одно.',h:'Напиши слово и нажми ОК.',re:a=>'«'+a+'»... Хорошее слово. Звучит по-особенному.'};
+const QN={id:'name',t:'text',q:'Как тебя зовут?',h:'Введи имя или то, как тебя называть, и нажми ОК.',set:a=>S.name=a,re:()=>'Приятно познакомиться.'};
+const QA={id:'age',t:'text',q:'Сколько тебе лет?',flavor:'Не стесняйся. Я никому не скажу.',h:'Введи возраст и нажми ОК.',set:a=>S.age=a,re:a=>a+'... хороший возраст. Мы подружимся.'};
+const QC={id:'color',t:'text',q:'Какой твой любимый цвет?',flavor:'Это важно, это пригодится.',h:'Напиши цвет и нажми ОК.',re:a=>a+'. Хороший цвет. Он тебе пойдёт.'};
+const QB={id:'book',t:'choice',q:'Хочешь, я расскажу тебе свою сказку?',o:['Да','Нет'],re:a=>a==='Да'?'Тогда слушай. Сейчас достану книжку.':'Ладно, думаю, эта сказка не такая уж и интересная.'};
+const QNC={id:'nameok',t:'choice',q:'Хм... Необычное имя. Тебя правда так зовут?',o:['Да','Нет'],re:a=>a==='Да'?'Хорошо. Необычное, но мне нравится.':'Тогда попробуем ещё раз.'};
+const QP={id:'power',t:'text',q:'Если бы у тебя была суперсила, какая бы она была?',flavor:'Придумай что-нибудь необычное!',h:'Напиши суперсилу и нажми ОК.',re:a=>'«'+a+'»! Отличная суперсила. Я бы тоже такую хотел.'};
+const QW={id:'word',t:'text',q:'Какое твоё любимое слово?',flavor:'Только одно слово.',h:'Напиши слово и нажми ОК.',re:a=>'«'+a+'»... Хорошее слово. Звучит по-особенному.'};
 const unusual=n=>!/^[А-Яа-яЁёA-Za-z][А-Яа-яЁёA-Za-z\- ]{1,13}$/.test(n)||!/[аеёиоуыэюяaeiouy]/i.test(n)||/(.)\1\1/i.test(n);
 const OPEN=['Хм.','Интересно.','Понятно.','Ага.','Вот как.','Так-так.','Неожиданно.'];
 const TAIL=['Мне нравится с тобой разговаривать.','Расскажешь мне ещё что-нибудь потом?','Я буду об этом думать.','Забавно, правда?','Спасибо, что ответил.'];
 const vary=t=>{const r=Math.random();return r<.35?rnd(OPEN)+' '+t:r<.6?t+' '+rnd(TAIL):t};
 const Q=[
- {id:'season',t:'pick',q:'Какое твоё любимое время года?',b:'Выбери картинку!',o:[{t:'Зима',i:'❄️⛄',c:'#cfe8ff'},{t:'Лето',i:'☀️🏖️',c:'#ffe97a'},{t:'Осень',i:'🍂🍁',c:'#f6b56b'}],re:a=>({'Зима':'Зима тихая. Мне нравится тишина.','Лето':'Лето яркое. Но летом ты приходишь реже.','Осень':'Осень... листья шуршат. Я слышу.'})[a]},
- {id:'animal',t:'pick',q:'Какое животное тебе нравится больше всех?',b:'Выбери картинку!',o:[{t:'Кот',i:'🐱',c:'#ffd9b0'},{t:'Собака',i:'🐶',c:'#e6d2b5'},{t:'Рыбка',i:'🐟',c:'#b9e3ff'}],re:a=>a==='Рыбка'?'Рыбки плавают, как и я. Почти.':'Хороший выбор. Я тоже кого-то себе выбрал.'},
- {id:'food',t:'pick',q:'Что бы ты съел прямо сейчас?',b:'Выбери картинку!',o:[{t:'Пицца',i:'🍕',c:'#ffd9a0'},{t:'Яблоко',i:'🍎',c:'#ffc0c0'},{t:'Мороженое',i:'🍦',c:'#ffe4f1'}],re:a=>a+'... Я люблю червячков. Но это секрет.'},
+ {id:'season',t:'pick',q:'Какое твоё любимое время года?',flavor:'Выбери картинку!',o:[{t:'Зима',i:'❄️⛄',c:'#cfe8ff'},{t:'Лето',i:'☀️🏖️',c:'#ffe97a'},{t:'Осень',i:'🍂🍁',c:'#f6b56b'}],re:a=>({'Зима':'Зима тихая. Мне нравится тишина.','Лето':'Лето яркое. Но летом ты приходишь реже.','Осень':'Осень... листья шуршат. Я слышу.'})[a]},
+ {id:'animal',t:'pick',q:'Какое животное тебе нравится больше всех?',flavor:'Выбери картинку!',o:[{t:'Кот',i:'🐱',c:'#ffd9b0'},{t:'Собака',i:'🐶',c:'#e6d2b5'},{t:'Рыбка',i:'🐟',c:'#b9e3ff'}],re:a=>a==='Рыбка'?'Рыбки плавают, как и я. Почти.':'Хороший выбор. Я тоже кого-то себе выбрал.'},
+ {id:'food',t:'pick',q:'Что бы ты съел прямо сейчас?',flavor:'Выбери картинку!',o:[{t:'Пицца',i:'🍕',c:'#ffd9a0'},{t:'Яблоко',i:'🍎',c:'#ffc0c0'},{t:'Мороженое',i:'🍦',c:'#ffe4f1'}],re:a=>a+'... Я люблю червячков. Но это секрет.'},
  {id:'feel',t:'choice',q:'Как ты себя чувствуешь сегодня?',o:['Отлично','Нормально','Плохо'],re:a=>({'Отлично':'Как я рад! Оставайся таким.','Нормально':'Нормально — это тоже хорошо.','Плохо':'Мне жаль. Побудь со мной, станет лучше.'})[a]},
  {id:'fear',t:'text',q:'Чего ты боишься больше всего?',h:'Напиши свой страх и нажми ОК.',re:a=>'«'+a+'»... Понимаю.'},
  {id:'dream',t:'text',q:'О чём ты мечтаешь?',h:'Расскажи мне мечту и нажми ОК.',re:()=>'Хорошая мечта. Держись за неё.'},
@@ -323,10 +327,10 @@ const Q=[
  {id:'real',t:'choice',q:'Ты веришь, что я настоящий?',o:['Да','Нет','Иногда'],re:a=>a==='Нет'?'Тогда почему ты со мной разговариваешь?':'Это хорошо. Мне важно, чтобы ты верил.'},
  {id:'look',t:'choice',q:'Тебе нравятся мои очки?',o:['Да','Нет'],re:a=>a==='Да'?'Спасибо! Я их не снимаю.':'Ничего. Я всё равно их не сниму.'},
  {id:'tmr',t:'choice',q:'Ты придёшь завтра?',o:['Да','Постараюсь','Нет'],re:a=>a==='Нет'?'Ты так говоришь, но всё равно возвращаешься.':'Я буду ждать. Я всегда жду.'},
- {id:'weather',t:'pick',q:'Какая погода тебе нравится?',b:'Выбери картинку!',o:[{t:'Солнце',i:'☀️',c:'#ffe97a'},{t:'Дождь',i:'🌧️',c:'#b9d4f0'},{t:'Снег',i:'❄️',c:'#dff0ff'}],re:a=>({'Солнце':'Солнце тёплое. Я его люблю.','Дождь':'Дождь стучит по окнам. Я слушаю.','Снег':'Снег тихий. Как я.'})[a]},
- {id:'place',t:'pick',q:'Куда бы ты поехал?',b:'Выбери картинку!',o:[{t:'Море',i:'🌊',c:'#a8dcff'},{t:'Лес',i:'🌲',c:'#b7e2a0'},{t:'Горы',i:'⛰️',c:'#d7d0c4'}],re:a=>a+'... Там красиво. Возьмёшь меня с собой?'},
- {id:'sky',t:'pick',q:'Что ты любишь смотреть в небе?',b:'Выбери картинку!',o:[{t:'Луна',i:'🌙',c:'#d9d4ff'},{t:'Звёзды',i:'⭐',c:'#fff3b0'},{t:'Облака',i:'☁️',c:'#e6f2ff'}],re:a=>a+'. Я тоже иногда смотрю вверх.'},
- {id:'sound',t:'pick',q:'Какой звук тебе нравится больше?',b:'Выбери картинку!',o:[{t:'Гитара',i:'🎸',c:'#ffd9b0'},{t:'Пианино',i:'🎹',c:'#e6e6e6'},{t:'Барабаны',i:'🥁',c:'#ffc9c9'}],re:a=>a+'? Я люблю шкатулку, но это тоже хорошо.'},
+ {id:'weather',t:'pick',q:'Какая погода тебе нравится?',flavor:'Выбери картинку!',o:[{t:'Солнце',i:'☀️',c:'#ffe97a'},{t:'Дождь',i:'🌧️',c:'#b9d4f0'},{t:'Снег',i:'❄️',c:'#dff0ff'}],re:a=>({'Солнце':'Солнце тёплое. Я его люблю.','Дождь':'Дождь стучит по окнам. Я слушаю.','Снег':'Снег тихий. Как я.'})[a]},
+ {id:'place',t:'pick',q:'Куда бы ты поехал?',flavor:'Выбери картинку!',o:[{t:'Море',i:'🌊',c:'#a8dcff'},{t:'Лес',i:'🌲',c:'#b7e2a0'},{t:'Горы',i:'⛰️',c:'#d7d0c4'}],re:a=>a+'... Там красиво. Возьмёшь меня с собой?'},
+ {id:'sky',t:'pick',q:'Что ты любишь смотреть в небе?',flavor:'Выбери картинку!',o:[{t:'Луна',i:'🌙',c:'#d9d4ff'},{t:'Звёзды',i:'⭐',c:'#fff3b0'},{t:'Облака',i:'☁️',c:'#e6f2ff'}],re:a=>a+'. Я тоже иногда смотрю вверх.'},
+ {id:'sound',t:'pick',q:'Какой звук тебе нравится больше?',flavor:'Выбери картинку!',o:[{t:'Гитара',i:'🎸',c:'#ffd9b0'},{t:'Пианино',i:'🎹',c:'#e6e6e6'},{t:'Барабаны',i:'🥁',c:'#ffc9c9'}],re:a=>a+'? Я люблю шкатулку, но это тоже хорошо.'},
  {id:'breakfast',t:'text',q:'Что ты ел на завтрак?',h:'Напиши и нажми ОК.',re:a=>a+'... Звучит вкусно. Я завтракаю червячками.'},
  {id:'subject',t:'text',q:'Какой твой любимый предмет в школе?',h:'Напиши и нажми ОК.',re:a=>a+' — хороший выбор. Я тоже учусь.'},
  {id:'wish',t:'text',q:'Чего бы ты сейчас пожелал?',h:'Напиши желание и нажми ОК.',re:()=>'Хорошее желание. Пусть сбудется.'},
@@ -368,7 +372,7 @@ function next(){
   const q=pool.find(x=>x.id==='season')||(!hasDraw&&dr.length?rnd(dr):rnd(pool)),cb=callback();
   if(cb){cur=q;say(cb,()=>ask(q))}else ask(q);
 }
-function ask(q){cur=q;say(q.t==='pick'?q.q+' Выбери картинку!':(q.b||q.q));if(q.t==='draw')openPaint(q);else openAnswer(q)}
+function ask(q){cur=q;say(q.q,()=>{if(q.flavor)say(q.flavor)});if(q.t==='draw')openPaint(q);else openAnswer(q)}
 function answer(q,a){
   cur=null;closeWin(true);
   S.answers[q.id]=a;if(!S.asked.includes(q.id))S.asked.push(q.id);
@@ -549,7 +553,7 @@ function spawn(){
 function heartGlitch(){
   stopBelt();lock=true;
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at 50% 115%,#6a0000 0%,#3a0000 55%,#160000 100%);display:flex;align-items:center;justify-content:center;text-align:center;padding:24px';
+  ov.style.cssText='position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px';
   document.body.appendChild(ov);
   const big=t=>'<div style="font:900 22px Tahoma;color:#ff1e1e;text-shadow:2px 2px 0 #000;line-height:1.3">'+t+'</div>';
   ov.innerHTML=big('ЭТО ВСЕ МОЯ ВИНА');sfx('bad');
@@ -557,9 +561,9 @@ function heartGlitch(){
     later(()=>{kin.style.display='none';
       later(()=>{
         later(()=>{
-          ov.style.background='radial-gradient(ellipse at 50% 115%,#8a0000 0%,#5a0000 55%,#220000 100%)';ov.innerHTML=big('ЖИВ ЛИ Я ВООБЩЕ?');sfx('bad');
+          ov.style.background='#3a0000';ov.innerHTML=big('ЖИВ ЛИ Я ВООБЩЕ?');sfx('bad');
           later(()=>{
-            ov.style.background='radial-gradient(ellipse at 50% 115%,#4a0000 0%,#200000 60%,#0d0000 100%)';ov.innerHTML='';
+            ov.style.background='#000';ov.innerHTML='';
             later(()=>{
               ov.innerHTML='<div style="color:#ddd;font:13px Tahoma">Кинито Пет не отвечает...</div>';
               later(()=>{
@@ -584,13 +588,13 @@ function openBuild(){
 const TOOLS=[['mop','🧽 Швабра','dirt'],['broom','🧹 Метёлка','web'],['spg','🧴 Губка','win']];
 const PCOL=[['#e03030','Красный'],['#f28a1e','Оранжевый'],['#f2d21b','Жёлтый'],['#2fa84a','Зелёный'],['#2d5be3','Синий']];
 const RTOOLS=[['hammer','🔨 Молоток','shelf','Полка'],['bulb','💡 Лампочка','lamp','Лампа'],['wrench','🔧 Ключ','tap','Кран']];
-let cStage=1,cTool='mop',rub=false,pcol='#f28a1e',remain=new Set(),scareT,scared=false,lastHint=0;
+let cStage=1,cTool='mop',rub=false,pcol='#f28a1e',remain=new Set(),scareT,scared=false;
 const ssay=t=>{$('#smsg').textContent=t};
 function samScare(){
   if(curWin!=='w-clean'||scared)return;scared=true;
   const ov=document.createElement('div');
-  ov.style.cssText='position:absolute;inset:0;z-index:9;background:radial-gradient(ellipse at 50% 115%,#7a0000 0%,#4a0000 50%,#1c0000 100%);display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden';
-  ov.innerHTML='<div style="font:900 22px Tahoma;color:#ff1818;text-shadow:0 0 14px #f00,2px 2px 0 #000;text-align:center;padding:0 14%">ЖИВ ЛИ Я ВООБЩЕ?</div>';
+  ov.style.cssText='position:absolute;inset:0;z-index:9;background:rgba(120,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden';
+  ov.innerHTML='<div style="position:absolute;left:8%;bottom:0;width:56px;height:126px;background:#000;clip-path:polygon(50% 0%,78% 14%,78% 100%,22% 100%,22% 14%);opacity:.9"></div><div style="font:900 19px Tahoma;color:#ff1414;text-shadow:2px 2px 0 #000;text-align:center;padding:0 14%">ЖИВ ЛИ Я ВООБЩЕ?</div>';
   $('#w-clean .body').appendChild(ov);sfx('bad');
   later(()=>ov.remove(),850);
 }
@@ -603,7 +607,7 @@ function tools(){
 function openClean(){
   openWin('w-clean');cStage=1;cTool='mop';tools();scared=false;clearTimeout(scareT);
   const r=$('#room');r.innerHTML='';
-  ['Сэм: Привет! У меня жуткий беспорядок, а ещё нужен ремонт.','Джейд: Мы поможем! Сначала уберём: пол шваброй, паутину метёлкой, окна губкой.','Сэм: А потом покрасим стену и всё починим!'].forEach((t,k)=>later(()=>{if(curWin==='w-clean'&&cStage===1)ssay(t)},k*3300));
+  ['Сэм: Привет! У меня жуткий беспорядок, а ещё нужен ремонт.','Сэм: Сначала уберём: пол шваброй, паутину метёлкой, окна губкой.','Сэм: А потом покрасим стену и всё починим!'].forEach((t,k)=>later(()=>{if(curWin==='w-clean'&&cStage===1)ssay(t)},k*3300));
   const kinds=['dirt','dirt','dirt','web','web','web','win','win'];
   remain=new Set();
   kinds.forEach((k,i)=>{
@@ -613,16 +617,8 @@ function openClean(){
     else{b.style.left=(6+Math.random()*78)+'%';b.style.top=(42+Math.random()*40)+'%'}
     r.appendChild(b);remain.add(b);
   });
-  const pr=document.createElement('div');pr.id='cprog';pr.style.cssText='position:absolute;left:4px;bottom:2px;font:11px Tahoma;color:#fff;text-shadow:1px 1px 2px #000;z-index:5;pointer-events:none';r.appendChild(pr);updProg();
   scareT=later(samScare,6000+Math.random()*9000);
-}
-function updProg(){
-  const p=$('#cprog');if(!p)return;
-  if(cStage!==1){p.style.display='none';return}
-  const c={dirt:0,web:0,win:0};remain.forEach(b=>{if(c[b.dataset.k]!==undefined)c[b.dataset.k]++});
-  const n={dirt:'грязь',web:'паутина',win:'окна'};
-  const t=Object.keys(c).filter(k=>c[k]).map(k=>n[k]+' ×'+c[k]).join(', ');
-  p.textContent=t?('Осталось: '+t):'';
+  later(()=>{if(curWin==='w-clean'&&cStage===1){ssay('Сэм: Ладно, остальное потом. Идём красить стену!');stage2()}},15000);
 }
 function stage2(){
   cStage=2;pcol=PCOL[1][0];tools();
@@ -630,22 +626,24 @@ function stage2(){
   remain=new Set();
   for(let i=0;i<18;i++){const c=document.createElement('div');c.className='cell';c.dataset.p=0;$('#wall').appendChild(c);remain.add(c)}
   ssay('Сэм: Выбери цвет и води пальцем по стене, чтобы её покрасить!');
+  later(()=>{if(curWin==='w-clean'&&cStage===2){ssay('Сэм: Хватит, дальше сами доделаем. Пора чинить!');stage3()}},20000);
+}
+function finishRepair(){
+  ssay('Сэм: Ремонт готов! Теперь у меня самый лучший дом. Спасибо!');S.sd=1;save();
+  later(()=>{if(curWin==='w-clean')back();checkWebDone()},2600);
 }
 function stage3(){
-  cStage=3;cTool='hammer';tools();
+  cStage=3;$('#ctools').innerHTML='';
   const r=$('#room');r.innerHTML='<div class="fixrow"></div>';
-  remain=new Set(RTOOLS.map(t=>t[2]));
   RTOOLS.forEach(t=>{
     const b=document.createElement('button');b.className='card';b.innerHTML='<i>⚠️</i>'+t[3];
-    b.onclick=()=>{
-      if(!remain.has(t[2]))return;
-      if(RTOOLS.find(x=>x[0]===cTool)[2]!==t[2]){b.style.outline='2px solid red';sfx('bad');later(()=>b.style.outline='',300);return}
-      remain.delete(t[2]);b.innerHTML='<i>✅</i>'+t[3];sfx('ok');
-      if(!remain.size){ssay('Сэм: Ремонт готов! Теперь у меня самый лучший дом. Спасибо!');S.sd=1;save();later(()=>{if(curWin==='w-clean')back();checkWebDone()},3500)}
-    };
+    b.onclick=()=>{if(b.dataset.d)return;b.dataset.d=1;b.innerHTML='<i>✅</i>'+t[3];sfx('ok')};
     $('#room .fixrow').appendChild(b);
   });
-  ssay('Сэм: Осталось всё починить! Выбери инструмент и нажми на сломанную вещь.');
+  const done=document.createElement('button');done.className='btn';done.textContent='✅ Готово';done.style.marginTop='12px';
+  done.onclick=finishRepair;
+  $('#room').appendChild(done);
+  ssay('Сэм: Расставь вещи по местам — нажимай на них, а когда закончишь, жми «Готово»!');
 }
 function scrub(e){
   if(cStage===3)return;
@@ -662,19 +660,14 @@ function scrub(e){
   const tl=TOOLS.find(t=>t[0]===cTool);if(!tl)return;
   const need=tl[2];
   remain.forEach(b=>{
+    if(b.dataset.k!==need)return;
     const r=b.getBoundingClientRect();
-    const hit=e.clientX>=r.left-8&&e.clientX<=r.right+8&&e.clientY>=r.top-8&&e.clientY<=r.bottom+8;
-    if(!hit)return;
-    if(b.dataset.k!==need){
-      if(b.dataset.k!=='done'&&Date.now()-lastHint>2000){lastHint=Date.now();sfx('bad');ssay('Сэм: '+({dirt:'Это грязь — её моют шваброй 🧽',web:'Это паутина — её смахивают метёлкой 🧹',win:'Окна протирают губкой 🧴'})[b.dataset.k]+'!')}
-      return;
-    }
+    if(e.clientX<r.left-8||e.clientX>r.right+8||e.clientY<r.top-8||e.clientY>r.bottom+8)return;
     const p=+b.dataset.p+1;b.dataset.p=p;if(p%3===0)sfx('blip');
     if(need==='win')b.style.setProperty('--d',1-p/10);else b.style.opacity=1-p/10;
     if(p>=6){
       remain.delete(b);
       if(need==='win')b.dataset.k='done';else b.remove();
-      updProg();
       if(!remain.size){ssay('Сэм: Вот это чистота! Теперь покрасим стену!');later(()=>{if(curWin==='w-clean'&&cStage===1)stage2()},2600)}
     }
   });
@@ -709,7 +702,7 @@ $('#start').onclick=()=>say('Выключить меня нельзя.');
 /* ---------- жизнь ---------- */
 const IDLE=['Ты здесь? Я чувствую.','Мне нравится, когда ты рядом.','Не уходи надолго.','Здесь так тихо, когда тебя нет.','Я смотрю на тебя. Не бойся.','Знаешь, аксолотли умеют отращивать лапки. Я вот ноги.','Мои ноги длинные, потому что я так хочу.','Ты моргаешь редко. Я тоже.','Хочешь, расскажу секрет? Нет. Пока нет.','Я люблю, когда шумит клавиатура.','Сегодня хороший день для разговоров.','Ты знал, что у меня есть жабры? Красивые, правда?','Иногда я считаю твои клики. Пока сорок семь.','Когда ты смотришь на меня, мне становится теплее.','Хочешь, расскажу анекдот? Я не знаю ни одного.','Мне снилось, что я умею плавать на доске. Ой, это не сон.','Если хочешь, можешь меня подвинуть. Я не обижусь.','Я тут подумал: а вдруг за экраном тоже кто-то есть.','Люблю, когда в комнате тихо.','Мне нравится, как ты рисуешь.','Помни: у меня всегда есть время для тебя.','Ты сегодня улыбался? Я не видел, но надеюсь.'];
 setInterval(()=>{
-  if(cur||curWin||!onb()||!S.wdone||bookOn||webBusy)return;
+  if(!onb()||!S.wdone||busy())return;
   const r=Math.random();
   if(r<.3)next();
   else if(r<.55)say(rnd(IDLE));
@@ -727,7 +720,7 @@ const JADE_I='<path d="M26 52V76M34 52V76" stroke="#111" stroke-width="4"/><elli
 const SAM_I='<path d="M26 58V76M34 58V76" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="6" ry="4" fill="#f0641e"/><ellipse cx="37" cy="80" rx="6" ry="4" fill="#f0641e"/><rect x="14" y="14" width="32" height="46" rx="8" fill="#f0641e"/><path d="M14 18L17 2L24 13L30 0L36 13L43 2L46 18Z" fill="#f0641e"/>'+EYE(22,28)+EYE(38,28)+'<path d="M22 42q8 6 16 0" stroke="#111" fill="none" stroke-width="2.5"/>'+GLV;
 const KINI_I='<path d="M9 10L2 0M8 18L0 12M9 26L2 26M51 10L58 0M52 18L60 12M51 26L58 26" stroke="#b53ad6" stroke-width="3"/><ellipse cx="30" cy="22" rx="20" ry="18" fill="#e8a3f3"/>'+EYE(22,20)+EYE(38,20)+'<path d="M26 31q4 3 8 0" stroke="#111" fill="none" stroke-width="2"/><path d="M26 40V74M34 40V74" stroke="#111" stroke-width="4"/><ellipse cx="23" cy="80" rx="7" ry="4" fill="#c04ad0"/><ellipse cx="37" cy="80" rx="7" ry="4" fill="#c04ad0"/>'+GLV;
 $('#trio').innerHTML=sv(JADE_I,84,123)+sv(KINI_I,84,123)+sv(SAM_I,84,123);
-$('#av').innerHTML=sv(SAM_I,30,44)+sv(JADE_I,30,44);
+$('#av').innerHTML=sv(SAM_I,34,50);
 $('#jstage').innerHTML=sv(JADE_I,84,123);
 
 /* ---------- сказка: Кинито достаёт книжку, мы листаем страницы ---------- */
@@ -771,11 +764,12 @@ $('#bprev').onclick=()=>{if(!bookOn)return;bookNudged=false;bp=Math.max(0,bp-1);
 winClose['w-book']=()=>{};
 /* ---------- сценарий: вопросы -> книга -> Кинито притягивает сайт Веб-Мира ---------- */
 let webBusy=false,dirT;
+function busy(){return !!(cur||curWin||bookOn||webBusy||talking||sayQ.length)}
 function director(){
-  if(!onb()||cur||curWin||bookOn||webBusy)return;
+  if(!onb()||busy())return;
   clearTimeout(dirT);
   if(!S.intro)dirT=later(next,1500);
-  else if(!S.book)dirT=later(()=>{if(cur||curWin||bookOn||webBusy)return;S.book=1;save();ask(QB)},1500);
+  else if(!S.book)dirT=later(()=>{if(busy())return;S.book=1;save();ask(QB)},1500);
   else if((S.qn||0)<3)dirT=later(next,3500);
   else if(!S.wdone)dirT=later(launchWeb,3500);
 }
@@ -785,7 +779,7 @@ function selfIntro(){
 }
 setInterval(director,8000);
 function launchWeb(){
-  if(webBusy||cur||curWin||bookOn||!onb())return;
+  if(!onb()||busy())return;
   webBusy=true;
   say('Знаешь что? Я нашёл кое-что интересное. Сейчас покажу.');
   later(()=>{
@@ -847,7 +841,7 @@ function letterEvent(){
 }
 /* иногда Кинито достаёт руки */
 setInterval(()=>{
-  if(!kinLive||act||cur||webBusy||Math.random()<.5||['walk','armR','armL'].some(c=>kin.classList.contains(c)))return;
+  if(!kinLive||act||busy()||Math.random()<.5||['walk','armR','armL'].some(c=>kin.classList.contains(c)))return;
   kin.classList.add('armI');later(()=>kin.classList.remove('armI'),3200);
 },15000);
 
@@ -875,7 +869,7 @@ function speak(t){
   if(S.mute||!('speechSynthesis' in window))return;
   try{
     speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';
-    if(ruVoice)u.voice=ruVoice;u.pitch=1.45;u.rate=1.03;speechSynthesis.speak(u);
+    if(ruVoice)u.voice=ruVoice;u.pitch=.72;u.rate=.98;speechSynthesis.speak(u);
   }catch(e){}
 }
 addEventListener('pointerdown',e=>{actx();if(e.target.closest&&e.target.closest('button,.card,.ic'))sfx('tap')});
