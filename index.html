@@ -127,6 +127,16 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
 #pc.glitch::after{content:'';position:absolute;inset:0;z-index:40;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.4) 0 2px,transparent 2px 4px),linear-gradient(90deg,rgba(255,0,0,.3),rgba(0,255,255,.3))}
 #pc.dead::after{content:'';position:absolute;inset:0;z-index:41;background:#000}
 #pbar{transition:width .2s}
+#tscene{position:relative;height:210px;background:linear-gradient(#050505,#1a1410 55%,#2a2015);overflow:hidden;border:3px solid #3a2a15;flex:none}
+#tfloor{position:absolute;left:-20%;right:-20%;bottom:0;height:55%;background:repeating-linear-gradient(95deg,#241a10 0 22px,#2e2113 22px 44px);transform:perspective(240px) rotateX(58deg);transform-origin:bottom}
+#tceil{position:absolute;left:-20%;right:-20%;top:0;height:20%;background:linear-gradient(#000,#1a1410)}
+#tsam{position:absolute;left:50%;bottom:16%;transform:translateX(-50%) scale(.15);font-size:58px;transition:transform .05s linear,filter .3s;filter:brightness(.25) drop-shadow(0 0 8px #000);z-index:2}
+#thide{position:absolute;bottom:8%;font-size:32px;cursor:pointer;animation:tpulse .75s ease-in-out infinite;z-index:3;filter:drop-shadow(0 0 6px #ffd84d)}
+@keyframes tpulse{50%{transform:scale(1.3)}}
+#texit{position:absolute;right:6%;top:14%;font:bold 15px Tahoma;color:#3fdc3a;background:#111;border:2px solid #3fdc3a;padding:6px 10px;cursor:pointer;border-radius:4px;z-index:3;animation:tpulse 1s ease-in-out infinite}
+#tmsg{font:12px Tahoma;color:#ccc;padding:4px 2px;min-height:16px}
+#twarn{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(0,0,0,.8);color:#ff1414;font:900 21px Tahoma;text-shadow:2px 2px 0 #000;padding:20px;letter-spacing:1px}
+#tflash{position:absolute;inset:0;z-index:7;background:#fff;opacity:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -154,6 +164,7 @@ fieldset{border:1px solid #bbb;margin:0;padding:6px}
   <div id="w-map" class="win big"><div class="tb"><span class="tt">Веб-Мир</span><b class="x">×</b></div><div class="body" style="padding:4px"><svg id="map" viewBox="0 0 400 240" style="width:100%;flex:1;min-height:0;touch-action:none;background:#f0d283"></svg></div></div>
   <div id="w-build" class="win big"><div class="tb"><span class="tt">Дом Джейд</span><b class="x">×</b></div><div class="body wood"><div class="scene"><div class="jrow"><div id="jstage"></div><div id="crate"><div id="sil">🚗</div><div id="cchips"></div></div></div><div id="jmsg"></div><div id="belt"></div></div></div></div>
   <div id="w-clean" class="win big"><div class="tb"><span class="tt">Дом Сэма</span><b class="x">×</b></div><div class="body"><div style="display:flex;gap:8px;align-items:center"><span id="av" style="flex:none"></span><div id="smsg"></div></div><div class="btns" id="ctools"></div><div id="room"></div></div></div>
+  <div id="w-tree" class="win big"><div class="tb"><span class="tt">Домик на дереве</span><b class="x">×</b></div><div class="body" id="tbody" style="position:relative"></div></div>
 
   <div id="w-music" class="win big" style="bottom:auto"><div class="tb"><span class="tt">Музыкальная шкатулка</span><b class="x">×</b></div>
     <div class="body"><div>Тихая мелодия.</div><div class="btns"><button class="btn" id="mplay">▶ Играть</button></div></div></div>
@@ -462,7 +473,7 @@ function hcol(){const t=(S.answers.color||'').toLowerCase();for(const k in CN)if
 let hx=200,hy=190,mapT;
 function buildMap(){
   let r=7;const rn=()=>(r=(r*9301+49297)%233280)/233280;
-  const Z=[[200,128,40],[71,118,36],[335,62,36],[200,200,26]];let t='';
+  const Z=[[200,128,40],[71,118,36],[335,62,36],[200,200,26],[149,150,30]];let t='';
   for(let i=0;i<80;i++){
     const x=rn()*400,y=rn()*240,k=rn();
     if(Z.some(z=>Math.hypot(x-z[0],y-z[1])<z[2]))continue;
@@ -473,6 +484,7 @@ function buildMap(){
    '<ellipse cx="200" cy="130" rx="30" ry="13" fill="#7fb6e6" stroke="#8a8a8a" stroke-width="4"/><rect x="196" y="106" width="8" height="24" fill="#8a8a8a"/>'+
    '<g id="h1" style="cursor:pointer"><rect x="45" y="100" width="52" height="34" fill="#e2c48a"/><path d="M38 102L71 76L104 102Z" fill="#8a3b2a"/><rect x="63" y="112" width="16" height="22" rx="8" fill="#3a2a20"/><text x="71" y="146" font-size="10" text-anchor="middle" fill="#3a2a20">Дом Сэма</text></g>'+
    '<g id="h2" style="cursor:pointer"><rect x="310" y="45" width="50" height="32" fill="#e2c48a"/><path d="M302 47Q335 10 368 47Z" fill="#8a5ad6"/><rect x="327" y="56" width="16" height="21" rx="8" fill="#3a2a20"/><text x="335" y="90" font-size="10" text-anchor="middle" fill="#3a2a20">Дом Джейд</text></g>'+
+   '<g id="h3" style="cursor:pointer"><rect x="144" y="163" width="10" height="36" fill="#6b4a2a"/><circle cx="149" cy="148" r="27" fill="#2f9a45"/><circle cx="128" cy="160" r="16" fill="#37a84f"/><circle cx="170" cy="160" r="16" fill="#37a84f"/><rect x="126" y="139" width="46" height="27" fill="#caa06a" stroke="#6b4a2a"/><path d="M121 139L149 116L177 139Z" fill="#7a4a2a"/><rect x="141" y="150" width="13" height="16" rx="4" fill="#241a10"/><circle cx="151" cy="158" r="1.4" fill="#e0a820"/><text x="149" y="203" font-size="9" text-anchor="middle" fill="#3a2a20">Домик на дереве</text></g>'+
    '<g id="hum" style="transform:translate(200px,190px);transition:transform 1s linear"><ellipse cx="0" cy="2" rx="7" ry="2.5" fill="rgba(0,0,0,.25)"/><rect x="-5" y="-14" width="10" height="13" rx="4" fill="'+c+'" stroke="#222"/><circle cx="0" cy="-19" r="6" fill="'+c+'" stroke="#222"/><circle cx="-2" cy="-20" r="1" fill="#111"/><circle cx="2" cy="-20" r="1" fill="#111"/></g>';
   hx=200;hy=190;
 }
@@ -483,8 +495,12 @@ function goto(x,y,cb){
 }
 $('#map').addEventListener('pointerdown',e=>{
   const m=$('#map'),pt=m.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
-  const q=pt.matrixTransform(m.getScreenCTM().inverse()),h=e.target.closest('#h1,#h2');
-  if(h){const sam=h.id==='h1';goto(sam?71:335,sam?140:84,sam?openClean:openBuild)}
+  const q=pt.matrixTransform(m.getScreenCTM().inverse()),h=e.target.closest('#h1,#h2,#h3');
+  if(h){
+    if(h.id==='h1')goto(71,140,openClean);
+    else if(h.id==='h2')goto(335,84,openBuild);
+    else goto(149,158,openTree);
+  }
   else goto(Math.max(10,Math.min(390,q.x)),Math.max(30,Math.min(232,q.y)));
 });
 function openMap(){buildMap();openWin('w-map')}
@@ -677,7 +693,65 @@ room.addEventListener('pointerdown',e=>{rub=true;scrub(e)});
 room.addEventListener('pointermove',e=>{if(rub)scrub(e)});
 ['pointerup','pointercancel','pointerleave'].forEach(t=>room.addEventListener(t,()=>rub=false));
 
-function upd(){}
+/* Домик на дереве: побег от 3D Сэма — прячься по сигналу, потом найди выход */
+let tTimer=null,tRound=0,tSamStart=0,tSamDur=0,tHideAt=0,tHideShown=false,tCaught=false,tActive=false;
+function treeBody(){
+  return '<div id="tscene"><div id="tceil"></div><div id="tfloor"></div><div id="tsam">🧍</div><div id="thide" style="display:none">🚪</div><div id="texit" style="display:none">ВЫХОД →</div><div id="tflash"></div></div><div id="tmsg"></div>';
+}
+function openTree(){
+  openWin('w-tree');tRound=0;tCaught=false;tActive=false;
+  $('#tbody').innerHTML=treeBody();
+  const w=document.createElement('div');w.id='twarn';w.textContent='ПРЯЧЬСЯ, И НЕ ОГЛЯДЫВАЙСЯ';
+  $('#tbody').appendChild(w);sfx('bad');
+  later(()=>{if(curWin!=='w-tree')return;w.remove();tActive=true;treeRound()},2600);
+}
+function treeRound(){
+  if(curWin!=='w-tree'||!tActive)return;
+  tRound++;tHideShown=false;tCaught=false;
+  const sam=$('#tsam'),hide=$('#thide'),ex=$('#texit');
+  if(!sam)return;
+  sam.style.display='block';sam.style.filter='brightness(.25) drop-shadow(0 0 8px #000)';
+  hide.style.display='none';ex.style.display='none';
+  hide.style.left=(15+Math.random()*65)+'%';
+  $('#tmsg').textContent='Шаги приближаются...';
+  tSamStart=Date.now();tSamDur=3600+Math.random()*1400;
+  tHideAt=900+Math.random()*1200;
+  clearTimeout(tTimer);
+  const hideTO=later(()=>{if(curWin==='w-tree'&&tActive&&!tCaught){tHideShown=true;hide.style.display='block';$('#tmsg').textContent='Прячься!'}},tHideAt);
+  const tick=()=>{
+    if(curWin!=='w-tree'||!tActive||tCaught)return;
+    const t=(Date.now()-tSamStart)/tSamDur;
+    if(t>=1){tCaught=true;clearTimeout(hideTO);treeCaught();return}
+    sam.style.transform='translateX(-50%) scale('+(.15+t*1.55)+')';
+    tTimer=later(tick,45);
+  };
+  sam.style.transform='translateX(-50%) scale(.15)';
+  tick();
+  hide.onclick=()=>{
+    if(!tHideShown||tCaught)return;
+    tCaught=true;clearTimeout(tTimer);clearTimeout(hideTO);
+    sam.style.display='none';hide.style.display='none';sfx('ok');
+    $('#tmsg').textContent='Ты спрятался...';
+    later(()=>{
+      if(curWin!=='w-tree')return;
+      if(tRound>=3)treeShowExit();else later(treeRound,900);
+    },1000);
+  };
+}
+function treeCaught(){
+  const sam=$('#tsam'),fl=$('#tflash');
+  if(sam)sam.style.transform='translateX(-50%) scale(2.4)';
+  sfx('bad');if(fl){fl.style.transition='none';fl.style.opacity='.9';later(()=>{fl.style.transition='opacity .4s';fl.style.opacity='0'},60)}
+  $('#tmsg').textContent='Он тебя заметил... беги, спрячься снова!';
+  later(()=>{if(curWin==='w-tree'&&tActive)treeRound()},1300);
+}
+function treeShowExit(){
+  const ex=$('#texit');if(!ex)return;
+  ex.style.display='block';$('#tmsg').textContent='Вон там выход!';
+  ex.onclick=()=>{tActive=false;clearTimeout(tTimer);S.tree=1;save();closeWin(true);back();later(()=>say('Молодец, что спрятался.'),400)};
+}
+winClose['w-tree']=()=>{tActive=false;clearTimeout(tTimer);back()};
+
 let ac,mt=null,ni=0;const N=[392,466,523,466,392,349,392,0,349,415,466,415,349,311,349,0];
 $('#mplay').onclick=()=>{
   if(mt){clearInterval(mt);mt=null;$('#mplay').textContent='▶ Играть';return}
